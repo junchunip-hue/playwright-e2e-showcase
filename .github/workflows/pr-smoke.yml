@@ -10,16 +10,39 @@ concurrency:
   group: smoke-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Toolshop is booted inside the runner instead of using the public demo:
+  # the demo sits behind Cloudflare, which serves a bot challenge to CI runner IPs.
+  # Pinned to an upstream commit so the system under test only changes when we bump it.
+  TOOLSHOP_REF: ae7caecb811dd8952c09d997e69be7cb946ecd44
+  SPRINT: sprint5
+  DISABLE_LOGGING: 'true'
+  BASE_URL: http://localhost:4200
+  API_URL: http://localhost:8091
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - name: Check out Toolshop (system under test)
+        uses: actions/checkout@v7
         with:
-          node-version: 20
+          repository: testsmith-io/practice-software-testing
+          ref: ${{ env.TOOLSHOP_REF }}
+          path: toolshop
+
+      # Start the build early: images build and the Angular dev server compiles
+      # in the background while we install our own dependencies.
+      - name: Start Toolshop containers
+        working-directory: toolshop
+        run: docker compose -f docker-compose.yml up -d
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -33,15 +56,44 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Install API dependencies
+        working-directory: toolshop
+        run: docker compose exec -T -u root laravel-api composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-ffi
+
+      - name: Wait for database
+        working-directory: toolshop
+        run: |
+          for i in $(seq 1 30); do
+            docker compose exec -T mariadb mysqladmin ping -h localhost -u root -proot --silent && exit 0
+            echo "MariaDB not ready ($i/30)"; sleep 2
+          done
+          exit 1
+
+      - name: Create & seed database
+        working-directory: toolshop
+        run: docker compose exec -T laravel-api php artisan migrate:refresh --seed
+
+      - name: Wait for API and UI
+        run: |
+          for i in $(seq 1 60); do
+            api=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/status" || true)
+            ui=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL" || true)
+            [ "$api" = "200" ] && [ "$ui" = "200" ] && echo "Toolshop is up" && exit 0
+            echo "API=$api UI=$ui ($i/60)"; sleep 10
+          done
+          exit 1
+
       - name: Run smoke tests (API + Chromium)
         run: npx playwright test --project=api --project=chromium --grep "@smoke|@setup"
-        env:
-          CUSTOMER_EMAIL: ${{ secrets.CUSTOMER_EMAIL }}
-          CUSTOMER_PASSWORD: ${{ secrets.CUSTOMER_PASSWORD }}
+
+      - name: Dump Toolshop logs on failure
+        if: ${{ failure() }}
+        working-directory: toolshop
+        run: docker compose logs --tail=200
 
       - name: Upload HTML report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/

@@ -32,7 +32,14 @@
 - Every test must be runnable alone and in parallel.
 - Logged-in state is created once (`auth.setup.ts`) and reused via `storageState`.
 - The public demo is shared and reset periodically, so tests do not depend on exact catalogue counts.
-- **Planned:** run the app locally via docker-compose for full data control.
+- **CI runs against its own Toolshop instance** (Docker, upstream repo pinned to a commit, DB migrated and seeded
+  on every run). Local development can still target the public demo.
+
+**Why CI does not use the public demo:** the first CI run failed in `auth.setup.ts`: the login form never
+appeared. The failure screenshot showed a Cloudflare "Verify you are human" challenge, served to the GitHub
+runner's datacenter IP. API tests passed because the API host was not challenged. A bot challenge must not be
+worked around in tests, and a shared, externally controlled environment cannot give a deterministic pipeline
+anyway, so the system under test now runs inside the CI job.
 
 ## 6. Execution strategy
 | Trigger | Scope | Browsers |

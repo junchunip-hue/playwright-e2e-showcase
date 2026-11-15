@@ -14,6 +14,8 @@ stable locators, isolated test data and CI integration, not just a collection of
 - **Authenticated session reuse** with a `setup` project and `storageState`
 - **Tag-based suites**: `@smoke`, `@regression`, `@negative`
 - **CI on every PR** (GitHub Actions): lint, typecheck, smoke tests, HTML report artifact
+- **Isolated CI environment**: CI boots Toolshop in Docker (pinned upstream commit, freshly seeded DB) instead of
+  depending on the shared public demo
 - **Documented test strategy**: see [`docs/test-strategy.md`](docs/test-strategy.md)
 
 ## Project structure
@@ -41,6 +43,6 @@ npm run report          # open the HTML report
 
 ## Roadmap
 - [ ] Checkout E2E with API-created test user
-- [ ] Run the app locally via docker-compose for full data control
+- [x] Run the app in Docker in CI for full data control
 - [ ] Nightly regression with sharding + merged report published to GitHub Pages
 - [ ] Visual regression and accessibility (axe-core) checks
