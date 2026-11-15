@@ -16,13 +16,16 @@ stable locators, isolated test data and CI integration, not just a collection of
 - **CI on every PR** (GitHub Actions): lint, typecheck, smoke tests, HTML report artifact
 - **Isolated CI environment**: CI boots Toolshop in Docker (pinned upstream commit, freshly seeded DB) instead of
   depending on the shared public demo
-- **Documented test strategy**: see [`docs/test-strategy.md`](docs/test-strategy.md)
+- **Checkout E2E**: customer registered via API, purchase through the UI, invoice verified via API
+- **Documented test strategy and plan**: [`docs/test-strategy.md`](docs/test-strategy.md) (why) and
+  [`docs/test-plan.md`](docs/test-plan.md) (what, where, in which order)
 
 ## Project structure
 ```
 src/
   api/          typed REST client (Toolshop API)
   config/       environment handling
+  data/         test data builders (API-created customers)
   fixtures/     custom Playwright fixtures
   pages/        page & component objects
 tests/
@@ -42,7 +45,7 @@ npm run report          # open the HTML report
 ```
 
 ## Roadmap
-- [ ] Checkout E2E with API-created test user
+- [x] Checkout E2E with API-created test user
 - [x] Run the app in Docker in CI for full data control
 - [ ] Nightly regression with sharding + merged report published to GitHub Pages
 - [ ] Visual regression and accessibility (axe-core) checks
