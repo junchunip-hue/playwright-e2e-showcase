@@ -1,0 +1,50 @@
+name: Wait for Toolshop
+description: Installs API dependencies, seeds the database and waits until the API and UI both serve data.
+
+inputs:
+  api-url:
+    description: Toolshop API base URL
+    required: true
+  base-url:
+    description: Toolshop UI base URL
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install API dependencies
+      shell: bash
+      working-directory: toolshop
+      run: docker compose exec -T -u root laravel-api composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-ffi
+
+    - name: Wait for database
+      shell: bash
+      working-directory: toolshop
+      run: |
+        for i in $(seq 1 30); do
+          docker compose exec -T mariadb mysqladmin ping -h localhost -u root -proot --silent && exit 0
+          echo "MariaDB not ready ($i/30)"; sleep 2
+        done
+        exit 1
+
+    - name: Create & seed database
+      shell: bash
+      working-directory: toolshop
+      run: docker compose exec -T laravel-api php artisan migrate:refresh --seed
+
+    # Probe a data endpoint, not just /status: /status was green while /products returned 500.
+    - name: Wait for API and UI
+      shell: bash
+      env:
+        API_URL: ${{ inputs.api-url }}
+        BASE_URL: ${{ inputs.base-url }}
+      run: |
+        for i in $(seq 1 60); do
+          api=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL/products" || true)
+          ui=$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL" || true)
+          [ "$api" = "200" ] && [ "$ui" = "200" ] && echo "Toolshop is up" && exit 0
+          echo "API=$api UI=$ui ($i/60)"; sleep 10
+        done
+        echo "::error::Toolshop did not become healthy"
+        curl -s "$API_URL/products" | head -c 2000
+        exit 1

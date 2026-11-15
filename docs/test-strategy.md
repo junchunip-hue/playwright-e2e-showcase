@@ -44,7 +44,7 @@ anyway, so the system under test now runs inside the CI job.
 ## 6. Execution strategy
 | Trigger | Scope | Browsers |
 |---|---|---|
-| Pull request | `@smoke` (UI + API) | Chromium |
+| Pull request | `@smoke` (UI + API), TypeScript and Java jobs in parallel | Chromium |
 | Nightly | `@regression` full suite, sharded | Chromium, Firefox, WebKit |
 | Local (dev) | anything | Chromium (Firefox opt-in via `ALL_BROWSERS=1`) |
 
@@ -53,5 +53,22 @@ anyway, so the system under test now runs inside the CI job.
 did not change it) and not a missing VC++ runtime. Cross-browser coverage is a CI concern anyway, because CI
 runs on Linux, which is the reference environment. Keeping the local loop on Chromium keeps it fast and reliable.
 
-## 7. Out of scope (deliberately)
+## 7. Two-language suite (TypeScript + Java)
+**Decision:** TypeScript is the primary suite. A Java + JUnit 5 module (`java/`) mirrors only the `@smoke` scenarios.
+
+**Why TypeScript first:** Playwright Test (fixtures, projects, retries, sharding, HTML report, trace) and newer
+tooling such as Test Agents exist only for Node. **Why Java at all:** many teams run Java stacks (JUnit/TestNG,
+Maven), and the same scenarios in both languages show the framework design is not tied to one runner.
+
+**Keeping them in sync:**
+- One source of truth for *what* is tested: the scenario names and tags match; the table in the README maps them.
+- Mirrored page objects and API client with identical `data-test` locators, so UI changes are mechanical in both.
+- Same Playwright version in `package.json` and `java/pom.xml`; same `.env` file and defaults.
+- Both run on every PR against the same pinned Toolshop; the shared boot lives in `.github/actions/`.
+- New coverage lands in TypeScript; a scenario is ported to Java only when it joins the smoke set.
+
+**Known difference:** the TypeScript suite logs in once (`setup` project + `storageState`); the Java `CartTest`
+signs in inside the test, which keeps the Java module free of cross-test state at the cost of a few seconds.
+
+## 8. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery.
