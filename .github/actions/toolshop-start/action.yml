@@ -1,0 +1,36 @@
+name: Start Toolshop
+description: >
+  Checks out Toolshop (system under test) at a pinned commit and starts its containers.
+  Returns immediately so the job can install its own toolchain while images build;
+  call toolshop-ready before running tests.
+
+inputs:
+  ref:
+    description: Upstream commit of testsmith-io/practice-software-testing
+    required: true
+  sprint:
+    description: Toolshop sprint folder to run
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check out Toolshop
+      uses: actions/checkout@v7
+      with:
+        repository: testsmith-io/practice-software-testing
+        ref: ${{ inputs.ref }}
+        path: toolshop
+
+    # The API container runs PHP as www-data (uid 1000), the runner checks out as uid 1001.
+    # Without this, Laravel cannot write its file cache and data endpoints return 500.
+    - name: Make Laravel storage writable
+      shell: bash
+      run: chmod -R a+rwX "toolshop/${{ inputs.sprint }}/API/storage" "toolshop/${{ inputs.sprint }}/API/bootstrap/cache"
+
+    - name: Start Toolshop containers
+      shell: bash
+      working-directory: toolshop
+      env:
+        SPRINT: ${{ inputs.sprint }}
+      run: docker compose -f docker-compose.yml up -d

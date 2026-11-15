@@ -6,3 +6,6 @@ playwright/.auth/
 .env
 # System under test, cloned by CI (or locally) to run Toolshop in Docker
 toolshop/
+
+# Java suite build output
+java/target/
