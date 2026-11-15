@@ -1,6 +1,6 @@
 # Playwright E2E Showcase
 
-![PR Smoke Tests](https://github.com/<your-user>/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)
+[![PR Smoke Tests](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml)
 
 A production-style test automation framework built with **Playwright + TypeScript**, targeting the public
 [Practice Software Testing (Toolshop)](https://practicesoftwaretesting.com) demo shop.
