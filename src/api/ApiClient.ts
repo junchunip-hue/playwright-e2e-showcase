@@ -54,7 +54,11 @@ export class ApiClient {
 
   private async getJson<T>(path: string): Promise<T> {
     const res = await this.request.get(path);
-    if (!res.ok()) throw new Error(`GET ${path} failed: ${res.status()}`);
+    if (!res.ok()) {
+      // Include the start of the body: server errors (e.g. Laravel debug output) are otherwise invisible in CI.
+      const body = (await res.text()).slice(0, 500);
+      throw new Error(`GET ${path} failed: ${res.status()}\n${body}`);
+    }
     return (await res.json()) as T;
   }
 }
