@@ -1,15 +1,12 @@
 import type { Locator, Page } from '@playwright/test';
+import { LoginForm } from './components/LoginForm';
 
 export class LoginPage {
-  readonly email: Locator;
-  readonly password: Locator;
-  readonly submit: Locator;
+  readonly form: LoginForm;
   readonly error: Locator;
 
   constructor(private readonly page: Page) {
-    this.email = page.getByTestId('email');
-    this.password = page.getByTestId('password');
-    this.submit = page.getByTestId('login-submit');
+    this.form = new LoginForm(page);
     this.error = page.getByTestId('login-error');
   }
 
@@ -18,8 +15,6 @@ export class LoginPage {
   }
 
   async login(email: string, password: string): Promise<void> {
-    await this.email.fill(email);
-    await this.password.fill(password);
-    await this.submit.click();
+    await this.form.signIn(email, password);
   }
 }

@@ -67,7 +67,7 @@ Maven), and the same scenarios in both languages show the framework design is no
 **Keeping them in sync:**
 - One source of truth for *what* is tested: the scenario names and tags match; the table in the README maps them.
 - Mirrored page objects and API client with identical `data-test` locators, so UI changes are mechanical in both.
-- Same Playwright version in `package.json` and `java/pom.xml`; same `.env` file and defaults.
+- Same Playwright minor version in `package.json` and `java/pom.xml`; same `.env` file and defaults.
 - Both run on every PR against the same pinned Toolshop; the shared boot lives in `.github/actions/`.
 - New coverage lands in TypeScript; a scenario is ported to Java only when it joins the smoke set.
 

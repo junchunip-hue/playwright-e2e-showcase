@@ -1,20 +1,32 @@
 name: Start Toolshop
 description: >
   Checks out Toolshop (system under test) at a pinned commit and starts its containers.
+  Single source of truth for the Toolshop version: every workflow (PR smoke, nightly, visual baselines)
+  tests the same build. Exports SPRINT, BASE_URL and API_URL to the job environment for later steps.
   Returns immediately so the job can install its own toolchain while images build;
   call toolshop-ready before running tests.
 
 inputs:
   ref:
-    description: Upstream commit of testsmith-io/practice-software-testing
-    required: true
+    description: Upstream commit of testsmith-io/practice-software-testing. Bump it here, nowhere else.
+    default: ae7caecb811dd8952c09d997e69be7cb946ecd44
   sprint:
     description: Toolshop sprint folder to run
-    required: true
+    default: sprint5
 
 runs:
   using: composite
   steps:
+    - name: Export Toolshop environment
+      shell: bash
+      run: |
+        {
+          echo "SPRINT=${{ inputs.sprint }}"
+          echo "DISABLE_LOGGING=true"
+          echo "BASE_URL=http://localhost:4200"
+          echo "API_URL=http://localhost:8091"
+        } >> "$GITHUB_ENV"
+
     - name: Check out Toolshop
       uses: actions/checkout@v7
       with:
@@ -33,4 +45,5 @@ runs:
       working-directory: toolshop
       env:
         SPRINT: ${{ inputs.sprint }}
+        DISABLE_LOGGING: 'true'
       run: docker compose -f docker-compose.yml up -d

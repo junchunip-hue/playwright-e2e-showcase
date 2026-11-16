@@ -9,40 +9,38 @@ import { expect, test } from '../../src/fixtures';
 test.describe('Visual regression', { tag: ['@visual', '@regression'] }, () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('header navigation (anonymous)', async ({ loginPage, page }) => {
+  test('header navigation (anonymous)', async ({ loginPage, header }) => {
     await loginPage.goto();
-    await expect(loginPage.email).toBeVisible();
-    await expect(page.locator('nav.navbar')).toHaveScreenshot('header-anonymous.png');
+    await expect(loginPage.form.email).toBeVisible();
+    await expect(header.root).toHaveScreenshot('header-anonymous.png');
   });
 
-  test('login form', async ({ loginPage, page }) => {
+  test('login form', async ({ loginPage }) => {
     await loginPage.goto();
-    await expect(loginPage.email).toBeVisible();
-    await expect(page.getByTestId('login-form')).toHaveScreenshot('login-form.png');
+    await expect(loginPage.form.email).toBeVisible();
+    await expect(loginPage.form.root).toHaveScreenshot('login-form.png');
   });
 
-  test('contact form', async ({ page }) => {
-    await page.goto('/contact');
-    const submit = page.getByTestId('contact-submit');
-    await expect(submit).toBeVisible();
-    await expect(page.locator('form').filter({ has: submit })).toHaveScreenshot('contact-form.png');
+  test('contact form', async ({ contactPage }) => {
+    await contactPage.goto();
+    await expect(contactPage.submit).toBeVisible();
+    await expect(contactPage.form).toHaveScreenshot('contact-form.png');
   });
 
-  test('catalogue filters', async ({ homePage, page }) => {
+  test('catalogue filters', async ({ homePage }) => {
     await homePage.goto();
     await expect(homePage.productNames.first()).toBeVisible();
-    // data-test="filters" is on both the mobile toggle button and the panel; screenshot the panel.
-    await expect(page.locator('div[data-test="filters"]')).toHaveScreenshot('catalogue-filters.png');
+    await expect(homePage.filtersPanel).toHaveScreenshot('catalogue-filters.png');
   });
 
   // Full-page example: anything that changes between runs is masked rather than compared.
   // The footer prints the Toolshop build date, and CI builds Toolshop on every run.
-  test('login page (full page)', async ({ loginPage, page }) => {
+  test('login page (full page)', async ({ loginPage, header, footer, page }) => {
     await loginPage.goto();
-    await expect(loginPage.email).toBeVisible();
+    await expect(loginPage.form.email).toBeVisible();
     await expect(page).toHaveScreenshot('login-page.png', {
       fullPage: true,
-      mask: [page.getByTestId('notification-bar'), page.getByText(/Built \d{4}-\d{2}-\d{2}/)],
+      mask: [header.notificationBar, footer.buildInfo],
     });
   });
 });

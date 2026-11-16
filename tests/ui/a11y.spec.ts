@@ -23,13 +23,13 @@ test.describe('Accessibility (anonymous visitor)', { tag: ['@a11y', '@regression
 
   test('login page', async ({ loginPage, makeAxeBuilder }, testInfo) => {
     await loginPage.goto();
-    await expect(loginPage.email).toBeVisible();
+    await expect(loginPage.form.email).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'login');
   });
 
-  test('contact page', async ({ page, makeAxeBuilder }, testInfo) => {
-    await page.goto('/contact');
-    await expect(page.getByTestId('contact-submit')).toBeVisible();
+  test('contact page', async ({ contactPage, makeAxeBuilder }, testInfo) => {
+    await contactPage.goto();
+    await expect(contactPage.submit).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'contact');
   });
 });
@@ -46,10 +46,10 @@ test.describe('Accessibility (logged-in customer)', { tag: ['@a11y', '@regressio
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'cart');
   });
 
-  test('account page', async ({ page, header, makeAxeBuilder }, testInfo) => {
-    await page.goto('/account');
+  test('account page', async ({ accountPage, header, makeAxeBuilder }, testInfo) => {
+    await accountPage.goto();
     await expect(header.userMenu).toBeVisible();
-    await expect(page.getByTestId('page-title')).toBeVisible();
+    await expect(accountPage.title).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'account');
   });
 });

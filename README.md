@@ -18,7 +18,8 @@ stable locators, isolated test data and CI integration, not just a collection of
 - **CI on every PR** (GitHub Actions): lint, typecheck, smoke tests, HTML report artifact
 - **Nightly regression**: full suite on Chromium, Firefox and WebKit, sharded across 3 jobs, merged into one
   HTML report published to GitHub Pages; full Java suite runs alongside
-- **Isolated CI environment**: CI boots Toolshop in Docker (pinned upstream commit, freshly seeded DB) instead of
+- **Isolated CI environment**: CI boots Toolshop in Docker (upstream commit pinned in one place,
+  [`toolshop-start`](.github/actions/toolshop-start/action.yml), freshly seeded DB) instead of
   depending on the shared public demo
 - **Checkout E2E**: customer registered via API, purchase through the UI, invoice verified via API
 - **Accessibility gate (axe-core)**: WCAG 2.1 A/AA scans of 6 key pages on every PR; Toolshop's existing issues are
@@ -48,7 +49,7 @@ tests/
   api/          API tests
 java/           Playwright for Java + JUnit 5 (core scenarios, same layout: api/ config/ pages/ tests/)
 .github/
-  actions/      shared Toolshop boot (used by both CI jobs)
+  actions/      shared CI steps: Toolshop boot (version pinned here), Node and Java suite setup
   workflows/    PR smoke (TypeScript + Java) and nightly regression (sharded, all browsers)
 ```
 
@@ -89,7 +90,8 @@ How the two stay in sync:
 - **Same contract, same names.** Both use the `data-test` locators, the same env variables and defaults, and mirrored
   page objects and API client (`HomePage.ts` ↔ `HomePage.java`). A locator change is the same one-line edit in both.
 - **Same tags.** `@smoke` / `@negative` in TypeScript are `@Tag("smoke")` / `@Tag("negative")` in JUnit.
-- **Same Playwright version.** `playwright.version` in `java/pom.xml` follows `@playwright/test` in `package.json`.
+- **Same Playwright release line.** `playwright.version` in `java/pom.xml` follows the minor version of
+  `@playwright/test` in `package.json` (Java patch releases can lag behind Node).
 - **CI enforces it.** Every PR runs both jobs against the same pinned Toolshop, so a UI change that breaks one
   language and not the other shows up immediately.
 - **New scenarios start in TypeScript.** Only port a scenario to Java when it becomes part of the smoke set.

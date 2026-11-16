@@ -11,13 +11,7 @@ concurrency:
   group: visual-baselines-${{ github.head_ref }}
   cancel-in-progress: true
 
-env:
-  TOOLSHOP_REF: ae7caecb811dd8952c09d997e69be7cb946ecd44
-  SPRINT: sprint5
-  DISABLE_LOGGING: 'true'
-  BASE_URL: http://localhost:4200
-  API_URL: http://localhost:8091
-
+# Same Toolshop version as the PR gate (.github/actions/toolshop-start), so baselines always match it.
 jobs:
   update:
     # Same-repo PRs only: a fork's token cannot push to its branch.
@@ -33,25 +27,12 @@ jobs:
           ref: ${{ github.head_ref }}
 
       - uses: ./.github/actions/toolshop-start
+
+      - uses: ./.github/actions/setup-node-suite
         with:
-          ref: ${{ env.TOOLSHOP_REF }}
-          sprint: ${{ env.SPRINT }}
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+          browsers: chromium
 
       - uses: ./.github/actions/toolshop-ready
-        with:
-          api-url: ${{ env.API_URL }}
-          base-url: ${{ env.BASE_URL }}
 
       # @setup is needed because --grep also filters dependency projects.
       - name: Regenerate baselines
