@@ -8,8 +8,8 @@
 
 | Minute | Show | Where it lives today |
 |---|---|---|
-| 1 | One business journey that reads like a story, API and UI working together | `tests/ui/checkout.spec.ts` (U6) |
-| 2 | Quality beyond functional: contracts, accessibility, visual, cross-browser | `tests/api/contracts.api.spec.ts`, `tests/ui/a11y.spec.ts`, `tests/ui/visual.spec.ts`, nightly report |
+| 1 | One business journey that reads like a story, API and UI working together | `tests/e2e/checkout.spec.ts` (U6) |
+| 2 | Quality beyond functional: contracts, accessibility, visual, cross-browser | `tests/api/contracts.api.spec.ts`, `tests/quality/a11y.spec.ts`, `tests/quality/visual.spec.ts`, nightly report |
 | 3 | A pipeline that guards itself: tag check, architecture tests, Auto-fix-able CI | `src/tags.ts`, `tests/architecture/`, `.github/` |
 
 Everything below either makes one of these three minutes stronger or keeps the repository easy to walk through.
