@@ -22,7 +22,7 @@ import org.junit.jupiter.api.DisplayName;
 class LoginTest {
 
   @SmokeTest
-  @DisplayName("customer can log in with valid credentials")
+  @DisplayName("U1: customer can log in with valid credentials")
   void validLogin(Page page) {
     LoginPage loginPage = new LoginPage(page);
     loginPage.navigate();
@@ -34,7 +34,7 @@ class LoginTest {
 
   @SmokeTest
   @Negative
-  @DisplayName("shows an error for a wrong password")
+  @DisplayName("U2: shows an error for a wrong password")
   void wrongPassword(Page page, Playwright playwright) {
     // Failed logins count towards an account lock (HTTP 423): use a throwaway account, never the shared one.
     Customer customer;

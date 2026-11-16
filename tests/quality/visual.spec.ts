@@ -9,25 +9,25 @@ import { expect, Tag, test } from '../../src/fixtures';
 test.describe('Visual regression', { tag: [Tag.visual, Tag.regression] }, () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('header navigation (anonymous)', async ({ loginPage, header }) => {
+  test('N1: header navigation (anonymous)', async ({ loginPage, header }) => {
     await loginPage.goto();
     await expect(loginPage.form.email).toBeVisible();
     await expect(header.root).toHaveScreenshot('header-anonymous.png');
   });
 
-  test('login form', async ({ loginPage }) => {
+  test('N1: login form', async ({ loginPage }) => {
     await loginPage.goto();
     await expect(loginPage.form.email).toBeVisible();
     await expect(loginPage.form.root).toHaveScreenshot('login-form.png');
   });
 
-  test('contact form', async ({ contactPage }) => {
+  test('N1: contact form', async ({ contactPage }) => {
     await contactPage.goto();
     await expect(contactPage.submit).toBeVisible();
     await expect(contactPage.form).toHaveScreenshot('contact-form.png');
   });
 
-  test('catalogue filters', async ({ homePage }) => {
+  test('N1: catalogue filters', async ({ homePage }) => {
     await homePage.goto();
     await expect(homePage.productNames.first()).toBeVisible();
     await expect(homePage.filtersPanel).toHaveScreenshot('catalogue-filters.png');
@@ -35,7 +35,7 @@ test.describe('Visual regression', { tag: [Tag.visual, Tag.regression] }, () => 
 
   // Full-page example: anything that changes between runs is masked rather than compared.
   // The footer prints the Toolshop build date, and CI builds Toolshop on every run.
-  test('login page (full page)', async ({ loginPage, header, footer, page }) => {
+  test('N1: login page (full page)', async ({ loginPage, header, footer, page }) => {
     await loginPage.goto();
     await expect(loginPage.form.email).toBeVisible();
     await expect(page).toHaveScreenshot('login-page.png', {

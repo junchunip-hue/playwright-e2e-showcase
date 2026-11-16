@@ -24,7 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 class ApiTest {
 
   @SmokeTest
-  @DisplayName("GET /products returns a paginated, well-formed list")
+  @DisplayName("A1: GET /products returns a paginated, well-formed list")
   void productsArePaginated(Playwright playwright) {
     try (ApiClient api = ApiClient.create(playwright)) {
       Paginated<Product> res = api.getProducts(1);
@@ -40,7 +40,7 @@ class ApiTest {
   }
 
   @SmokeTest
-  @DisplayName("valid credentials return an access token")
+  @DisplayName("A2: valid credentials return an access token")
   void validLoginReturnsToken(Playwright playwright) {
     try (ApiClient api = ApiClient.create(playwright)) {
       String token = api.login(Env.CUSTOMER_EMAIL, Env.CUSTOMER_PASSWORD);
@@ -50,7 +50,7 @@ class ApiTest {
 
   @RegressionTest
   @Negative
-  @DisplayName("wrong password is rejected with 401")
+  @DisplayName("A3: wrong password is rejected with 401")
   void wrongPasswordIs401(Playwright playwright) {
     try (ApiClient api = ApiClient.create(playwright)) {
       // Throwaway account: failed logins count towards an account lock (HTTP 423) on the shared customer.

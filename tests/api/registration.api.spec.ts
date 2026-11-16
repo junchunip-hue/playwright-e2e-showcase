@@ -6,7 +6,7 @@ import { expect, Tag, test } from '../../src/fixtures';
 
 test.describe('Registration API', () => {
   test('A4: weak password is rejected with every unmet rule', { tag: [Tag.smoke, Tag.negative] }, async ({ api }) => {
-    const res = await api.registerRequest(await newCustomerData(api, { password: 'abc' }));
+    const res = await api.customers.registerRequest(await newCustomerData(api, { password: 'abc' }));
 
     expect(res.status()).toBe(422);
     const errors = await api.validationErrors(res, 'POST /users/register');
@@ -25,7 +25,7 @@ test.describe('Registration API', () => {
   // through when that service is unreachable. External dependency, so nightly rather than the PR gate.
   test('A4: password from a known data leak is rejected', { tag: [Tag.regression, Tag.negative] }, async ({ api }) => {
     // Satisfies every local rule, but appears in public breach lists.
-    const res = await api.registerRequest(await newCustomerData(api, { password: 'Password1!' }));
+    const res = await api.customers.registerRequest(await newCustomerData(api, { password: 'Password1!' }));
 
     expect(res.status()).toBe(422);
     const errors = await api.validationErrors(res, 'POST /users/register');
@@ -36,7 +36,7 @@ test.describe('Registration API', () => {
   test('A5: duplicate email is rejected with 409', { tag: [Tag.smoke, Tag.negative] }, async ({ api }) => {
     const existing = await createCustomer(api);
 
-    const res = await api.registerRequest(await newCustomerData(api, { email: existing.email }));
+    const res = await api.customers.registerRequest(await newCustomerData(api, { email: existing.email }));
 
     expect(res.status()).toBe(409);
     const errors = await api.validationErrors(res, 'POST /users/register');

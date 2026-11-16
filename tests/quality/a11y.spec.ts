@@ -8,26 +8,26 @@ import { expect, Tag, test } from '../../src/fixtures';
 test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regression] }, () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('catalogue page', async ({ homePage, makeAxeBuilder }, testInfo) => {
+  test('N2: catalogue page', async ({ homePage, makeAxeBuilder }, testInfo) => {
     await homePage.goto();
     await expect(homePage.productNames.first()).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'home');
   });
 
-  test('product detail page', async ({ api, productPage, makeAxeBuilder }, testInfo) => {
-    const product = await api.findInStockProduct();
+  test('N2: product detail page', async ({ api, productPage, makeAxeBuilder }, testInfo) => {
+    const product = await api.products.findInStock();
     await productPage.goto(product.id);
     await expect(productPage.name).toHaveText(product.name);
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'product');
   });
 
-  test('login page', async ({ loginPage, makeAxeBuilder }, testInfo) => {
+  test('N2: login page', async ({ loginPage, makeAxeBuilder }, testInfo) => {
     await loginPage.goto();
     await expect(loginPage.form.email).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'login');
   });
 
-  test('contact page', async ({ contactPage, makeAxeBuilder }, testInfo) => {
+  test('N2: contact page', async ({ contactPage, makeAxeBuilder }, testInfo) => {
     await contactPage.goto();
     await expect(contactPage.submit).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'contact');
@@ -35,8 +35,8 @@ test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regress
 });
 
 test.describe('Accessibility (logged-in customer)', { tag: [Tag.a11y, Tag.regression] }, () => {
-  test('cart step of checkout', async ({ api, productPage, header, checkoutPage, makeAxeBuilder }, testInfo) => {
-    const product = await api.findInStockProduct();
+  test('N2: cart step of checkout', async ({ api, productPage, header, checkoutPage, makeAxeBuilder }, testInfo) => {
+    const product = await api.products.findInStock();
     await productPage.goto(product.id);
     await productPage.addToCart.click();
     await expect(header.cartQuantity).toHaveText('1');
@@ -46,7 +46,7 @@ test.describe('Accessibility (logged-in customer)', { tag: [Tag.a11y, Tag.regres
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'cart');
   });
 
-  test('account page', async ({ accountPage, header, makeAxeBuilder }, testInfo) => {
+  test('N2: account page', async ({ accountPage, header, makeAxeBuilder }, testInfo) => {
     await accountPage.goto();
     await expect(header.userMenu).toBeVisible();
     await expect(accountPage.title).toBeVisible();

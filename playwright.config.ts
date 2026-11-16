@@ -10,6 +10,9 @@ const isPublicDemo = env.baseURL.includes('practicesoftwaretesting.com');
 // The PR smoke job still picks only --project=chromium; the nightly run uses all of them.
 const runAllBrowsers = isCI || !!process.env.ALL_BROWSERS;
 
+// tests/ is split by intent: api/ and architecture/ need no browser; ui/, e2e/ and quality/ do.
+const BROWSER_TESTS = /[\\/]tests[\\/](ui|e2e|quality)[\\/].*\.spec\.ts$/;
+
 // Which tests run is decided by name only (SUITE=pr, SUITE=nightly, ...); the tag lists live in src/tags.ts.
 const suite = resolveSuite(process.env.SUITE);
 
@@ -54,9 +57,10 @@ export default defineConfig({
     // Static rules about the pipeline and code (cycles, self-triggering workflows): no browser, no Toolshop.
     { name: 'architecture', testDir: './tests/architecture' },
 
+    // Browser tests: tests/ui (single-page behaviour), tests/e2e (journeys), tests/quality (a11y, visual).
     {
       name: 'chromium',
-      testDir: './tests/ui',
+      testMatch: BROWSER_TESTS,
       dependencies: ['setup'],
       use: { ...devices['Desktop Chrome'], storageState: STORAGE_STATE },
     },
@@ -64,7 +68,7 @@ export default defineConfig({
       ? [
           {
             name: 'firefox',
-            testDir: './tests/ui',
+            testMatch: BROWSER_TESTS,
             // a11y: axe evaluates the DOM, so results do not depend on the engine.
             // visual: one set of baselines (Chromium/Linux) is enough to catch layout regressions.
             // A project grepInvert replaces the config one, so the suite's exclusions are merged in.
@@ -74,7 +78,7 @@ export default defineConfig({
           },
           {
             name: 'webkit',
-            testDir: './tests/ui',
+            testMatch: BROWSER_TESTS,
             grepInvert: suiteGrepInvert(suite, CHROMIUM_ONLY),
             dependencies: ['setup'],
             use: { ...devices['Desktop Safari'], storageState: STORAGE_STATE },
