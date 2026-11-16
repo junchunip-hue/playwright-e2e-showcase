@@ -8,12 +8,14 @@
     "test:smoke": "playwright test --grep \"@smoke|@setup\"",
     "test:api": "playwright test --project=api",
     "test:ui": "playwright test --project=chromium",
+    "test:a11y": "playwright test --project=chromium --grep @a11y",
     "report": "playwright show-report",
     "codegen": "playwright codegen https://practicesoftwaretesting.com",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.56.0",
     "@types/node": "^22.0.0",
     "dotenv": "^16.4.5",

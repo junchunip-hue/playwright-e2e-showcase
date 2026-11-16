@@ -45,12 +45,15 @@ export default defineConfig({
           {
             name: 'firefox',
             testDir: './tests/ui',
+            // axe evaluates the DOM, so a11y results do not depend on the engine: scan on Chromium only.
+            grepInvert: /@a11y/,
             dependencies: ['setup'],
             use: { ...devices['Desktop Firefox'], storageState: STORAGE_STATE },
           },
           {
             name: 'webkit',
             testDir: './tests/ui',
+            grepInvert: /@a11y/,
             dependencies: ['setup'],
             use: { ...devices['Desktop Safari'], storageState: STORAGE_STATE },
           },

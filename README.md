@@ -21,6 +21,8 @@ stable locators, isolated test data and CI integration, not just a collection of
 - **Isolated CI environment**: CI boots Toolshop in Docker (pinned upstream commit, freshly seeded DB) instead of
   depending on the shared public demo
 - **Checkout E2E**: customer registered via API, purchase through the UI, invoice verified via API
+- **Accessibility gate (axe-core)**: WCAG 2.1 A/AA scans of 6 key pages on every PR; Toolshop's existing issues are
+  tracked as documented known issues, so only *new* violations fail
 - **Documented test strategy and plan**: [`docs/test-strategy.md`](docs/test-strategy.md) (why) and
   [`docs/test-plan.md`](docs/test-plan.md) (what, where, in which order)
 - **Java + JUnit 5 twin suite** ([`java/`](java/)): the core smoke scenarios ported to Playwright for Java, run as a
@@ -31,6 +33,7 @@ stable locators, isolated test data and CI integration, not just a collection of
 ## Project structure
 ```
 src/
+  a11y/         axe scan helper + known-issue list
   api/          typed REST client (Toolshop API)
   config/       environment handling
   data/         test data builders (API-created customers)
@@ -52,6 +55,7 @@ npm install
 npx playwright install
 cp .env.example .env
 npm run test:smoke      # quick check
+npm run test:a11y       # accessibility scans
 npm test                # everything
 npm run report          # open the HTML report
 ```
@@ -91,4 +95,5 @@ How the two stay in sync:
 - [x] Run the app in Docker in CI for full data control
 - [x] Java + JUnit 5 twin suite for the smoke scenarios
 - [x] Nightly regression with sharding + merged report published to GitHub Pages
-- [ ] Visual regression and accessibility (axe-core) checks
+- [x] Accessibility (axe-core) checks with a known-issue baseline
+- [ ] Visual regression

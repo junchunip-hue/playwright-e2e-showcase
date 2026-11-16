@@ -74,5 +74,24 @@ Maven), and the same scenarios in both languages show the framework design is no
 **Known difference:** the TypeScript suite logs in once (`setup` project + `storageState`); the Java `CartTest`
 signs in inside the test, which keeps the Java module free of cross-test state at the cost of a few seconds.
 
-## 8. Out of scope (deliberately)
+## 8. Accessibility
+**What:** axe-core scans against WCAG 2.1 A/AA (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`) on six pages:
+catalogue, product detail, login, contact, cart step of checkout, account. Tagged `@a11y`, part of the PR gate.
+
+**Known issues instead of exclusions:** Toolshop is third-party, so its existing violations cannot be fixed here.
+They are listed per axe rule in `src/a11y/accessibility.ts`, each with where it occurs. A violation of any other rule
+fails the test; a listed rule that stops occurring is reported as an annotation so the list only shrinks.
+Rule-level entries were chosen over `exclude(selector)`, which would silence *every* rule on that element.
+
+| Rule | Where | Impact |
+|---|---|---|
+| `label-content-name-mismatch` | Header (all pages): language selector, cart link | serious |
+| `list` | Catalogue: category filter `<ul>` contains non-`<li>` children | serious |
+| `button-name` | Login: password visibility toggle has no accessible name | critical |
+
+**Why Chromium only:** axe evaluates the DOM, not rendering, so results are engine-independent; Firefox/WebKit skip
+`@a11y` via `grepInvert`. **Limits:** automated scans catch a fraction of real issues (no keyboard flow, focus order or
+screen-reader output), so they complement manual checks rather than replace them.
+
+## 9. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery.
