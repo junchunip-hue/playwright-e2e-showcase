@@ -7,7 +7,9 @@ import {
   ProductPageSchema,
   ProductSchema,
   ProductSearchPageSchema,
+  ValidationErrorsSchema,
   type InvoicePage,
+  type ValidationErrors,
   type Product,
   type ProductPage,
   type ProductSearchPage,
@@ -55,9 +57,21 @@ export class ApiClient {
     return body.access_token;
   }
 
+  registerRequest(customer: NewCustomer): Promise<APIResponse> {
+    return this.request.post('/users/register', { data: customer, headers: { Accept: 'application/json' } });
+  }
+
   async registerCustomer(customer: NewCustomer): Promise<void> {
-    const res = await this.request.post('/users/register', { data: customer });
-    await this.ensureOk(res, 'POST /users/register');
+    await this.ensureOk(await this.registerRequest(customer), 'POST /users/register');
+  }
+
+  /** Field errors of a rejected request (422/409), validated against ValidationErrorsSchema. */
+  async validationErrors(res: APIResponse, label: string): Promise<ValidationErrors> {
+    const result = ValidationErrorsSchema.safeParse(await res.json());
+    if (!result.success) {
+      throw new Error(`${label} error body does not match its schema:\n${z.prettifyError(result.error)}`);
+    }
+    return result.data;
   }
 
   /**

@@ -29,11 +29,13 @@ jobs:
       - uses: ./.github/actions/setup-node-suite
 
       # check:tags fails on unknown tags or tests without a tier (smoke/regression/setup/seed).
-      - name: Lint, typecheck & tag check
+      # test:architecture fails on pipeline loops: self-triggering workflows, cycles, unbounded waits.
+      - name: Static checks (lint, types, tags, architecture)
         run: |
           npm run lint
           npm run typecheck
           npm run check:tags
+          npm run test:architecture
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium

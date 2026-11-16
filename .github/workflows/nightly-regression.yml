@@ -65,6 +65,7 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [regression]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
 
@@ -100,6 +101,7 @@ jobs:
     if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.merge-reports.result == 'success' }}
     needs: [merge-reports]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write

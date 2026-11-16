@@ -18,6 +18,7 @@ export const Tag = {
   e2e: '@e2e',
   a11y: '@a11y',
   visual: '@visual',
+  architecture: '@architecture', // static rules about the pipeline and code, no browser or Toolshop
 } as const;
 
 export type TagValue = (typeof Tag)[keyof typeof Tag];
@@ -45,6 +46,8 @@ export const SUITES = {
   smoke: { include: [Tag.smoke] },
   a11y: { include: [Tag.a11y] },
   visual: { include: [Tag.visual] },
+  /** Static pipeline/code rules; runs in the PR static stage before Toolshop is up. */
+  architecture: { include: [Tag.architecture] },
   /** Nightly: everything except the agents' seed. */
   nightly: { exclude: [Tag.seed] },
 } as const satisfies Record<string, Suite>;

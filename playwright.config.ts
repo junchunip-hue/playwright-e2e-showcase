@@ -51,6 +51,9 @@ export default defineConfig({
     // Pure API tests: no browser needed.
     { name: 'api', testDir: './tests/api' },
 
+    // Static rules about the pipeline and code (cycles, self-triggering workflows): no browser, no Toolshop.
+    { name: 'architecture', testDir: './tests/architecture' },
+
     {
       name: 'chromium',
       testDir: './tests/ui',

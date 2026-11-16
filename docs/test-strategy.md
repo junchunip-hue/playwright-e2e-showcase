@@ -156,5 +156,22 @@ against real responses. Objects are not strict: new fields are allowed, while mi
 
 **Java:** not mirrored yet. The Java client parses only the fields its scenarios use (Gson records).
 
-## 12. Out of scope (deliberately)
+## 12. Architecture tests
+**Why:** this pipeline has automation that writes back (the baseline workflow commits to PR branches) and
+shared building blocks (composite actions, suites, page objects). Such setups can loop or recurse without anyone
+noticing until a run hangs or repeats. The rules are checked statically, in the PR static stage, in under a second.
+
+**Rules** (`tests/architecture/`, project `architecture`, `@smoke @architecture`):
+- A workflow that pushes commits must not be triggered by `push`, `workflow_run` or `repository_dispatch`. Its
+  checkout must keep `GITHUB_TOKEN`, whose pushes never start runs. A label-triggered job must remove its own label.
+  It also needs a concurrency group.
+- No `workflow_run` cycle, and no step that starts or re-runs a workflow.
+- No cycles between composite actions, npm scripts, Playwright project dependencies, or TypeScript imports.
+- Every job has `timeout-minutes` ≤ 60; shell waits use bounded `for … in $(seq …)` loops, never `while`/`until`.
+
+**Evidence:** on its first run the timeout rule found two nightly jobs with no timeout (GitHub's default is 6 hours).
+They are now bounded. Injecting a push trigger, a `while true`, an import cycle and an npm-script cycle made
+the matching rules fail with the exact path or cycle.
+
+## 13. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery.

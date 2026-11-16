@@ -18,7 +18,7 @@ Why CI never uses the public demo: Cloudflare serves a bot challenge to CI runne
 
 | # | Stage | Checks | Fails fast because |
 |---|---|---|---|
-| 1 | Static | ESLint (incl. Playwright rules), `tsc --noEmit` | Broken code never reaches a browser |
+| 1 | Static | ESLint (incl. Playwright rules), `tsc --noEmit`, tag check, architecture tests | Broken code or a looping pipeline never reaches a browser |
 | 2 | Environment | Containers up, DB seeded, `/products` and UI return 200 | Infra problems are reported as infra, not as test failures |
 | 3 | `setup` + `api` (parallel) | Session for UI tests; API contract checks | Cheapest layer first |
 | 4 | `chromium` | UI smoke incl. checkout E2E, accessibility, visual (depends on `setup`) | Only runs when login works |
@@ -37,8 +37,9 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A2 | Valid credentials return a token | `@smoke` | ✅ | ✅ |
 | A3 | Wrong password → 401 | `@regression @negative` | ✅ | ✅ |
 | A0 | Response contracts: every response validated against `src/api/schemas.ts` (zod); explicit checks for list/detail/search, empty paginator, login + invoices, postcode lookup, and the guard itself | `@smoke` | | ✅ |
-| A4 | Register: weak / compromised password → 422 with field errors | `@negative` | | ⬜ |
-| A5 | Register: duplicate email → 422 | `@negative` | | ⬜ |
+| A4 | Register: weak password → 422 listing every unmet rule | `@smoke @negative` | | ✅ |
+| A4 | Register: password from a data leak → 422 (external HIBP check, so nightly) | `@regression @negative` | | ✅ |
+| A5 | Register: duplicate email → **409** Conflict (not 422 as first assumed) | `@smoke @negative` | | ✅ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ⬜ |
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ⬜ |
 | A8 | Admin: product create/update/delete (admin token) | `@regression` | | ⬜ |
@@ -63,6 +64,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 |---|---|---|---|
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline (strategy §8) | PR + nightly | ✅ |
+| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job bounded | PR static stage | ✅ |
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
 selects it.
@@ -98,4 +100,5 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | N1 visual regression, N2 axe-core | Quality beyond functional |
 | ✅ | A0 API schema validation (types derived from the schemas) | Contract testing |
 | ✅ | Negative login tests on throwaway accounts (the shared demo account locks after repeated failures) | Test data isolation |
-| Later ⬜ | A4, A5, U7 | Negative + data-driven testing |
+| ✅ | A4, A5 registration rules; N3 architecture tests | Negative testing, self-guarding pipeline |
+| Next 🟡 | Showcase scenarios S2–S7 and structure R1–R6 | See [`roadmap.md`](roadmap.md) |
