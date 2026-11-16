@@ -1,0 +1,88 @@
+name: Update Visual Baselines
+
+# Add the `update-snapshots` label to a PR to (re)generate the Linux baselines for @visual tests
+# against the pinned Toolshop and commit them to the PR branch. The label is removed afterwards.
+# Review the committed PNGs in the PR diff like any other change.
+on:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: visual-baselines-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env:
+  TOOLSHOP_REF: ae7caecb811dd8952c09d997e69be7cb946ecd44
+  SPRINT: sprint5
+  DISABLE_LOGGING: 'true'
+  BASE_URL: http://localhost:4200
+  API_URL: http://localhost:8091
+
+jobs:
+  update:
+    # Same-repo PRs only: a fork's token cannot push to its branch.
+    if: ${{ github.event.label.name == 'update-snapshots' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: ./.github/actions/toolshop-start
+        with:
+          ref: ${{ env.TOOLSHOP_REF }}
+          sprint: ${{ env.SPRINT }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - uses: ./.github/actions/toolshop-ready
+        with:
+          api-url: ${{ env.API_URL }}
+          base-url: ${{ env.BASE_URL }}
+
+      # @setup is needed because --grep also filters dependency projects.
+      - name: Regenerate baselines
+        run: npx playwright test --project=chromium --grep "@visual|@setup" --update-snapshots=all
+
+      # Proves the new baselines are stable before they are committed.
+      - name: Verify baselines against a second run
+        run: npx playwright test --project=chromium --grep "@visual|@setup"
+
+      - name: Commit baselines to the PR branch
+        run: |
+          git add 'tests/**/*-linux.png'
+          if git diff --cached --quiet; then
+            echo "Baselines unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update visual baselines (Linux, Chromium)"
+          git push
+
+      - name: Remove the label
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --remove-label update-snapshots
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-baselines-report
+          path: playwright-report/
+          retention-days: 7
