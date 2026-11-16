@@ -57,6 +57,23 @@ export class CheckoutPage {
     await this.signInForm.signIn(email, password);
   }
 
+  /**
+   * Second click on Finish: the app creates the invoice (POST /invoices) and only then shows the confirmation.
+   * Waiting for that response instead of a fixed assertion timeout means a slow backend (e.g. three browsers
+   * checking out at once in the nightly run) is waited for, and a failing one is reported as the API error.
+   */
+  async placeOrder(): Promise<void> {
+    const [response] = await Promise.all([
+      this.page.waitForResponse(
+        (res) => res.request().method() === 'POST' && new URL(res.url()).pathname.endsWith('/invoices'),
+      ),
+      this.finish.click(),
+    ]);
+    if (!response.ok()) {
+      throw new Error(`POST /invoices failed: ${response.status()}\n${(await response.text()).slice(0, 500)}`);
+    }
+  }
+
   /** Enters country + postcode + house number; the app's postcode lookup fills street, city and state. */
   async enterAddressForLookup(address: Address): Promise<void> {
     await this.country.selectOption(address.country);
