@@ -1,11 +1,11 @@
 import { expectNoNewViolations } from '../../src/a11y/accessibility';
-import { expect, test } from '../../src/fixtures';
+import { expect, Tag, test } from '../../src/fixtures';
 
 // Automated WCAG 2.1 A/AA checks with axe-core. Known Toolshop issues are listed in src/a11y/accessibility.ts;
 // anything new fails. Automated scans find roughly a third of real issues, so this complements, not replaces,
-// manual keyboard and screen-reader checks. Runs on Chromium only (see grepInvert in playwright.config.ts).
+// manual keyboard and screen-reader checks. Runs on Chromium only (CHROMIUM_ONLY in src/tags.ts).
 
-test.describe('Accessibility (anonymous visitor)', { tag: ['@a11y', '@regression'] }, () => {
+test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regression] }, () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('catalogue page', async ({ homePage, makeAxeBuilder }, testInfo) => {
@@ -23,18 +23,18 @@ test.describe('Accessibility (anonymous visitor)', { tag: ['@a11y', '@regression
 
   test('login page', async ({ loginPage, makeAxeBuilder }, testInfo) => {
     await loginPage.goto();
-    await expect(loginPage.email).toBeVisible();
+    await expect(loginPage.form.email).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'login');
   });
 
-  test('contact page', async ({ page, makeAxeBuilder }, testInfo) => {
-    await page.goto('/contact');
-    await expect(page.getByTestId('contact-submit')).toBeVisible();
+  test('contact page', async ({ contactPage, makeAxeBuilder }, testInfo) => {
+    await contactPage.goto();
+    await expect(contactPage.submit).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'contact');
   });
 });
 
-test.describe('Accessibility (logged-in customer)', { tag: ['@a11y', '@regression'] }, () => {
+test.describe('Accessibility (logged-in customer)', { tag: [Tag.a11y, Tag.regression] }, () => {
   test('cart step of checkout', async ({ api, productPage, header, checkoutPage, makeAxeBuilder }, testInfo) => {
     const product = await api.findInStockProduct();
     await productPage.goto(product.id);
@@ -46,10 +46,10 @@ test.describe('Accessibility (logged-in customer)', { tag: ['@a11y', '@regressio
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'cart');
   });
 
-  test('account page', async ({ page, header, makeAxeBuilder }, testInfo) => {
-    await page.goto('/account');
+  test('account page', async ({ accountPage, header, makeAxeBuilder }, testInfo) => {
+    await accountPage.goto();
     await expect(header.userMenu).toBeVisible();
-    await expect(page.getByTestId('page-title')).toBeVisible();
+    await expect(accountPage.title).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'account');
   });
 });

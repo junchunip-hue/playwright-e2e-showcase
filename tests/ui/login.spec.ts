@@ -1,11 +1,11 @@
 import { env } from '../../src/config/env';
-import { expect, test } from '../../src/fixtures';
+import { expect, Tag, test } from '../../src/fixtures';
 
 test.describe('Login', () => {
   // These tests need a logged-out browser, so override the shared session.
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('customer can log in with valid credentials', { tag: '@smoke' }, async ({ page, loginPage, header }) => {
+  test('customer can log in with valid credentials', { tag: [Tag.smoke] }, async ({ page, loginPage, header }) => {
     await loginPage.goto();
     await loginPage.login(env.customer.email, env.customer.password);
 
@@ -13,7 +13,7 @@ test.describe('Login', () => {
     await expect(header.userMenu).toBeVisible();
   });
 
-  test('shows an error for a wrong password', { tag: ['@smoke', '@negative'] }, async ({ page, loginPage }) => {
+  test('shows an error for a wrong password', { tag: [Tag.smoke, Tag.negative] }, async ({ page, loginPage }) => {
     await loginPage.goto();
     await loginPage.login(env.customer.email, 'definitely-wrong-password');
 

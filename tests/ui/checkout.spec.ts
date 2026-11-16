@@ -1,4 +1,4 @@
-import { expect, test } from '../../src/fixtures';
+import { expect, Tag, test } from '../../src/fixtures';
 import { createCustomer } from '../../src/data/customers';
 
 test.describe('Checkout', () => {
@@ -7,7 +7,7 @@ test.describe('Checkout', () => {
 
   test(
     'new customer buys an in-stock product with cash on delivery',
-    { tag: ['@smoke', '@e2e'] },
+    { tag: [Tag.smoke, Tag.e2e] },
     async ({ api, productPage, header, checkoutPage }) => {
       // Arrange (API): a fresh account and a product that can actually be bought.
       const customer = await createCustomer(api);
@@ -52,7 +52,7 @@ test.describe('Checkout', () => {
         await checkoutPage.paymentMethod.selectOption('cash-on-delivery');
         await checkoutPage.finish.click(); // 1st click: payment check
         await expect(checkoutPage.paymentSuccess).toBeVisible();
-        await checkoutPage.finish.click(); // 2nd click: place the order
+        await checkoutPage.placeOrder(); // 2nd click: creates the invoice, waits for the API
         await expect(checkoutPage.orderConfirmation).toContainText(/INV-\d+/);
         invoiceNumber = (await checkoutPage.orderConfirmation.textContent())?.match(/INV-\d+/)?.[0] ?? '';
       });

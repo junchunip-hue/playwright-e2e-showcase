@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { env, STORAGE_STATE } from './src/config/env';
+import { CHROMIUM_ONLY, resolveSuite, suiteGrep, suiteGrepInvert } from './src/tags';
 
 const isCI = !!process.env.CI;
 // Be gentle with the shared public demo; a local Docker instance can take full parallelism.
@@ -9,8 +10,13 @@ const isPublicDemo = env.baseURL.includes('practicesoftwaretesting.com');
 // The PR smoke job still picks only --project=chromium; the nightly run uses all of them.
 const runAllBrowsers = isCI || !!process.env.ALL_BROWSERS;
 
+// Which tests run is decided by name only (SUITE=pr, SUITE=nightly, ...); the tag lists live in src/tags.ts.
+const suite = resolveSuite(process.env.SUITE);
+
 export default defineConfig({
   testDir: './tests',
+  grep: suiteGrep(suite),
+  grepInvert: suiteGrepInvert(suite),
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
@@ -58,14 +64,15 @@ export default defineConfig({
             testDir: './tests/ui',
             // a11y: axe evaluates the DOM, so results do not depend on the engine.
             // visual: one set of baselines (Chromium/Linux) is enough to catch layout regressions.
-            grepInvert: /@a11y|@visual/,
+            // A project grepInvert replaces the config one, so the suite's exclusions are merged in.
+            grepInvert: suiteGrepInvert(suite, CHROMIUM_ONLY),
             dependencies: ['setup'],
             use: { ...devices['Desktop Firefox'], storageState: STORAGE_STATE },
           },
           {
             name: 'webkit',
             testDir: './tests/ui',
-            grepInvert: /@a11y|@visual/,
+            grepInvert: suiteGrepInvert(suite, CHROMIUM_ONLY),
             dependencies: ['setup'],
             use: { ...devices['Desktop Safari'], storageState: STORAGE_STATE },
           },

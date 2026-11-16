@@ -5,11 +5,15 @@ export class HomePage {
   readonly searchInput: Locator;
   readonly searchSubmit: Locator;
   readonly productNames: Locator;
+  /** Sort, price, search and category/brand filters in the sidebar. */
+  readonly filtersPanel: Locator;
 
   constructor(private readonly page: Page) {
     this.searchInput = page.getByTestId('search-query');
     this.searchSubmit = page.getByTestId('search-submit');
     this.productNames = page.getByTestId('product-name');
+    // data-test="filters" is on both the mobile toggle button and the panel itself.
+    this.filtersPanel = page.locator('div[data-test="filters"]');
   }
 
   async goto(): Promise<void> {

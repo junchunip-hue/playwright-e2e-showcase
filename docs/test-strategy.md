@@ -67,7 +67,7 @@ Maven), and the same scenarios in both languages show the framework design is no
 **Keeping them in sync:**
 - One source of truth for *what* is tested: the scenario names and tags match; the table in the README maps them.
 - Mirrored page objects and API client with identical `data-test` locators, so UI changes are mechanical in both.
-- Same Playwright version in `package.json` and `java/pom.xml`; same `.env` file and defaults.
+- Same Playwright minor version in `package.json` and `java/pom.xml`; same `.env` file and defaults.
 - Both run on every PR against the same pinned Toolshop; the shared boot lives in `.github/actions/`.
 - New coverage lands in TypeScript; a scenario is ported to Java only when it joins the smoke set.
 
@@ -90,7 +90,7 @@ Rule-level entries were chosen over `exclude(selector)`, which would silence *ev
 | `button-name` | Login: password visibility toggle has no accessible name | critical |
 
 **Why Chromium only:** axe evaluates the DOM, not rendering, so results are engine-independent; Firefox/WebKit skip
-`@a11y` via `grepInvert`. **Limits:** automated scans catch a fraction of real issues (no keyboard flow, focus order or
+`@a11y` (`CHROMIUM_ONLY` in `src/tags.ts`). **Limits:** automated scans catch a fraction of real issues (no keyboard flow, focus order or
 screen-reader output), so they complement manual checks rather than replace them.
 
 ## 9. Visual regression
@@ -111,5 +111,25 @@ plus one full-page login screenshot. Tagged `@visual`, part of the PR gate.
 - **Chromium only.** One engine is enough to catch layout regressions; three sets of baselines would triple
   maintenance for little extra signal.
 
-## 10. Out of scope (deliberately)
+## 10. Tags and suites
+**Why it matters:** tags decide which tests gate a PR and which only run at night. A mistyped tag used to drop a
+test from the PR gate without any error, and every grep had to remember to add `@setup`.
+
+**Rules:**
+- **One registry.** `src/tags.ts` defines every tag (`Tag.smoke`, ...) and every suite (`pr`, `smoke`, `a11y`,
+  `visual`, `nightly`). Specs only use `Tag.*`, so a typo is a compile error. CI and npm scripts only pass a suite
+  name (`SUITE=pr`). The config turns it into `grep`/`grepInvert` and adds `@setup` where a login is needed.
+- **One tier per test.** Every test has exactly one of `@smoke`, `@regression`, `@setup`, `@seed`. Kinds
+  (`@negative`, `@e2e`, `@a11y`, `@visual`) are optional. `npm run check:tags` lists all tests without a browser,
+  prints how many tests each tag selects, and fails on unknown tags or a missing/duplicate tier. It runs in the PR
+  static stage.
+- **Java mirrors it.** Composed annotations (`@ToolshopTest`, `@SmokeTest`, `@RegressionTest`, `@Negative`) replace
+  repeated `@UsePlaywright(...)`, `@Test` and `@Tag("...")`. `TagGuardTest` rejects raw `@Test`/`@Tag`, unknown tags
+  and missing tiers.
+
+**Review point:** changing what a suite runs means editing `src/tags.ts` or a test's tier, and `check:tags` prints
+the resulting counts. The first run of the guard found one test with no tier (API "wrong password → 401", nightly
+only); it is now explicitly `@regression`, which keeps its schedule unchanged.
+
+## 11. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery.

@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import type { Address } from '../api/ApiClient';
+import { LoginForm } from './components/LoginForm';
 
 export type PaymentMethod = 'bank-transfer' | 'cash-on-delivery' | 'credit-card' | 'buy-now-pay-later' | 'gift-card';
 
@@ -10,9 +11,7 @@ export class CheckoutPage {
   readonly cartTotal: Locator;
   readonly proceedFromCart: Locator;
   // Step 2: sign in
-  readonly email: Locator;
-  readonly password: Locator;
-  readonly loginSubmit: Locator;
+  readonly signInForm: LoginForm;
   readonly proceedFromSignIn: Locator;
   // Step 3: billing address
   readonly country: Locator;
@@ -33,9 +32,7 @@ export class CheckoutPage {
     this.cartTotal = page.getByTestId('cart-total');
     this.proceedFromCart = page.getByTestId('proceed-1');
 
-    this.email = page.getByTestId('email');
-    this.password = page.getByTestId('password');
-    this.loginSubmit = page.getByTestId('login-submit');
+    this.signInForm = new LoginForm(page);
     this.proceedFromSignIn = page.getByTestId('proceed-2');
 
     this.country = page.getByTestId('country');
@@ -57,9 +54,24 @@ export class CheckoutPage {
   }
 
   async signIn(email: string, password: string): Promise<void> {
-    await this.email.fill(email);
-    await this.password.fill(password);
-    await this.loginSubmit.click();
+    await this.signInForm.signIn(email, password);
+  }
+
+  /**
+   * Second click on Finish: the app creates the invoice (POST /invoices) and only then shows the confirmation.
+   * Waiting for that response instead of a fixed assertion timeout means a slow backend (e.g. three browsers
+   * checking out at once in the nightly run) is waited for, and a failing one is reported as the API error.
+   */
+  async placeOrder(): Promise<void> {
+    const [response] = await Promise.all([
+      this.page.waitForResponse(
+        (res) => res.request().method() === 'POST' && new URL(res.url()).pathname.endsWith('/invoices'),
+      ),
+      this.finish.click(),
+    ]);
+    if (!response.ok()) {
+      throw new Error(`POST /invoices failed: ${response.status()}\n${(await response.text()).slice(0, 500)}`);
+    }
   }
 
   /** Enters country + postcode + house number; the app's postcode lookup fills street, city and state. */
