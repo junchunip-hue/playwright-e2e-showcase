@@ -5,8 +5,9 @@ const isCI = !!process.env.CI;
 // Be gentle with the shared public demo; a local Docker instance can take full parallelism.
 const isPublicDemo = env.baseURL.includes('practicesoftwaretesting.com');
 // Playwright's Firefox build fails to start on some Windows 11 machines (SxS "mozglue" error),
-// so Firefox runs in CI (Linux) by default and locally only on request: ALL_BROWSERS=1.
-const runFirefox = isCI || !!process.env.ALL_BROWSERS;
+// so Firefox and WebKit run in CI (Linux) by default and locally only on request: ALL_BROWSERS=1.
+// The PR smoke job still picks only --project=chromium; the nightly run uses all of them.
+const runAllBrowsers = isCI || !!process.env.ALL_BROWSERS;
 
 export default defineConfig({
   testDir: './tests',
@@ -39,13 +40,19 @@ export default defineConfig({
       dependencies: ['setup'],
       use: { ...devices['Desktop Chrome'], storageState: STORAGE_STATE },
     },
-    ...(runFirefox
+    ...(runAllBrowsers
       ? [
           {
             name: 'firefox',
             testDir: './tests/ui',
             dependencies: ['setup'],
             use: { ...devices['Desktop Firefox'], storageState: STORAGE_STATE },
+          },
+          {
+            name: 'webkit',
+            testDir: './tests/ui',
+            dependencies: ['setup'],
+            use: { ...devices['Desktop Safari'], storageState: STORAGE_STATE },
           },
         ]
       : []),

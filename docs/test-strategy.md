@@ -45,7 +45,11 @@ anyway, so the system under test now runs inside the CI job.
 | Trigger | Scope | Browsers |
 |---|---|---|
 | Pull request | `@smoke` (UI + API), TypeScript and Java jobs in parallel | Chromium |
-| Nightly | `@regression` full suite, sharded | Chromium, Firefox, WebKit |
+| Nightly (02:00 UTC) | Full suite (all tags), 3 shards, merged HTML report on GitHub Pages; full Java suite | Chromium, Firefox, WebKit |
+
+**Nightly mechanics:** each shard boots its own Toolshop (no shared data between shards) and writes a blob report;
+a merge job turns the blobs into one HTML report, and `main` publishes it to GitHub Pages. The `setup` login project
+only runs in shards that contain UI tests. The workflow also runs on PRs that change it, without publishing.
 | Local (dev) | anything | Chromium (Firefox opt-in via `ALL_BROWSERS=1`) |
 
 **Why Firefox is CI-only by default:** Playwright's bundled Firefox failed to start on the Windows 11 dev machine

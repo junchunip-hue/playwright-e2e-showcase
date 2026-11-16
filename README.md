@@ -1,6 +1,8 @@
 # Playwright E2E Showcase
 
 [![PR Smoke Tests](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml)
+[![Nightly Regression](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml)
+· [Latest regression report](https://junchunip-hue.github.io/playwright-e2e-showcase/)
 
 A production-style test automation framework built with **Playwright + TypeScript**, targeting the public
 [Practice Software Testing (Toolshop)](https://practicesoftwaretesting.com) demo shop.
@@ -14,6 +16,8 @@ stable locators, isolated test data and CI integration, not just a collection of
 - **Authenticated session reuse** with a `setup` project and `storageState`
 - **Tag-based suites**: `@smoke`, `@regression`, `@negative`
 - **CI on every PR** (GitHub Actions): lint, typecheck, smoke tests, HTML report artifact
+- **Nightly regression**: full suite on Chromium, Firefox and WebKit, sharded across 3 jobs, merged into one
+  HTML report published to GitHub Pages; full Java suite runs alongside
 - **Isolated CI environment**: CI boots Toolshop in Docker (pinned upstream commit, freshly seeded DB) instead of
   depending on the shared public demo
 - **Checkout E2E**: customer registered via API, purchase through the UI, invoice verified via API
@@ -39,7 +43,7 @@ tests/
 java/           Playwright for Java + JUnit 5 (core scenarios, same layout: api/ config/ pages/ tests/)
 .github/
   actions/      shared Toolshop boot (used by both CI jobs)
-  workflows/    PR smoke: TypeScript and Java jobs in parallel
+  workflows/    PR smoke (TypeScript + Java) and nightly regression (sharded, all browsers)
 ```
 
 ## Getting started
@@ -85,5 +89,6 @@ How the two stay in sync:
 ## Roadmap
 - [x] Checkout E2E with API-created test user
 - [x] Run the app in Docker in CI for full data control
-- [ ] Nightly regression with sharding + merged report published to GitHub Pages
+- [x] Java + JUnit 5 twin suite for the smoke scenarios
+- [x] Nightly regression with sharding + merged report published to GitHub Pages
 - [ ] Visual regression and accessibility (axe-core) checks
