@@ -1,19 +1,21 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { z } from 'zod';
+import {
+  InvoicePageSchema,
+  LoginResponseSchema,
+  PostcodeLookupSchema,
+  ProductPageSchema,
+  ProductSchema,
+  ProductSearchPageSchema,
+  type InvoicePage,
+  type Product,
+  type ProductPage,
+  type ProductSearchPage,
+} from './schemas';
 
-export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  in_stock: boolean;
-  is_rental: boolean;
-}
+export type { Invoice, InvoicePage, Product, ProductPage, ProductSearchPage } from './schemas';
 
-export interface Paginated<T> {
-  current_page: number;
-  data: T[];
-  total: number;
-}
-
+/** Address as our test data and the checkout form use it (the lookup endpoint calls the postcode `postcode`). */
 export interface Address {
   street: string;
   house_number: string;
@@ -23,6 +25,7 @@ export interface Address {
   postal_code: string;
 }
 
+/** Request body of POST /users/register (our own test data, so a plain type rather than a response schema). */
 export interface NewCustomer {
   first_name: string;
   last_name: string;
@@ -33,17 +36,11 @@ export interface NewCustomer {
   address: Address;
 }
 
-export interface Invoice {
-  id: string;
-  invoice_number: string;
-  total: number;
-  billing_country: string;
-}
-
 /**
  * Thin typed wrapper around the Toolshop REST API.
  * Used both for API tests and for fast test-data setup in UI tests.
- * The request context is created with baseURL = API_URL (see fixtures).
+ * Every JSON response is validated against its schema in ./schemas, so any test that touches the API
+ * also checks the contract. The request context is created with baseURL = API_URL (see fixtures).
  */
 export class ApiClient {
   constructor(private readonly request: APIRequestContext) {}
@@ -54,8 +51,7 @@ export class ApiClient {
 
   async login(email: string, password: string): Promise<string> {
     const res = await this.loginRequest(email, password);
-    await this.ensureOk(res, 'POST /users/login');
-    const body = (await res.json()) as { access_token: string };
+    const body = await this.parse(res, 'POST /users/login', LoginResponseSchema);
     return body.access_token;
   }
 
@@ -70,23 +66,20 @@ export class ApiClient {
    */
   async lookupAddress(country: string, postcode: string, houseNumber: string): Promise<Address> {
     const query = new URLSearchParams({ country, postcode, house_number: houseNumber });
-    const res = await this.getJson<Omit<Address, 'postal_code'> & { postcode: string }>(`/postcode-lookup?${query}`);
-    return {
-      street: res.street,
-      house_number: res.house_number,
-      city: res.city,
-      state: res.state,
-      country: res.country,
-      postal_code: res.postcode,
-    };
+    const { postcode: postalCode, ...rest } = await this.getJson(`/postcode-lookup?${query}`, PostcodeLookupSchema);
+    return { ...rest, postal_code: postalCode };
   }
 
-  async getInvoices(token: string): Promise<Paginated<Invoice>> {
-    return this.getJson('/invoices', token);
+  async getInvoices(token: string): Promise<InvoicePage> {
+    return this.getJson('/invoices', InvoicePageSchema, token);
   }
 
-  async getProducts(page = 1): Promise<Paginated<Product>> {
-    return this.getJson(`/products?page=${page}`);
+  async getProducts(page = 1): Promise<ProductPage> {
+    return this.getJson(`/products?page=${page}`, ProductPageSchema);
+  }
+
+  async getProduct(id: string): Promise<Product> {
+    return this.getJson(`/products/${encodeURIComponent(id)}`, ProductSchema);
   }
 
   /**
@@ -100,15 +93,29 @@ export class ApiClient {
     return product;
   }
 
-  async searchProducts(query: string): Promise<Paginated<Product>> {
-    return this.getJson(`/products/search?q=${encodeURIComponent(query)}`);
+  async searchProducts(query: string): Promise<ProductSearchPage> {
+    return this.getJson(`/products/search?q=${encodeURIComponent(query)}`, ProductSearchPageSchema);
   }
 
-  private async getJson<T>(path: string, token?: string): Promise<T> {
+  private async getJson<S extends z.ZodType>(path: string, schema: S, token?: string): Promise<z.infer<S>> {
     const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-    const res = await this.request.get(path, { headers });
-    await this.ensureOk(res, `GET ${path}`);
-    return (await res.json()) as T;
+    return this.parse(await this.request.get(path, { headers }), `GET ${path}`, schema);
+  }
+
+  /** Fails on a non-2xx status first, then on a body that breaks the contract (with the offending field paths). */
+  private async parse<S extends z.ZodType>(res: APIResponse, label: string, schema: S): Promise<z.infer<S>> {
+    await this.ensureOk(res, label);
+    const body: unknown = await res.json();
+    const result = schema.safeParse(body);
+    if (!result.success) {
+      const received = result.error.issues
+        .map((i) => `  ${i.path.join('.') || '(root)'} = ${JSON.stringify(valueAt(body, i.path))?.slice(0, 120)}`)
+        .join('\n');
+      throw new Error(
+        `${label} response does not match its schema:\n${z.prettifyError(result.error)}\nReceived:\n${received}`,
+      );
+    }
+    return result.data;
   }
 
   private async ensureOk(res: APIResponse, label: string): Promise<void> {
@@ -117,4 +124,8 @@ export class ApiClient {
     const body = (await res.text()).slice(0, 500);
     throw new Error(`${label} failed: ${res.status()}\n${body}`);
   }
+}
+
+function valueAt(value: unknown, path: readonly PropertyKey[]): unknown {
+  return path.reduce<unknown>((v, key) => (v as Record<PropertyKey, unknown> | undefined)?.[key], value);
 }

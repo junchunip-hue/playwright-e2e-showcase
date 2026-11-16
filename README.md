@@ -13,6 +13,8 @@ stable locators, isolated test data and CI integration, not just a collection of
 ## Highlights
 - **Page Objects + custom fixtures**: tests receive page objects and an API client through dependency injection
 - **API + UI hybrid tests**: the backend is the source of truth for UI assertions
+- **API contract validation**: every response is checked against zod schemas ([`src/api/schemas.ts`](src/api/schemas.ts))
+  that also produce the client's TypeScript types; failures name the field and the received value
 - **Authenticated session reuse** with a `setup` project and `storageState`
 - **Tag-based suites from one registry** ([`src/tags.ts`](src/tags.ts)): typed tags, named suites (`SUITE=pr`),
   and a tag check that fails on unknown tags or tests without a tier; Java mirrors it with composed annotations
@@ -39,7 +41,7 @@ stable locators, isolated test data and CI integration, not just a collection of
 src/
   a11y/         axe scan helper + known-issue list
   visual/       CSS injected while taking screenshots (hides live widgets)
-  api/          typed REST client (Toolshop API)
+  api/          REST client + zod response schemas (types derived from the schemas)
   config/       environment handling
   data/         test data builders (API-created customers)
   fixtures/     custom Playwright fixtures

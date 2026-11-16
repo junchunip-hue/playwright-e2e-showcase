@@ -64,7 +64,7 @@ test.describe('Checkout', () => {
         const invoice = invoices.find((i) => i.invoice_number === invoiceNumber);
         expect(invoice, `invoice ${invoiceNumber} for ${customer.email}`).toBeDefined();
         expect(invoice!.billing_country).toBe(customer.address.country);
-        expect(Number(invoice!.total)).toBeCloseTo(cartTotal, 2);
+        expect(invoice!.total).toBeCloseTo(cartTotal, 2); // a number: guaranteed by InvoiceSchema
       });
     },
   );

@@ -131,5 +131,23 @@ test from the PR gate without any error, and every grep had to remember to add `
 the resulting counts. The first run of the guard found one test with no tier (API "wrong password → 401", nightly
 only); it is now explicitly `@regression`, which keeps its schedule unchanged.
 
-## 11. Out of scope (deliberately)
+## 11. API contracts
+**What:** every JSON response the tests read goes through a zod schema in `src/api/schemas.ts` (products, product
+search, login, postcode lookup, invoices). `ApiClient` rejects a mismatch with the field path and the received
+value. The TypeScript types are `z.infer` of the same schemas, so types and runtime checks cannot drift.
+`tests/api/contracts.api.spec.ts` (A0) adds what a schema cannot express: list/detail/search agreement, an empty
+paginator, a new customer's empty invoice list, and a self-test that the guard reports a retyped field.
+
+**Where the schemas come from:** the pinned Toolshop source (OpenAPI annotations and model casts), checked
+against real responses. Objects are not strict: new fields are allowed, while missing or retyped fields fail.
+
+**Findings while writing them:**
+- `GET /products/search` returns `category` without `slug`, unlike the list and detail endpoints. This is recorded as
+  `ProductSearchItemSchema` instead of loosening the main contract, so either side changing is reported.
+- IDs are ULIDs, upper case for seeded rows and lower case for rows created at runtime (invoices). The schema
+  accepts both cases, which the ULID format allows.
+
+**Java:** not mirrored yet. The Java client parses only the fields its scenarios use (Gson records).
+
+## 12. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery.

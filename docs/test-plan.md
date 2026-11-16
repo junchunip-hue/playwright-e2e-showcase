@@ -36,7 +36,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A1 | `GET /products` is paginated and well-formed | `@smoke` | ✅ | ✅ |
 | A2 | Valid credentials return a token | `@smoke` | ✅ | ✅ |
 | A3 | Wrong password → 401 | `@regression @negative` | ✅ | ✅ |
-| A0 | Response bodies validated against schemas (products, auth, invoices) | `@smoke` | | 🟡 |
+| A0 | Response contracts: every response validated against `src/api/schemas.ts` (zod); explicit checks for list/detail/search, empty paginator, login + invoices, postcode lookup, and the guard itself | `@smoke` | | ✅ |
 | A4 | Register: weak / compromised password → 422 with field errors | `@negative` | | ⬜ |
 | A5 | Register: duplicate email → 422 | `@negative` | | ⬜ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ⬜ |
@@ -96,5 +96,6 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | Java + JUnit 5 twin suite for the smoke scenarios | Same design in two stacks |
 | ✅ | Nightly: 3 browsers, sharding, merged blob report on GitHub Pages | CI scalability |
 | ✅ | N1 visual regression, N2 axe-core | Quality beyond functional |
-| Next 🟡 | A0 API schema validation (types derived from the schemas) | Contract testing |
+| ✅ | A0 API schema validation (types derived from the schemas) | Contract testing |
+| Next 🟡 | Negative login tests on throwaway accounts (the shared demo account locks after repeated failures) | Test data isolation |
 | Later ⬜ | A4, A5, U7 | Negative + data-driven testing |
