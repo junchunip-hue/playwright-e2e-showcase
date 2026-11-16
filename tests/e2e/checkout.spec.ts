@@ -11,7 +11,7 @@ test.describe('Checkout', () => {
     async ({ api, productPage, header, checkoutPage }) => {
       // Arrange (API): a fresh account and a product that can actually be bought.
       const customer = await createCustomer(api);
-      const product = await api.findInStockProduct();
+      const product = await api.products.findInStock();
 
       // Act (UI): the real user journey.
       await test.step('add product to cart', async () => {
@@ -59,8 +59,8 @@ test.describe('Checkout', () => {
 
       // Assert (API): the order really exists in the backend, for this customer, at the right price.
       await test.step('invoice exists in the backend', async () => {
-        const token = await api.login(customer.email, customer.password);
-        const { data: invoices } = await api.getInvoices(token);
+        const token = await api.auth.login(customer.email, customer.password);
+        const { data: invoices } = await api.invoices.list(token);
         const invoice = invoices.find((i) => i.invoice_number === invoiceNumber);
         expect(invoice, `invoice ${invoiceNumber} for ${customer.email}`).toBeDefined();
         expect(invoice!.billing_country).toBe(customer.address.country);

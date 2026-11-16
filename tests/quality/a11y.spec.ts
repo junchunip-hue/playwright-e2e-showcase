@@ -15,7 +15,7 @@ test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regress
   });
 
   test('N2: product detail page', async ({ api, productPage, makeAxeBuilder }, testInfo) => {
-    const product = await api.findInStockProduct();
+    const product = await api.products.findInStock();
     await productPage.goto(product.id);
     await expect(productPage.name).toHaveText(product.name);
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'product');
@@ -36,7 +36,7 @@ test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regress
 
 test.describe('Accessibility (logged-in customer)', { tag: [Tag.a11y, Tag.regression] }, () => {
   test('N2: cart step of checkout', async ({ api, productPage, header, checkoutPage, makeAxeBuilder }, testInfo) => {
-    const product = await api.findInStockProduct();
+    const product = await api.products.findInStock();
     await productPage.goto(product.id);
     await productPage.addToCart.click();
     await expect(header.cartQuantity).toHaveText('1');

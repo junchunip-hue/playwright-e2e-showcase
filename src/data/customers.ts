@@ -16,7 +16,7 @@ export async function newCustomerData(api: ApiClient, overrides: Partial<NewCust
     dob: '1990-01-01',
     phone: '0612345678',
     // Toolshop validates at checkout that city/state belong to the postcode, so the address comes from its lookup.
-    address: await api.lookupAddress('US', '90210', '1'),
+    address: await api.addresses.lookup('US', '90210', '1'),
     ...overrides,
   };
 }
@@ -28,6 +28,6 @@ export async function newCustomerData(api: ApiClient, overrides: Partial<NewCust
  */
 export async function createCustomer(api: ApiClient): Promise<NewCustomer> {
   const customer = await newCustomerData(api);
-  await api.registerCustomer(customer);
+  await api.customers.register(customer);
   return customer;
 }
