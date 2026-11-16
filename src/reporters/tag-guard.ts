@@ -38,7 +38,7 @@ export default class TagGuard implements Reporter {
     }
 
     console.log(`Tag check: ${seen.size} tests`);
-    for (const tag of [...this.counts.keys()].sort()) console.log(`  ${tag.padEnd(12)} ${this.counts.get(tag)}`);
+    for (const tag of [...this.counts.keys()].sort()) console.log(`  ${tag.padEnd(15)} ${this.counts.get(tag)}`);
   }
 
   async onEnd(): Promise<{ status: FullResult['status'] } | void> {

@@ -93,6 +93,10 @@ export const InvoiceSchema = z.object({
 
 export const InvoicePageSchema = paginated(InvoiceSchema);
 
+/** Rejected request (422 validation, 409 conflict): field name → messages, e.g. { password: ["..."] }. */
+export const ValidationErrorsSchema = z.record(z.string(), z.array(z.string().min(1)).min(1));
+
+export type ValidationErrors = z.infer<typeof ValidationErrorsSchema>;
 export type Product = z.infer<typeof ProductSchema>;
 export type ProductPage = z.infer<typeof ProductPageSchema>;
 export type ProductSearchPage = z.infer<typeof ProductSearchPageSchema>;
