@@ -12,7 +12,7 @@
 | **CI – Nightly** | GitHub Actions, 02:00 UTC + manual | Same Docker setup, one instance per shard | Chromium, Firefox, WebKit | Full suite (TS, 3 shards) + full Java suite; merged report on GitHub Pages |
 | **CI – Visual baselines** | GitHub Actions, PR label `update-snapshots` | Same Docker setup | Chromium | Regenerates Linux baselines and commits them to the PR |
 
-Why CI never uses the public demo: Cloudflare serves a bot challenge to CI runner IPs (see strategy §5).
+Why CI never uses the public demo: Cloudflare serves a bot challenge to CI runner IPs ([ADR 0001](decisions/0001-ci-runs-its-own-toolshop.md)).
 
 ## 2. Pipeline order (one PR run, TypeScript job)
 
@@ -44,7 +44,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ⬜ |
 | A8 | Admin: product create/update/delete (admin token) | `@regression` | | ⬜ |
 
-### UI (`tests/ui`, project `chromium`; Firefox/WebKit nightly)
+### UI and journeys (`tests/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
 | ID | Test | Tag | Java | Status |
 |---|---|---|---|---|
 | U1 | Login with valid credentials | `@smoke` | ✅ | ✅ |
@@ -59,17 +59,17 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | U10 | Registration form validation (UI) | `@regression` | | ⬜ |
 | U11 | Category filter + sort on the catalogue | `@regression` | | ⬜ |
 
-### Non-functional (Chromium only)
+### Non-functional (`tests/quality`, `tests/architecture`; Chromium only)
 | ID | Test | Where | Status |
 |---|---|---|---|
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
-| N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline (strategy §8) | PR + nightly | ✅ |
+| N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
 | N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job bounded | PR static stage | ✅ |
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
 selects it.
 
-Tags and suites are defined in `src/tags.ts` (Java: `com.showcase.annotations`); see strategy §10.
+Tags and suites are defined in `src/tags.ts` (Java: `com.showcase.annotations`); see [ci.md](ci.md#tags-and-suites).
 Every test has exactly one tier tag, enforced by `npm run check:tags` and the Java `TagGuardTest`.
 
 ## 4. Which platform checks what

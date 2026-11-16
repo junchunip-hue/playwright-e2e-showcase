@@ -36,25 +36,26 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 Every scenario follows the same contract: **arrange via API, act via UI, assert via UI and API**. Each one gets
 its own throwaway data and is tagged `@regression @e2e` (nightly), except the one PR-gate representative per area.
 
-## 3. Structure: refactoring direction (proposed)
+## 3. Structure: refactoring direction (done)
 
 Goal: a reviewer opening the repo for the first time finds a journey, a page object and a CI rule within a
 minute, and long scenarios read as business steps rather than clicks.
 
-| # | Change | Why | Size |
-|---|---|---|---|
-| **R1** | Split tests by intent: `tests/api`, `tests/e2e` (journeys), `tests/ui` (single-page behaviour), `tests/quality` (a11y, visual), `tests/architecture` | Today a11y/visual sit next to functional UI tests; folders should answer "what kind of test is this?" | S |
-| **R2** | Add a **flows** layer (`src/flows/`): business steps such as `checkout.payWith(method)`, `admin.publishProduct()` | Long scenarios (S2–S5) stay readable; page objects stay locator-only | M |
-| **R3** | Split `ApiClient` per resource (`products`, `auth`, `customers`, `invoices`) behind one `api` fixture | It grows with every scenario (A8 adds admin endpoints); one file per resource keeps each small | S |
-| **R4** | Test IDs in every title (`A4:`, `U6:`, `S2:`) and a generated inventory | Titles map 1:1 to the test plan; the plan's tables can be checked against the code | S |
-| **R5** | README as a 3-minute tour: what it is, one diagram (Mermaid: PR gate / nightly / baselines), how to run, links | The README has grown into a feature list; detail belongs in `docs/` | S |
-| **R6** | Docs by question: `strategy` (why), `test-plan` (what/where), `ci` (pipeline), `decisions/` (short ADRs for choices like Docker SUT, known a11y issues, search-schema exception) | `test-strategy.md` has 12 sections mixing decisions and pipeline detail | M |
+| # | Change | Result |
+|---|---|---|
+| **R1** ✅ | Split tests by intent | `tests/api`, `tests/ui` (single pages), `tests/e2e` (journeys), `tests/quality` (a11y, visual), `tests/architecture`; every suite lists the same tests as before |
+| **R2** ✅ | **Flows** layer for journeys | `src/flows/CheckoutFlow.ts`; U6 reads arrange/act/assert in 30 lines instead of 71. New scenarios (S2+) add flows such as `admin.publishProduct()` |
+| **R3** ✅ | `ApiClient` per resource | `src/api/http.ts` + `resources/{products,auth,customers,addresses,invoices}.ts` behind one `api` (`api.products.search(...)`) |
+| **R4** ✅ | Test-plan ID in every title | `A4: ...`, `U6: ...`; `check:tags` and Java `TagGuardTest` fail on a missing ID or one not in the plan |
+| **R5** ✅ | README as a 3-minute tour | Tour, one Mermaid diagram, layout, how to run, "read more" by question |
+| **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (8 ADRs) |
 
 **Not planned:** a BDD/Gherkin layer (adds a translation step without a business author), more browsers for
 a11y/visual (no extra signal), more Java scenarios beyond S1/S2 (maintenance doubles for little demo value).
 
-**Order:** R4 and R5 first (cheap, immediately visible), then R1 + R3 together, then R2 right before S2, so the
-first long scenario is written on the new layer. R6 last, once the content has settled.
+**Conventions for what comes next:** a new journey goes to `tests/e2e` with an `S` ID in the test plan, uses flows
+from `src/flows` and builders from `src/data`, and adds API calls as a method on the matching resource in
+`src/api/resources`. A new decision gets the next ADR number.
 
 ## 4. Guard rails that already keep this manageable
 
