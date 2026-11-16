@@ -6,7 +6,7 @@ test.describe('Checkout', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test(
-    'new customer buys an in-stock product with cash on delivery',
+    'U6: new customer buys an in-stock product with cash on delivery',
     { tag: [Tag.smoke, Tag.e2e] },
     async ({ api, productPage, header, checkoutPage }) => {
       // Arrange (API): a fresh account and a product that can actually be bought.

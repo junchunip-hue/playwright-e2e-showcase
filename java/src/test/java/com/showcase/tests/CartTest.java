@@ -24,7 +24,7 @@ import org.junit.jupiter.api.DisplayName;
 class CartTest {
 
   @SmokeTest
-  @DisplayName("adding a product updates the cart badge")
+  @DisplayName("U5: adding a product updates the cart badge")
   void addToCartUpdatesBadge(Page page, Playwright playwright) {
     Product product;
     try (ApiClient api = ApiClient.create(playwright)) {

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 class SearchTest {
 
   @SmokeTest
-  @DisplayName("every result matches the search term")
+  @DisplayName("U3: every result matches the search term")
   void resultsMatchTerm(Page page) {
     HomePage homePage = new HomePage(page);
     homePage.navigate();

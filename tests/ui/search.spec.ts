@@ -1,7 +1,7 @@
 import { expect, Tag, test } from '../../src/fixtures';
 
 test.describe('Product search', () => {
-  test('every result matches the search term', { tag: [Tag.smoke] }, async ({ homePage }) => {
+  test('U3: every result matches the search term', { tag: [Tag.smoke] }, async ({ homePage }) => {
     await homePage.goto();
     await homePage.search('pliers');
 
@@ -13,7 +13,7 @@ test.describe('Product search', () => {
   });
 
   // Hybrid check: the UI must show what the backend returns (catches frontend filtering bugs).
-  test('UI results are consistent with the search API', { tag: [Tag.regression] }, async ({ homePage, api }) => {
+  test('U4: UI results are consistent with the search API', { tag: [Tag.regression] }, async ({ homePage, api }) => {
     const apiNames = (await api.searchProducts('hammer')).data.map((p) => p.name.trim());
 
     await homePage.goto();
