@@ -58,8 +58,9 @@ jobs:
           api-url: ${{ env.API_URL }}
           base-url: ${{ env.BASE_URL }}
 
-      - name: Run smoke tests (API + Chromium)
-        run: npx playwright test --project=api --project=chromium --grep "@smoke|@setup"
+      # @a11y is part of the PR gate: a few seconds, deterministic against the pinned Toolshop.
+      - name: Run smoke + accessibility tests (API + Chromium)
+        run: npx playwright test --project=api --project=chromium --grep "@smoke|@setup|@a11y"
 
       - name: Dump Toolshop logs on failure
         if: ${{ failure() }}

@@ -1,4 +1,6 @@
+import AxeBuilder from '@axe-core/playwright';
 import { test as base } from '@playwright/test';
+import { WCAG_TAGS } from '../a11y/accessibility';
 import { ApiClient } from '../api/ApiClient';
 import { env } from '../config/env';
 import { CheckoutPage } from '../pages/CheckoutPage';
@@ -14,6 +16,8 @@ type Fixtures = {
   checkoutPage: CheckoutPage;
   header: Header;
   api: ApiClient;
+  /** Returns an AxeBuilder for the current page, preconfigured for WCAG 2.1 A/AA. */
+  makeAxeBuilder: () => AxeBuilder;
 };
 
 /**
@@ -31,6 +35,10 @@ export const test = base.extend<Fixtures>({
     const context = await playwright.request.newContext({ baseURL: env.apiURL });
     await use(new ApiClient(context));
     await context.dispose();
+  },
+
+  makeAxeBuilder: async ({ page }, use) => {
+    await use(() => new AxeBuilder({ page }).withTags([...WCAG_TAGS]));
   },
 });
 
