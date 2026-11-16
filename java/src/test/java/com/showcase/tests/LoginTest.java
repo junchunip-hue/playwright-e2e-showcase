@@ -3,23 +3,21 @@ package com.showcase.tests;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.junit.UsePlaywright;
+import com.showcase.annotations.Negative;
+import com.showcase.annotations.SmokeTest;
+import com.showcase.annotations.ToolshopTest;
 import com.showcase.config.Env;
-import com.showcase.config.ToolshopOptions;
 import com.showcase.pages.Header;
 import com.showcase.pages.LoginPage;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 /** Mirrors tests/ui/login.spec.ts. Each test gets a fresh, logged-out browser context. */
-@UsePlaywright(ToolshopOptions.class)
+@ToolshopTest
 @DisplayName("Login")
 class LoginTest {
 
-  @Test
-  @Tag("smoke")
+  @SmokeTest
   @DisplayName("customer can log in with valid credentials")
   void validLogin(Page page) {
     LoginPage loginPage = new LoginPage(page);
@@ -30,9 +28,8 @@ class LoginTest {
     assertThat(new Header(page).userMenu).isVisible();
   }
 
-  @Test
-  @Tag("smoke")
-  @Tag("negative")
+  @SmokeTest
+  @Negative
   @DisplayName("shows an error for a wrong password")
   void wrongPassword(Page page) {
     LoginPage loginPage = new LoginPage(page);

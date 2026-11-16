@@ -1,7 +1,7 @@
-import { expect, test } from '../../src/fixtures';
+import { expect, Tag, test } from '../../src/fixtures';
 
 test.describe('Cart (logged-in customer)', () => {
-  test('adding a product updates the cart badge', { tag: '@smoke' }, async ({ api, productPage, header }) => {
+  test('adding a product updates the cart badge', { tag: [Tag.smoke] }, async ({ api, productPage, header }) => {
     // Hybrid setup: the API picks a product that is actually in stock right now,
     // so the test does not break when the shared demo server's inventory changes.
     const product = await api.findInStockProduct();

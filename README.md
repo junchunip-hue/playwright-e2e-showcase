@@ -14,7 +14,8 @@ stable locators, isolated test data and CI integration, not just a collection of
 - **Page Objects + custom fixtures**: tests receive page objects and an API client through dependency injection
 - **API + UI hybrid tests**: the backend is the source of truth for UI assertions
 - **Authenticated session reuse** with a `setup` project and `storageState`
-- **Tag-based suites**: `@smoke`, `@regression`, `@negative`
+- **Tag-based suites from one registry** ([`src/tags.ts`](src/tags.ts)): typed tags, named suites (`SUITE=pr`),
+  and a tag check that fails on unknown tags or tests without a tier; Java mirrors it with composed annotations
 - **CI on every PR** (GitHub Actions): lint, typecheck, smoke tests, HTML report artifact
 - **Nightly regression**: full suite on Chromium, Firefox and WebKit, sharded across 3 jobs, merged into one
   HTML report published to GitHub Pages; full Java suite runs alongside
@@ -59,6 +60,8 @@ npm install
 npx playwright install
 cp .env.example .env
 npm run test:smoke      # quick check
+npm run test:pr         # exactly what the PR gate runs (API + Chromium)
+npm run check:tags      # tag counts per suite; fails on unknown tags or a missing tier
 npm run test:a11y       # accessibility scans
 npm run test:visual     # visual regression (first local run writes your own OS baselines, git-ignored)
 npm test                # everything
@@ -89,7 +92,8 @@ TypeScript is the primary suite; Java holds a deliberately small subset of the s
 How the two stay in sync:
 - **Same contract, same names.** Both use the `data-test` locators, the same env variables and defaults, and mirrored
   page objects and API client (`HomePage.ts` ↔ `HomePage.java`). A locator change is the same one-line edit in both.
-- **Same tags.** `@smoke` / `@negative` in TypeScript are `@Tag("smoke")` / `@Tag("negative")` in JUnit.
+- **Same tags.** `Tag.smoke` / `Tag.negative` in TypeScript are `@SmokeTest` / `@Negative` in JUnit; both sides
+  have one tag registry and a guard that requires exactly one tier per test.
 - **Same Playwright release line.** `playwright.version` in `java/pom.xml` follows the minor version of
   `@playwright/test` in `package.json` (Java patch releases can lag behind Node).
 - **CI enforces it.** Every PR runs both jobs against the same pinned Toolshop, so a UI change that breaks one

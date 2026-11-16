@@ -5,21 +5,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.microsoft.playwright.Page;
-import com.microsoft.playwright.junit.UsePlaywright;
-import com.showcase.config.ToolshopOptions;
+import com.showcase.annotations.SmokeTest;
+import com.showcase.annotations.ToolshopTest;
 import com.showcase.pages.HomePage;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 /** Mirrors the @smoke case in tests/ui/search.spec.ts. */
-@UsePlaywright(ToolshopOptions.class)
+@ToolshopTest
 @DisplayName("Product search")
 class SearchTest {
 
-  @Test
-  @Tag("smoke")
+  @SmokeTest
   @DisplayName("every result matches the search term")
   void resultsMatchTerm(Page page) {
     HomePage homePage = new HomePage(page);

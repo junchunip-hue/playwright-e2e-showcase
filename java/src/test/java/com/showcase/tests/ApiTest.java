@@ -6,23 +6,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.junit.UsePlaywright;
+import com.showcase.annotations.Negative;
+import com.showcase.annotations.RegressionTest;
+import com.showcase.annotations.SmokeTest;
+import com.showcase.annotations.ToolshopTest;
 import com.showcase.api.ApiClient;
 import com.showcase.api.ApiClient.Paginated;
 import com.showcase.api.ApiClient.Product;
 import com.showcase.config.Env;
-import com.showcase.config.ToolshopOptions;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 /** Mirrors tests/api/products.api.spec.ts. No browser is launched: only the Playwright request API. */
-@UsePlaywright(ToolshopOptions.class)
+@ToolshopTest
 @DisplayName("Toolshop API")
 class ApiTest {
 
-  @Test
-  @Tag("smoke")
+  @SmokeTest
   @DisplayName("GET /products returns a paginated, well-formed list")
   void productsArePaginated(Playwright playwright) {
     try (ApiClient api = ApiClient.create(playwright)) {
@@ -38,8 +37,7 @@ class ApiTest {
     }
   }
 
-  @Test
-  @Tag("smoke")
+  @SmokeTest
   @DisplayName("valid credentials return an access token")
   void validLoginReturnsToken(Playwright playwright) {
     try (ApiClient api = ApiClient.create(playwright)) {
@@ -48,8 +46,8 @@ class ApiTest {
     }
   }
 
-  @Test
-  @Tag("negative")
+  @RegressionTest
+  @Negative
   @DisplayName("wrong password is rejected with 401")
   void wrongPasswordIs401(Playwright playwright) {
     try (ApiClient api = ApiClient.create(playwright)) {

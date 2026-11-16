@@ -1,12 +1,12 @@
-import { expect, test } from '../../src/fixtures';
+import { expect, Tag, test } from '../../src/fixtures';
 
-// Visual regression on Chromium only (see grepInvert in playwright.config.ts).
+// Visual regression on Chromium only (CHROMIUM_ONLY in src/tags.ts).
 // Baselines are Linux screenshots of the pinned, freshly seeded Toolshop in CI; they are created or refreshed by
 // adding the `update-snapshots` label to a PR (.github/workflows/update-visual-baselines.yml).
 // Component-level screenshots are preferred: they fail for a reason that is easy to read and are not
 // affected by unrelated parts of the page.
 
-test.describe('Visual regression', { tag: ['@visual', '@regression'] }, () => {
+test.describe('Visual regression', { tag: [Tag.visual, Tag.regression] }, () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('header navigation (anonymous)', async ({ loginPage, header }) => {

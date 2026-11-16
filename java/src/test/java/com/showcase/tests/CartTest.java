@@ -4,29 +4,26 @@ import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertTha
 
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
-import com.microsoft.playwright.junit.UsePlaywright;
+import com.showcase.annotations.SmokeTest;
+import com.showcase.annotations.ToolshopTest;
 import com.showcase.api.ApiClient;
 import com.showcase.api.ApiClient.Product;
 import com.showcase.config.Env;
-import com.showcase.config.ToolshopOptions;
 import com.showcase.pages.Header;
 import com.showcase.pages.LoginPage;
 import com.showcase.pages.ProductPage;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 /**
  * Mirrors tests/ui/cart.spec.ts. The TypeScript suite reuses a saved login session (setup project);
  * here the test signs in itself, which keeps the Java module free of cross-test state.
  */
-@UsePlaywright(ToolshopOptions.class)
+@ToolshopTest
 @DisplayName("Cart (logged-in customer)")
 class CartTest {
 
-  @Test
-  @Tag("smoke")
+  @SmokeTest
   @DisplayName("adding a product updates the cart badge")
   void addToCartUpdatesBadge(Page page, Playwright playwright) {
     Product product;

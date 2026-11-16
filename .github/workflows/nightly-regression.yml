@@ -40,10 +40,12 @@ jobs:
 
       - uses: ./.github/actions/toolshop-ready
 
+      # Suite "nightly" (src/tags.ts): everything except the Test Agents' seed.
       # blob output is merged into one HTML report by merge-reports.
-      # @seed is the Test Agents' starting point, not a regression test.
       - name: Run regression shard
-        run: npx playwright test --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }} --grep-invert "@seed" --reporter=blob,github
+        env:
+          SUITE: nightly
+        run: npx playwright test --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }} --reporter=blob,github
 
       - name: Dump Toolshop logs on failure
         if: ${{ failure() }}

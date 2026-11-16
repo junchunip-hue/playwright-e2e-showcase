@@ -1,4 +1,4 @@
-import { expect, test } from '../../src/fixtures';
+import { expect, Tag, test } from '../../src/fixtures';
 import { createCustomer } from '../../src/data/customers';
 
 test.describe('Checkout', () => {
@@ -7,7 +7,7 @@ test.describe('Checkout', () => {
 
   test(
     'new customer buys an in-stock product with cash on delivery',
-    { tag: ['@smoke', '@e2e'] },
+    { tag: [Tag.smoke, Tag.e2e] },
     async ({ api, productPage, header, checkoutPage }) => {
       // Arrange (API): a fresh account and a product that can actually be bought.
       const customer = await createCustomer(api);

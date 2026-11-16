@@ -28,19 +28,21 @@ jobs:
 
       - uses: ./.github/actions/setup-node-suite
 
-      - name: Lint & typecheck
+      # check:tags fails on unknown tags or tests without a tier (smoke/regression/setup/seed).
+      - name: Lint, typecheck & tag check
         run: |
           npm run lint
           npm run typecheck
+          npm run check:tags
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
       - uses: ./.github/actions/toolshop-ready
 
-      # @a11y and @visual are part of the PR gate: a few seconds, deterministic against the pinned Toolshop.
-      - name: Run smoke, accessibility and visual tests (API + Chromium)
-        run: npx playwright test --project=api --project=chromium --grep "@smoke|@setup|@a11y|@visual"
+      # Suite "pr" (src/tags.ts): smoke + accessibility + visual on API and Chromium.
+      - name: Run PR suite (API + Chromium)
+        run: npm run test:pr
 
       - name: Dump Toolshop logs on failure
         if: ${{ failure() }}

@@ -35,7 +35,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 |---|---|---|---|---|
 | A1 | `GET /products` is paginated and well-formed | `@smoke` | ✅ | ✅ |
 | A2 | Valid credentials return a token | `@smoke` | ✅ | ✅ |
-| A3 | Wrong password → 401 | `@negative` | ✅ | ✅ |
+| A3 | Wrong password → 401 | `@regression @negative` | ✅ | ✅ |
 | A0 | Response bodies validated against schemas (products, auth, invoices) | `@smoke` | | 🟡 |
 | A4 | Register: weak / compromised password → 422 with field errors | `@negative` | | ⬜ |
 | A5 | Register: duplicate email → 422 | `@negative` | | ⬜ |
@@ -64,8 +64,11 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline (strategy §8) | PR + nightly | ✅ |
 
-`tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: it is excluded
-from the nightly run and not part of the PR grep.
+`tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
+selects it.
+
+Tags and suites are defined in `src/tags.ts` (Java: `com.showcase.annotations`); see strategy §10.
+Every test has exactly one tier tag, enforced by `npm run check:tags` and the Java `TagGuardTest`.
 
 ## 4. Which platform checks what
 

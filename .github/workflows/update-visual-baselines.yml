@@ -34,13 +34,13 @@ jobs:
 
       - uses: ./.github/actions/toolshop-ready
 
-      # @setup is needed because --grep also filters dependency projects.
+      # Suite "visual" (src/tags.ts).
       - name: Regenerate baselines
-        run: npx playwright test --project=chromium --grep "@visual|@setup" --update-snapshots=all
+        run: npm run test:visual -- --update-snapshots=all
 
       # Proves the new baselines are stable before they are committed.
       - name: Verify baselines against a second run
-        run: npx playwright test --project=chromium --grep "@visual|@setup"
+        run: npm run test:visual
 
       - name: Commit baselines to the PR branch
         run: |
