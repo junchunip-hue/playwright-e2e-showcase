@@ -93,5 +93,23 @@ Rule-level entries were chosen over `exclude(selector)`, which would silence *ev
 `@a11y` via `grepInvert`. **Limits:** automated scans catch a fraction of real issues (no keyboard flow, focus order or
 screen-reader output), so they complement manual checks rather than replace them.
 
-## 9. Out of scope (deliberately)
+## 9. Visual regression
+**What:** `toHaveScreenshot()` on Chromium for the header navigation, login form, contact form and catalogue filters,
+plus one full-page login screenshot. Tagged `@visual`, part of the PR gate.
+
+**Decisions:**
+- **Component screenshots over full pages.** A failure points at one component, and unrelated page changes do not
+  break it. The single full-page test shows how to handle dynamic content: `mask` for the notification bar.
+- **Dynamic content is removed, not tolerated.** `src/visual/screenshot.css` hides the chat and live-activity
+  widgets during capture; animations and the caret are disabled. `maxDiffPixelRatio: 0.01` only absorbs
+  anti-aliasing noise. A 20px navbar change in a local check was flagged at 5% of pixels.
+- **Baselines come from CI.** Screenshots differ by OS and font rendering, so the committed baselines are
+  `*-chromium-linux.png` from the pinned, freshly seeded Toolshop. Adding the `update-snapshots` label to a PR runs
+  `update-visual-baselines.yml`, which regenerates them, checks them against a second run and commits them.
+  The PNG diff in the PR is the review step. Local runs write `*-win32.png`/`*-darwin.png` baselines, which are
+  git-ignored.
+- **Chromium only.** One engine is enough to catch layout regressions; three sets of baselines would triple
+  maintenance for little extra signal.
+
+## 10. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery.

@@ -19,6 +19,17 @@ export default defineConfig({
     ? [['html', { open: 'never' }], ['github'], ['list']]
     : [['html', { open: 'never' }], ['list']],
 
+  // Visual baselines are generated on Linux in CI against the pinned Toolshop; the {platform} suffix keeps
+  // local (Windows/macOS) baselines separate, and those are git-ignored.
+  expect: {
+    toHaveScreenshot: {
+      animations: 'disabled',
+      caret: 'hide',
+      maxDiffPixelRatio: 0.01, // tolerate anti-aliasing noise, not layout changes
+      stylePath: './src/visual/screenshot.css',
+    },
+  },
+
   use: {
     baseURL: env.baseURL,
     testIdAttribute: 'data-test', // Toolshop exposes data-test attributes -> getByTestId()
@@ -45,15 +56,16 @@ export default defineConfig({
           {
             name: 'firefox',
             testDir: './tests/ui',
-            // axe evaluates the DOM, so a11y results do not depend on the engine: scan on Chromium only.
-            grepInvert: /@a11y/,
+            // a11y: axe evaluates the DOM, so results do not depend on the engine.
+            // visual: one set of baselines (Chromium/Linux) is enough to catch layout regressions.
+            grepInvert: /@a11y|@visual/,
             dependencies: ['setup'],
             use: { ...devices['Desktop Firefox'], storageState: STORAGE_STATE },
           },
           {
             name: 'webkit',
             testDir: './tests/ui',
-            grepInvert: /@a11y/,
+            grepInvert: /@a11y|@visual/,
             dependencies: ['setup'],
             use: { ...devices['Desktop Safari'], storageState: STORAGE_STATE },
           },

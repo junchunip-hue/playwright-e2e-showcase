@@ -1,0 +1,8 @@
+/*
+ * Injected only while toHaveScreenshot() captures (expect.toHaveScreenshot.stylePath in playwright.config.ts).
+ * Hides floating widgets whose content changes on its own, so baselines only change when the layout does.
+ */
+app-chat-widget,
+app-live-activity-widget {
+  visibility: hidden !important;
+}
