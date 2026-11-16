@@ -34,6 +34,13 @@
 - The public demo is shared and reset periodically, so tests do not depend on exact catalogue counts.
 - **CI runs against its own Toolshop instance** (Docker, upstream repo pinned to a commit, DB migrated and seeded
   on every run). Local development can still target the public demo.
+- **The shared demo account is only used for successful logins.** Toolshop locks an account (HTTP 423) after
+  repeated failed logins, and repeated local runs of the wrong-password tests did exactly that, which then broke
+  `auth.setup.ts` and every logged-in test. Negative login tests (TS and Java, UI and API) now register a
+  throwaway customer first. Everyone else using the public demo can still lock the shared account, so a local
+  `setup` failure with 423 means "wait or use local Docker", not a product bug.
+- **Other people's data shows up on the public demo.** For example, brands created by other users lengthen the catalogue
+  filter list, so local visual baselines go stale. This is why visual baselines come from the seeded CI instance.
 
 **Why CI does not use the public demo:** the first CI run failed in `auth.setup.ts`: the login form never
 appeared. The failure screenshot showed a Cloudflare "Verify you are human" challenge, served to the GitHub

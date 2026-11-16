@@ -14,6 +14,8 @@ import com.showcase.api.ApiClient;
 import com.showcase.api.ApiClient.Paginated;
 import com.showcase.api.ApiClient.Product;
 import com.showcase.config.Env;
+import com.showcase.data.Customers;
+import com.showcase.data.Customers.Customer;
 import org.junit.jupiter.api.DisplayName;
 
 /** Mirrors tests/api/products.api.spec.ts. No browser is launched: only the Playwright request API. */
@@ -51,7 +53,9 @@ class ApiTest {
   @DisplayName("wrong password is rejected with 401")
   void wrongPasswordIs401(Playwright playwright) {
     try (ApiClient api = ApiClient.create(playwright)) {
-      assertEquals(401, api.loginRequest(Env.CUSTOMER_EMAIL, "definitely-wrong-password").status());
+      // Throwaway account: failed logins count towards an account lock (HTTP 423) on the shared customer.
+      Customer customer = Customers.create(api);
+      assertEquals(401, api.loginRequest(customer.email(), "definitely-wrong-password").status());
     }
   }
 }
