@@ -49,6 +49,32 @@ public final class ApiClient implements AutoCloseable {
     return GSON.fromJson(res.text(), JsonObject.class).get("access_token").getAsString();
   }
 
+  /** POST /users/register; the payload is built by {@link com.showcase.data.Customers}. */
+  public void registerCustomer(Map<String, Object> customer) {
+    APIResponse res = request.post("/users/register", RequestOptions.create().setData(customer));
+    ensureOk(res, "POST /users/register");
+  }
+
+  /**
+   * The postcode lookup the checkout form uses (Toolshop validates that city/state match the postcode),
+   * returned with the field names the register API expects.
+   */
+  public Map<String, String> lookupAddress(String country, String postcode, String houseNumber) {
+    APIResponse res = request.get("/postcode-lookup", RequestOptions.create()
+        .setQueryParam("country", country)
+        .setQueryParam("postcode", postcode)
+        .setQueryParam("house_number", houseNumber));
+    ensureOk(res, "GET /postcode-lookup");
+    JsonObject body = GSON.fromJson(res.text(), JsonObject.class);
+    return Map.of(
+        "street", body.get("street").getAsString(),
+        "house_number", body.get("house_number").getAsString(),
+        "city", body.get("city").getAsString(),
+        "state", body.get("state").getAsString(),
+        "country", body.get("country").getAsString(),
+        "postal_code", body.get("postcode").getAsString());
+  }
+
   public Paginated<Product> getProducts(int page) {
     return getProductPage("/products", RequestOptions.create().setQueryParam("page", page));
   }

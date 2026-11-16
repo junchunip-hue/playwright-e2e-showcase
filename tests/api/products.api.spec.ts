@@ -1,4 +1,5 @@
 import { env } from '../../src/config/env';
+import { createCustomer } from '../../src/data/customers';
 import { expect, Tag, test } from '../../src/fixtures';
 
 test.describe('Products API', () => {
@@ -20,8 +21,10 @@ test.describe('Auth API', () => {
     expect(token).toBeTruthy();
   });
 
+  // Throwaway account: failed logins count towards an account lock (HTTP 423) on the shared customer.
   test('wrong password is rejected with 401', { tag: [Tag.regression, Tag.negative] }, async ({ api }) => {
-    const res = await api.loginRequest(env.customer.email, 'definitely-wrong-password');
+    const customer = await createCustomer(api);
+    const res = await api.loginRequest(customer.email, 'definitely-wrong-password');
     expect(res.status()).toBe(401);
   });
 });

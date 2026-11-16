@@ -1,4 +1,5 @@
 import { env } from '../../src/config/env';
+import { createCustomer } from '../../src/data/customers';
 import { expect, Tag, test } from '../../src/fixtures';
 
 test.describe('Login', () => {
@@ -13,9 +14,13 @@ test.describe('Login', () => {
     await expect(header.userMenu).toBeVisible();
   });
 
-  test('shows an error for a wrong password', { tag: [Tag.smoke, Tag.negative] }, async ({ page, loginPage }) => {
+  // Failed logins count towards an account lock (HTTP 423), so they target a throwaway account:
+  // repeated runs must never lock the shared customer that the other tests sign in with.
+  test('shows an error for a wrong password', { tag: [Tag.smoke, Tag.negative] }, async ({ api, page, loginPage }) => {
+    const customer = await createCustomer(api);
+
     await loginPage.goto();
-    await loginPage.login(env.customer.email, 'definitely-wrong-password');
+    await loginPage.login(customer.email, 'definitely-wrong-password');
 
     await expect(loginPage.error).toBeVisible();
     await expect(page).toHaveURL(/\/auth\/login/);

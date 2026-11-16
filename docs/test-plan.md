@@ -97,5 +97,5 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | Nightly: 3 browsers, sharding, merged blob report on GitHub Pages | CI scalability |
 | ✅ | N1 visual regression, N2 axe-core | Quality beyond functional |
 | ✅ | A0 API schema validation (types derived from the schemas) | Contract testing |
-| Next 🟡 | Negative login tests on throwaway accounts (the shared demo account locks after repeated failures) | Test data isolation |
+| ✅ | Negative login tests on throwaway accounts (the shared demo account locks after repeated failures) | Test data isolation |
 | Later ⬜ | A4, A5, U7 | Negative + data-driven testing |
