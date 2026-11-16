@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { test as base } from '@playwright/test';
 import { WCAG_TAGS } from '../a11y/accessibility';
 import { ApiClient } from '../api/ApiClient';
+import { CheckoutFlow } from '../flows/CheckoutFlow';
 import { env } from '../config/env';
 import { AccountPage } from '../pages/AccountPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
@@ -22,6 +23,8 @@ type Fixtures = {
   header: Header;
   footer: Footer;
   api: ApiClient;
+  /** Business steps of the checkout journey (src/flows), built on the page objects above. */
+  checkout: CheckoutFlow;
   /** Returns an AxeBuilder for the current page, preconfigured for WCAG 2.1 A/AA. */
   makeAxeBuilder: () => AxeBuilder;
 };
@@ -39,6 +42,7 @@ export const test = base.extend<Fixtures>({
   accountPage: async ({ page }, use) => use(new AccountPage(page)),
   header: async ({ page }, use) => use(new Header(page)),
   footer: async ({ page }, use) => use(new Footer(page)),
+  checkout: async ({ productPage, header, checkoutPage }, use) => use(new CheckoutFlow(productPage, header, checkoutPage)),
 
   api: async ({ playwright }, use) => {
     const context = await playwright.request.newContext({ baseURL: env.apiURL });
