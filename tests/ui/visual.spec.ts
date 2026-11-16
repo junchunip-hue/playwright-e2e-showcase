@@ -36,12 +36,13 @@ test.describe('Visual regression', { tag: ['@visual', '@regression'] }, () => {
   });
 
   // Full-page example: anything that changes between runs is masked rather than compared.
+  // The footer prints the Toolshop build date, and CI builds Toolshop on every run.
   test('login page (full page)', async ({ loginPage, page }) => {
     await loginPage.goto();
     await expect(loginPage.email).toBeVisible();
     await expect(page).toHaveScreenshot('login-page.png', {
       fullPage: true,
-      mask: [page.getByTestId('notification-bar')],
+      mask: [page.getByTestId('notification-bar'), page.getByText(/Built \d{4}-\d{2}-\d{2}/)],
     });
   });
 });
