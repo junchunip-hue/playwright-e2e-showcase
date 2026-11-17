@@ -33,7 +33,9 @@ export const ProductSchema = z.object({
   is_rental: z.boolean(),
   // A stock count for admins; a boolean for customers and guests, which is how these tests call the API.
   in_stock: z.boolean(),
-  co2_rating: z.string(),
+  // Seeded products all have a rating, but it is optional on create (not in StoreProduct rules; the model handles
+  // `co2_rating ?? ''`), so products published later return null. Found by A8/S3.
+  co2_rating: z.string().nullable(),
   is_eco_friendly: z.boolean(),
   brand: z.object({ id: ulid, name: z.string().min(1) }),
   category: z.object({ id: ulid, name: z.string().min(1), slug: z.string().min(1) }),

@@ -17,3 +17,8 @@ value. TypeScript types are `z.infer` of the same schemas. Objects allow new fie
   `ProductSearchItemSchema`, so either side changing is reported); IDs are ULIDs in upper case for seeded rows and
   lower case for rows created at runtime (both accepted, as the format allows).
 - Registration rejects with 422 for invalid input and **409** for a duplicate email (A4, A5).
+- **Contracts built from seeded data can be too strict.** Every seeded product has a `co2_rating`, but the field is
+  optional on create, so the first product published by a test (A8/S3) came back with `null`. That failed the
+  contract in all three browser shards and in Java at once. The source confirms `null` is legitimate (not in the
+  create rules; the model handles `co2_rating ?? ''`), so the field is nullable in both `schemas.ts` and
+  `Contracts.java`. The test data keeps omitting it, so the null case stays covered.

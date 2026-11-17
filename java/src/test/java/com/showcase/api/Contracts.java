@@ -179,7 +179,8 @@ public final class Contracts {
     at.bool(p, "is_location_offer");
     at.bool(p, "is_rental");
     at.bool(p, "in_stock");
-    at.string(p, "co2_rating", 0);
+    // Optional on create, so products published later return null (seeded ones all have a rating). Found by A8/S3.
+    at.nullableString(p, "co2_rating");
     at.bool(p, "is_eco_friendly");
 
     at.object(p, "brand", (b, o) -> {
