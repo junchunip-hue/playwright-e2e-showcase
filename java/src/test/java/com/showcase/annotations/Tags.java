@@ -13,6 +13,7 @@ public final class Tags {
   // Kind: optional.
   public static final String NEGATIVE = "negative";
   public static final String E2E = "e2e";
+  public static final String ADMIN = "admin";
 
   private Tags() {}
 }

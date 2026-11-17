@@ -1,10 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
-import { env, STORAGE_STATE } from './src/config/env';
+import { env, isPublicDemo, STORAGE_STATE } from './src/config/env';
 import { CHROMIUM_ONLY, resolveSuite, suiteGrep, suiteGrepInvert } from './src/tags';
 
 const isCI = !!process.env.CI;
-// Be gentle with the shared public demo; a local Docker instance can take full parallelism.
-const isPublicDemo = env.baseURL.includes('practicesoftwaretesting.com');
+// Be gentle with the shared public demo (isPublicDemo); a local Docker instance can take full parallelism.
 // Playwright's Firefox build fails to start on some Windows 11 machines (SxS "mozglue" error),
 // so Firefox and WebKit run in CI (Linux) by default and locally only on request: ALL_BROWSERS=1.
 // The PR smoke job still picks only --project=chromium; the nightly run uses all of them.

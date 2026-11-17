@@ -41,7 +41,9 @@ test runs ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)).
   only a suite name (`SUITE=pr`), and `playwright.config.ts` turns it into `grep`/`grepInvert`, adding `@setup`
   where a login is needed.
 - **Tiers:** every test has exactly one of `@smoke` (PR gate), `@regression` (nightly), `@setup`, `@seed`.
-  **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`.
+  **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, and `@admin`. An `@admin` test signs in as
+  the seeded admin and changes catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
+  fixture, Java: `@Admin`) and runs against our own Toolshop only.
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. The Java `TagGuardTest` applies the same rules to JUnit.

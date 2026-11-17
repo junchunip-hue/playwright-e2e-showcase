@@ -78,6 +78,8 @@ public class CheckoutFlow {
     checkoutPage.country.selectOption(address.get("country"));
     checkoutPage.postalCode.fill(address.get("postal_code"));
     checkoutPage.houseNumber.fill(address.get("house_number"));
+    // The country is checked too: the order is rejected (422) when it does not match the postcode.
+    assertThat(checkoutPage.country).hasValue(address.get("country"));
     assertThat(checkoutPage.street).hasValue(address.get("street"));
     assertThat(checkoutPage.city).hasValue(address.get("city"));
     assertThat(checkoutPage.state).hasValue(address.get("state"));

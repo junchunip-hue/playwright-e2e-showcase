@@ -57,6 +57,8 @@ export class CheckoutFlow {
   async confirmAddress(address: Address): Promise<void> {
     await test.step('billing address via postcode lookup', async () => {
       await this.checkoutPage.enterAddressForLookup(address);
+      // The country is checked too: the order is rejected (422) when it does not match the postcode.
+      await expect(this.checkoutPage.country).toHaveValue(address.country);
       await expect(this.checkoutPage.street).toHaveValue(address.street);
       await expect(this.checkoutPage.city).toHaveValue(address.city);
       await expect(this.checkoutPage.state).toHaveValue(address.state);

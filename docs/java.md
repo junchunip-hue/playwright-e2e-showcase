@@ -31,6 +31,8 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 | U6 (S1) | First purchase journey | `tests/e2e/checkout.spec.ts` | `CheckoutJourneyTest` |
 | S2 | Payment matrix journey (4 methods + 2 invalid cards) | `tests/e2e/payments.spec.ts` | `PaymentJourneyTest` |
 | A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
+| S3 | Admin publishes, customer buys, admin ships (own Toolshop only) | `tests/e2e/admin-to-customer.spec.ts` | `AdminToCustomerJourneyTest` |
+| A8 | Admin publishes a product (own Toolshop only) | `tests/api/admin.api.spec.ts` | `AdminApiTest` |
 | U1, U2 | Login (valid / wrong password) | `tests/ui/login.spec.ts` | `LoginTest` |
 | U3, U4 | Search results match the term; UI agrees with the search API | `tests/ui/search.spec.ts` | `SearchTest` |
 | U5 | Add to cart updates the badge | `tests/ui/cart.spec.ts` | `CartTest` |

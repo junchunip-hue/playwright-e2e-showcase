@@ -33,7 +33,9 @@ export const ProductSchema = z.object({
   is_rental: z.boolean(),
   // A stock count for admins; a boolean for customers and guests, which is how these tests call the API.
   in_stock: z.boolean(),
-  co2_rating: z.string(),
+  // Seeded products all have a rating, but it is optional on create (not in StoreProduct rules; the model handles
+  // `co2_rating ?? ''`), so products published later return null. Found by A8/S3.
+  co2_rating: z.string().nullable(),
   is_eco_friendly: z.boolean(),
   brand: z.object({ id: ulid, name: z.string().min(1) }),
   category: z.object({ id: ulid, name: z.string().min(1), slug: z.string().min(1) }),
@@ -108,6 +110,27 @@ export const LaravelValidationErrorSchema = z.object({
 });
 
 export const PaymentCheckSchema = z.object({ message: z.literal('Payment was successful') });
+
+/** Order statuses an admin can set (pinned InvoiceController::updateStatus). */
+export const INVOICE_STATUSES = ['AWAITING_FULFILLMENT', 'ON_HOLD', 'AWAITING_SHIPMENT', 'SHIPPED', 'COMPLETED'] as const;
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
+
+/** GET /invoices/{id}: the list fields plus the message that comes with the status. */
+export const InvoiceDetailSchema = InvoiceSchema.extend({ status_message: z.string().nullable() });
+
+export const StatusUpdatedSchema = z.object({ success: z.literal(true) });
+
+// Catalogue lookups an admin needs to publish a product (plain arrays, not paginated).
+export const BrandListSchema = z.array(z.object({ id: ulid, name: z.string().min(1), slug: z.string().min(1) })).min(1);
+export const CategoryListSchema = z
+  .array(z.object({ id: ulid, name: z.string().min(1), slug: z.string().min(1), parent_id: ulid.nullable() }))
+  .min(1);
+export const ImageListSchema = z.array(ProductSchema.shape.product_image).min(1);
+
+/** POST /products answers with the stored product (relations are not loaded yet). */
+export const CreatedProductSchema = z.object({ id: ulid, name: z.string().min(1), price: z.number() });
+
+export type InvoiceDetail = z.infer<typeof InvoiceDetailSchema>;
 export type Product = z.infer<typeof ProductSchema>;
 export type ProductPage = z.infer<typeof ProductPageSchema>;
 export type ProductSearchPage = z.infer<typeof ProductSearchPageSchema>;

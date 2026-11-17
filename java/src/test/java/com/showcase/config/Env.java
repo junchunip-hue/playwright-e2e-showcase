@@ -19,8 +19,16 @@ public final class Env {
   // Publicly documented Toolshop demo account.
   public static final String CUSTOMER_EMAIL = get("CUSTOMER_EMAIL", "customer@practicesoftwaretesting.com");
   public static final String CUSTOMER_PASSWORD = get("CUSTOMER_PASSWORD", "welcome01");
+  // Seeded admin of Toolshop; only used against our own instance (see annotations.Admin).
+  public static final String ADMIN_EMAIL = get("ADMIN_EMAIL", "admin@practicesoftwaretesting.com");
+  public static final String ADMIN_PASSWORD = get("ADMIN_PASSWORD", "welcome01");
 
   private Env() {}
+
+  /** The shared public demo: other people use it, so tests must not change its catalogue or orders there. */
+  public static boolean isPublicDemo() {
+    return BASE_URL.contains("practicesoftwaretesting.com");
+  }
 
   private static String get(String key, String fallback) {
     String fromEnv = System.getenv(key);

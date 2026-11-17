@@ -23,13 +23,13 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 |---|---|---|---|---|
 | **S1** | First purchase (exists as U6) | API-registered customer → cart → sign in → postcode lookup → pay → invoice verified via API | ✅ | Hybrid API/UI, isolated data |
 | **S2** ✅ | Payment matrix (U7) | Same journey, data-driven over every payment method; invalid card is flagged, cannot be submitted, is rejected by the API (A9) and creates no invoice | S1 | Data-driven tests, negative path, one data model for UI and API |
-| **S3** | Admin publishes, customer buys | Admin creates a product via API (A8) → customer finds it with search + category filter (U11) → buys it → admin sets invoice status → customer sees the new status | A8, U11, S1 | Cross-role E2E, two sessions in one test |
+| **S3** ✅ | Admin publishes, customer buys | Admin creates a product via API (A8) → customer finds it with search + category filter (U11) → buys it → admin sets invoice status → customer sees the new status | A8, U11, S1 | Cross-role E2E, two sessions in one test |
 | **S4** | Guest checkout (U8) | Anonymous cart → guest email → address → pay → invoice via guest endpoint | S1 | Second entry path into the same flow |
 | **S5** | Returning customer | Login → favourites → compare two products → buy one → download the invoice PDF and check its status endpoint | S1 | Downloads, multi-tab/compare UI |
 | **S6** | Resilience | `page.route` makes `/products` fail or slow down → UI shows its error/loading state, recovers on retry | – | Network mocking, failure UX |
 | **S7** | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
-**Order:** S2 ✅ → S3 → S6 → S4 → S5 → S7. S2 extends the flagship directly, S3 is the strongest demo story
+**Order:** S2 ✅ → S3 ✅ → S6 → S4 → S5 → S7. S2 extends the flagship directly, S3 is the strongest demo story
 (two roles, API + UI), and S6 shows a technique (mocking) the suite does not use yet. **Every journey ships in
 TypeScript and Java** ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1 and S2 already do.
 
