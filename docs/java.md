@@ -1,6 +1,7 @@
 # Java + JUnit 5 twin
 
-> Why there are two languages: [ADR 0002](decisions/0002-typescript-primary-java-twin.md).
+> Why there are two languages: [ADR 0002](decisions/0002-typescript-primary-java-twin.md). Since
+> [ADR 0009](decisions/0009-every-journey-in-both-languages.md), **every journey ships in both**.
 
 ## Run
 Needs JDK 21+. Maven comes from the wrapper, and config is read from the same `.env` as the TypeScript suite.
@@ -12,24 +13,40 @@ cd java
 ```
 On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 
-## What is mirrored
+## Same layers, side by side
+| Layer | TypeScript | Java |
+|---|---|---|
+| Journey steps | `src/flows/CheckoutFlow.ts` | `flows/CheckoutFlow.java` |
+| Page objects | `src/pages/*.ts` | `pages/*.java` |
+| Test data | `src/data/customers.ts`, `payments.ts` | `data/Customers.java`, `Payments.java` |
+| API client | `src/api/` (per resource, schema-checked) | `api/ApiClient.java` (fields the tests use) |
+| Tags and tiers | `src/tags.ts`, `Tag.smoke` | `annotations/`, `@SmokeTest`, `@RegressionCases`, `@Journey` |
+| Data-driven tests | `for (const payment of methods) test(...)` | `@RegressionCases` + `@MethodSource` (one case per argument) |
+| Tag/ID guard | `npm run check:tags` | `TagGuardTest` |
+
+## What runs in both
 | ID | Scenario | TypeScript | Java |
 |---|---|---|---|
+| U6 (S1) | First purchase journey | `tests/e2e/checkout.spec.ts` | `CheckoutJourneyTest` |
+| S2 | Payment matrix journey (4 methods + 2 invalid cards) | `tests/e2e/payments.spec.ts` | `PaymentJourneyTest` |
+| A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
 | U1, U2 | Login (valid / wrong password) | `tests/ui/login.spec.ts` | `LoginTest` |
 | U3 | Search results match the term | `tests/ui/search.spec.ts` | `SearchTest` |
 | U5 | Add to cart updates the badge | `tests/ui/cart.spec.ts` | `CartTest` |
 | A1–A3 | Products and auth API | `tests/api/products.api.spec.ts` | `ApiTest` |
-| U6 and the rest | Checkout journey, contracts, a11y, visual, architecture | ✅ | TypeScript only |
+
+TypeScript only, by design: accessibility (N2), visual (N1), architecture (N3), response schema validation (A0),
+UI-vs-API search (U4) and registration rules (A4, A5).
 
 ## How the two stay in sync
-- **Same contract, same names.** Both use the `data-test` locators, the same env variables and defaults, and mirrored
-  page objects (`HomePage.ts` ↔ `HomePage.java`). A locator change is the same one-line edit in both.
-- **Same tags and IDs.** `Tag.smoke` / `Tag.negative` are `@SmokeTest` / `@Negative` in JUnit, and display names carry
-  the same test-plan IDs. `TagGuardTest` enforces one tier and a known ID per test.
+- **Parity is a CI rule.** `tests/architecture/parity.arch.spec.ts` fails when a journey exists in only one language,
+  or when the test plan's "Java" column disagrees with the Java suite.
+- **The pipeline shows both.** The summary job draws the run and lists every test ID with its TypeScript and Java
+  results side by side (see [ci.md](ci.md#pipeline-summary)).
+- **Same contract, same names.** Same `data-test` locators, env variables, test data and IDs. A locator change is
+  the same one-line edit in both.
 - **Same Playwright release line.** `playwright.version` in `java/pom.xml` follows the minor version of
   `@playwright/test` (Java patch releases can lag behind Node).
-- **CI enforces it.** Every PR runs both against the same pinned Toolshop.
-- **New scenarios start in TypeScript.** A scenario is ported only when it joins the smoke set (roadmap: S1, S2).
 
-**Known difference:** TypeScript logs in once (`setup` project + `storageState`). Java `CartTest` signs in inside the
-test, which keeps the module free of cross-test state at the cost of a few seconds.
+**Known difference:** TypeScript logs in once for single-page tests (`setup` project + `storageState`); Java signs in
+inside the test. Journeys use fresh customers in both.

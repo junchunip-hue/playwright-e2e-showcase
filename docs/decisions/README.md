@@ -13,3 +13,4 @@ New decisions get the next number; a reversed decision is marked "Superseded" an
 | [0006](0006-tag-registry-and-test-ids.md) | One tag registry, one tier and one test-plan ID per test |
 | [0007](0007-throwaway-accounts-for-negative-logins.md) | Negative logins use throwaway accounts |
 | [0008](0008-architecture-tests.md) | Architecture tests guard the pipeline against loops |
+| [0009](0009-every-journey-in-both-languages.md) | Every journey ships in TypeScript and Java; parity is checked |

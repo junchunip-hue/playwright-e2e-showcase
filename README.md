@@ -39,10 +39,13 @@ flowchart LR
     S["Static: lint · types ·<br/>tag check · architecture"] --> T["Toolshop in Docker<br/>(pinned, fresh DB)"]
     T --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
     T --> J["Java: JUnit 5 smoke"]
+    TS --> SUM["Summary: run diagram +<br/>TS vs Java per test ID"]
+    J --> SUM
   end
   subgraph N["Nightly 02:00 UTC"]
     SH["3 shards × Chromium,<br/>Firefox, WebKit"] --> M["Merged HTML report"] --> P["GitHub Pages"]
-    NJ["Java: full suite"]
+    NJ["Java: full suite,<br/>all journeys"] --> NS["Summary"]
+    M --> NS
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
@@ -81,7 +84,8 @@ npm run check:tags          # tag counts; fails on unknown tags, missing tier or
 npm test                    # everything
 npm run report              # open the HTML report
 ```
-Java: `cd java && ./mvnw test` (JDK 21+, see [docs/java.md](docs/java.md)).
+Java: `cd java && ./mvnw test` (JDK 21+, see [docs/java.md](docs/java.md)). Every journey exists in both languages,
+and each CI run ends with a summary that draws the run and compares TypeScript and Java per test ID.
 
 ## Read more
 

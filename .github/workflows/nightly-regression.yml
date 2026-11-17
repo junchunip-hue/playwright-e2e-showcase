@@ -78,8 +78,18 @@ jobs:
           pattern: blob-report-*
           merge-multiple: true
 
+      # JSON next to HTML feeds the pipeline summary.
       - name: Merge into one HTML report
-        run: npx playwright merge-reports --reporter html ./all-blob-reports
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: reports/ts-results.json
+        run: npx playwright merge-reports --reporter html,json ./all-blob-reports
+
+      - name: Upload results for the summary
+        uses: actions/upload-artifact@v7
+        with:
+          name: ts-results
+          path: reports/ts-results.json
+          retention-days: 30
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v7
@@ -143,3 +153,34 @@ jobs:
           name: junit-reports-nightly
           path: java/target/surefire-reports/
           retention-days: 30
+
+  # Diagram of the run and TypeScript-vs-Java results per test ID (job summary on the run page).
+  summary:
+    name: pipeline summary
+    if: ${{ !cancelled() }}
+    needs: [merge-reports, regression-java]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download TypeScript results
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: ts-results
+          path: results/ts
+
+      - name: Download Java results
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: junit-reports-nightly
+          path: results/java
+
+      - name: Write pipeline summary
+        env:
+          PIPELINE: nightly
+          TS_JOB: ${{ needs.merge-reports.result }}
+          JAVA_JOB: ${{ needs.regression-java.result }}
+        run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java
