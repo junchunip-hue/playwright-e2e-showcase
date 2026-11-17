@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Address, NewCustomer, Product } from '../api/ApiClient';
-import type { CheckoutPage, PaymentMethod } from '../pages/CheckoutPage';
+import type { Payment } from '../data/payments';
+import type { CheckoutPage } from '../pages/CheckoutPage';
 import type { Header } from '../pages/components/Header';
 import type { ProductPage } from '../pages/ProductPage';
 
@@ -11,7 +12,7 @@ import type { ProductPage } from '../pages/ProductPage';
  *   const total = await checkout.reviewCart([product]);
  *   await checkout.signIn(customer);
  *   await checkout.confirmAddress(customer.address);
- *   const invoice = await checkout.pay('cash-on-delivery');
+ *   const invoice = await checkout.pay(payments.cashOnDelivery());
  *
  * Page objects stay locator-only; flows add the order of actions and the waits that make each step safe to
  * continue from (e.g. "proceed" is enabled). Business assertions stay in the test. Each step is a test.step,
@@ -64,10 +65,22 @@ export class CheckoutFlow {
     });
   }
 
-  /** Pays with the given method and places the order; returns the invoice number from the confirmation. */
-  async pay(method: PaymentMethod): Promise<string> {
-    return test.step(`pay with ${method}`, async () => {
-      await this.checkoutPage.paymentMethod.selectOption(method);
+  /** Selects the payment method and fills its details, without submitting. */
+  async enterPayment(payment: Payment): Promise<void> {
+    await test.step(`enter ${payment.method} details`, async () => {
+      await this.checkoutPage.paymentMethod.selectOption(payment.method);
+      for (const [field, value] of Object.entries(payment.details)) {
+        const input = this.checkoutPage.paymentField(field);
+        if (field === 'monthly_installments') await input.selectOption(value);
+        else await input.fill(value);
+      }
+    });
+  }
+
+  /** Pays and places the order; returns the invoice number from the confirmation. */
+  async pay(payment: Payment): Promise<string> {
+    await this.enterPayment(payment);
+    return test.step(`pay with ${payment.method}`, async () => {
       await this.checkoutPage.finish.click(); // 1st click: payment check
       await expect(this.checkoutPage.paymentSuccess).toBeVisible();
       await this.checkoutPage.placeOrder(); // 2nd click: creates the invoice, waits for the API

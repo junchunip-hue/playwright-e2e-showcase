@@ -2,8 +2,6 @@ import type { Locator, Page } from '@playwright/test';
 import type { Address } from '../api/ApiClient';
 import { LoginForm } from './components/LoginForm';
 
-export type PaymentMethod = 'bank-transfer' | 'cash-on-delivery' | 'credit-card' | 'buy-now-pay-later' | 'gift-card';
-
 /** The 4-step checkout wizard: cart -> sign in -> billing address -> payment. */
 export class CheckoutPage {
   // Step 1: cart
@@ -25,6 +23,8 @@ export class CheckoutPage {
   readonly paymentMethod: Locator;
   readonly finish: Locator;
   readonly paymentSuccess: Locator;
+  /** Inline field errors of the payment form (Bootstrap alerts, no data-test). */
+  readonly paymentFieldErrors: Locator;
   readonly orderConfirmation: Locator;
 
   constructor(private readonly page: Page) {
@@ -46,11 +46,17 @@ export class CheckoutPage {
     this.paymentMethod = page.getByTestId('payment-method');
     this.finish = page.getByTestId('finish');
     this.paymentSuccess = page.getByTestId('payment-success-message');
+    this.paymentFieldErrors = page.locator('.alert-danger');
     this.orderConfirmation = page.locator('#order-confirmation'); // no data-test on this element
   }
 
   async goto(): Promise<void> {
     await this.page.goto('/checkout');
+  }
+
+  /** A payment detail field; its data-test id is also the API field name (see src/data/payments.ts). */
+  paymentField(name: string): Locator {
+    return this.page.getByTestId(name);
   }
 
   async signIn(email: string, password: string): Promise<void> {

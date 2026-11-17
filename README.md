@@ -18,7 +18,7 @@ await checkout.addToCart(product);                       // act via UI: business
 const cartTotal = await checkout.reviewCart([product]);
 await checkout.signIn(customer);
 await checkout.confirmAddress(customer.address);
-const invoiceNumber = await checkout.pay('cash-on-delivery');
+const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 // assert via API: the invoice exists, for this customer, at the cart total
 ```
 

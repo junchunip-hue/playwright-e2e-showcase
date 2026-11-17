@@ -1,4 +1,5 @@
 import { createCustomer } from '../../src/data/customers';
+import { payments } from '../../src/data/payments';
 import { expect, Tag, test } from '../../src/fixtures';
 
 // Journey pattern for every e2e scenario: arrange via API, act via UI (business steps from src/flows),
@@ -18,7 +19,7 @@ test.describe('Checkout', () => {
     const cartTotal = await checkout.reviewCart([product]); // discounts applied: the expected invoice amount
     await checkout.signIn(customer);
     await checkout.confirmAddress(customer.address);
-    const invoiceNumber = await checkout.pay('cash-on-delivery');
+    const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 
     // Assert (API): the order really exists in the backend, for this customer, at the right price.
     await test.step('invoice exists in the backend', async () => {

@@ -97,6 +97,17 @@ export const InvoicePageSchema = paginated(InvoiceSchema);
 export const ValidationErrorsSchema = z.record(z.string(), z.array(z.string().min(1)).min(1));
 
 export type ValidationErrors = z.infer<typeof ValidationErrorsSchema>;
+
+/**
+ * Laravel's standard 422 body, used by POST /payment/check: a summary plus field → messages.
+ * (Registration answers with the bare field map instead; see ValidationErrorsSchema.)
+ */
+export const LaravelValidationErrorSchema = z.object({
+  message: z.string().min(1),
+  errors: ValidationErrorsSchema,
+});
+
+export const PaymentCheckSchema = z.object({ message: z.literal('Payment was successful') });
 export type Product = z.infer<typeof ProductSchema>;
 export type ProductPage = z.infer<typeof ProductPageSchema>;
 export type ProductSearchPage = z.infer<typeof ProductSearchPageSchema>;
