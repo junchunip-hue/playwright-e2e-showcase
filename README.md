@@ -35,20 +35,31 @@ const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 
 ```mermaid
 flowchart LR
-  subgraph PR["Every pull request"]
-    S["Static: lint · types ·<br/>tag check · architecture"] --> T["Toolshop in Docker<br/>(pinned, fresh DB)"]
-    T --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
-    T --> J["Java: JUnit 5 smoke"]
+  subgraph PR["Every pull request: two lanes in parallel, each with its own Toolshop"]
+    direction LR
+    S["Static: lint · types ·<br/>tag check · architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
+    J["Java: JUnit 5 smoke<br/>(same scenario IDs)"]
     TS --> SUM["Summary: run diagram +<br/>TS vs Java per test ID"]
     J --> SUM
   end
   subgraph N["Nightly 02:00 UTC"]
-    SH["3 shards × Chromium,<br/>Firefox, WebKit"] --> M["Merged HTML report"] --> P["GitHub Pages"]
+    direction LR
+    SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> P["GitHub Pages"]
     NJ["Java: full suite,<br/>all journeys"] --> NS["Summary"]
     M --> NS
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
+
+| Layer | IDs | What it proves | Languages |
+|---|---|---|---|
+| API | A0–A5, A8, A9 | Contracts, auth, registration rules, payment check, admin publishing | TS + Java |
+| UI | U1–U5 | Login, search (incl. UI = API), cart | TS + Java |
+| Journeys | U6/S1, S2, S3 | First purchase, every payment method, admin → customer → admin | TS + Java |
+| Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | TS |
+| Architecture | N3 | Pipeline cannot loop, TS/Java parity | TS |
+
+Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).
 
 CI never uses the public demo: it boots its own Toolshop for every run, so results depend only on the code
 ([why](docs/ci.md#system-under-test)).
@@ -70,7 +81,7 @@ tests/
   e2e/          journeys across pages, API and UI
   quality/      accessibility and visual regression
   architecture/ rules about the pipeline and the code itself
-java/           Playwright for Java + JUnit 5 twin of the smoke scenarios
+java/           Playwright for Java + JUnit 5: every A/U/S scenario, same IDs and tiers
 .github/        workflows (PR, nightly, baselines) and shared actions
 ```
 
@@ -84,7 +95,7 @@ npm run check:tags          # tag counts; fails on unknown tags, missing tier or
 npm test                    # everything
 npm run report              # open the HTML report
 ```
-Java: `cd java && ./mvnw test` (JDK 21+, see [docs/java.md](docs/java.md)). Every journey exists in both languages,
+Java: `cd java && ./mvnw test` (JDK 21+, see [docs/java.md](docs/java.md)). Every scenario exists in both languages,
 and each CI run ends with a summary that draws the run and compares TypeScript and Java per test ID.
 
 ## Read more

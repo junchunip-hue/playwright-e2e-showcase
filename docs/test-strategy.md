@@ -16,7 +16,7 @@
 | Product search & filter | High (revenue entry point) | Medium | P1 | UI + API consistency |
 | Add to cart → checkout | Critical (revenue) | Medium | P1 | E2E journey |
 | Registration | Medium | Low | P2 | API rules, data setup |
-| Admin product management | Medium | Low | P3 | API |
+| Admin product management → customer purchase | Medium | Low | P2 | API + journey (S3, own Toolshop only) |
 | Contact form, i18n | Low | Low | Later (roadmap S7) | – |
 
 ## 3. Layers
@@ -50,8 +50,10 @@ Suites are selected by name (`SUITE=pr`), and a tag check keeps both honest
 ([ADR 0006](decisions/0006-tag-registry-and-test-ids.md), details in [ci.md](ci.md#tags-and-suites)).
 
 ## 7. Two languages
-TypeScript is the primary suite; a Java + JUnit 5 twin mirrors the smoke scenarios
-([ADR 0002](decisions/0002-typescript-primary-java-twin.md), [java.md](java.md)).
+TypeScript is the primary suite. Every scenario (A, U, S) also exists in Java + JUnit 5 with the same ID and tier, so
+each pipeline runs a TypeScript lane and a Java lane over the same scenarios; only the quality and architecture checks
+(N1–N3) are TypeScript-only ([ADR 0002](decisions/0002-typescript-primary-java-twin.md),
+[ADR 0009](decisions/0009-every-journey-in-both-languages.md), [java.md](java.md)).
 
 ## 8. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery,

@@ -18,6 +18,31 @@ UI both return 200. A plain health endpoint was green while data endpoints still
 | `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed) in 3 shards, plus the full Java suite | Chromium, Firefox, WebKit |
 | `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR | Chromium |
 
+```mermaid
+flowchart LR
+  subgraph PRW["pr-smoke.yml"]
+    direction LR
+    A["smoke (TypeScript)<br/>static → Toolshop → suite pr"] --> C["summary"]
+    B["smoke (Java)<br/>Toolshop → -Dgroups=smoke"] --> C
+  end
+  subgraph NW["nightly-regression.yml"]
+    direction LR
+    R["regression × 3 shards<br/>Chromium · Firefox · WebKit"] --> M["merge-reports<br/>HTML + JSON"] --> D["deploy-report<br/>main only"]
+    RJ["regression-java<br/>full suite"] --> S["summary"]
+    M --> S
+  end
+```
+Every job has its own Toolshop and a timeout of at most 60 minutes. `summary` and `merge-reports` run even when a
+lane fails (`!cancelled()`), so a red run still shows which IDs failed in which language.
+
+| Artifact | From | Contents |
+|---|---|---|
+| `playwright-report` / `regression-report` | PR / nightly | HTML report with traces, screenshots and video on failure |
+| `ts-results` | PR, nightly | Playwright JSON, input for the summary |
+| `junit-reports` / `junit-reports-nightly` | PR / nightly | Surefire XML, input for the summary |
+| `junit-reports-traces` / `junit-reports-nightly-traces` | Java failure only | Playwright traces of the failed Java tests |
+| `blob-report-<shard>` | nightly | Shard results, merged by `merge-reports` |
+
 **Nightly mechanics:** each shard boots its own Toolshop (no shared data between shards) and writes a blob report.
 A merge job turns the blobs into one HTML report, and runs on `main` publish it to GitHub Pages. The `setup` login
 project only runs in shards that contain UI tests. A PR that changes the workflow runs it without publishing.
