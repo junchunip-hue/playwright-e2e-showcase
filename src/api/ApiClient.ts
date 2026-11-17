@@ -4,6 +4,7 @@ import { AddressesApi } from './resources/addresses';
 import { AuthApi } from './resources/auth';
 import { CustomersApi } from './resources/customers';
 import { InvoicesApi } from './resources/invoices';
+import { PaymentsApi } from './resources/payments';
 import { ProductsApi } from './resources/products';
 import type { ValidationErrors } from './schemas';
 
@@ -23,6 +24,7 @@ export class ApiClient {
   readonly customers: CustomersApi;
   readonly addresses: AddressesApi;
   readonly invoices: InvoicesApi;
+  readonly payments: PaymentsApi;
   private readonly http: Http;
 
   constructor(request: APIRequestContext) {
@@ -32,6 +34,7 @@ export class ApiClient {
     this.customers = new CustomersApi(this.http);
     this.addresses = new AddressesApi(this.http);
     this.invoices = new InvoicesApi(this.http);
+    this.payments = new PaymentsApi(this.http);
   }
 
   /** Field errors of a rejected request (422 validation, 409 conflict), validated against their schema. */

@@ -40,6 +40,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A4 | Register: weak password → 422 listing every unmet rule | `@smoke @negative` | | ✅ |
 | A4 | Register: password from a data leak → 422 (external HIBP check, so nightly) | `@regression @negative` | | ✅ |
 | A5 | Register: duplicate email → **409** Conflict (not 422 as first assumed) | `@smoke @negative` | | ✅ |
+| A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | | ✅ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ⬜ |
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ⬜ |
 | A8 | Admin: product create/update/delete (admin token) | `@regression` | | ⬜ |
@@ -53,11 +54,18 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | U4 | Search: UI results equal search API results | `@regression` | | ✅ |
 | U5 | Add to cart updates the badge (product picked via API) | `@smoke` | ✅ | ✅ |
 | **U6** | **Checkout E2E: API-registered customer → cart → sign in → address (postcode lookup) → cash on delivery → invoice verified via API** | `@smoke @e2e` | | ✅ |
-| U7 | Checkout with each payment method (data-driven, incl. invalid card) | `@regression` | | ⬜ |
+| U7 | Checkout with each payment method → implemented as journey **S2** below | – | | ✅ |
 | U8 | Guest checkout | `@regression` | | ⬜ |
 | U9 | Cart: change quantity / remove item, totals update | `@regression` | | ⬜ |
 | U10 | Registration form validation (UI) | `@regression` | | ⬜ |
 | U11 | Category filter + sort on the catalogue | `@regression` | | ⬜ |
+
+### Journeys (`tests/e2e`, see [roadmap.md](roadmap.md) §2)
+| ID | Journey | Tag | Java | Status |
+|---|---|---|---|---|
+| S1 | First purchase (= U6) | `@smoke @e2e` | | ✅ |
+| S2 | Payment matrix: bank transfer, credit card, buy now pay later, gift card each end in an invoice at the cart total; a malformed or expired card is flagged in the form, cannot be submitted, is rejected by the API too, and creates no invoice | `@regression @e2e` | | ✅ |
+| S3 | Admin publishes a product, customer finds and buys it, admin sets the status | `@regression @e2e` | | 🟡 |
 
 ### Non-functional (`tests/quality`, `tests/architecture`; Chromium only)
 | ID | Test | Where | Status |

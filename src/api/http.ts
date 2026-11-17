@@ -34,7 +34,12 @@ export class Http {
 
   /** Field errors of a rejected request (422 validation, 409 conflict). */
   async validationErrors(res: APIResponse, label: string): Promise<ValidationErrors> {
-    return validate(await res.json(), `${label} error body`, ValidationErrorsSchema);
+    return this.body(res, `${label} error body`, ValidationErrorsSchema);
+  }
+
+  /** Validates a body regardless of status, for tests that expect a rejection. */
+  async body<S extends z.ZodType>(res: APIResponse, label: string, schema: S): Promise<z.infer<S>> {
+    return validate(await res.json(), label, schema);
   }
 }
 
