@@ -119,7 +119,7 @@ const md = [
   '|---|---|---|---|',
   ...ids.map((id) => `| ${id} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`),
   '',
-  'Journeys (S, U6) must run in both languages; that is enforced by the parity architecture test (ADR 0009).',
+  'Every A, U and S ID must show results in both columns (same tier, so same pipeline); N IDs are TypeScript-only (ADR 0009).',
   '',
 ].join('\n');
 

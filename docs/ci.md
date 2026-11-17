@@ -32,7 +32,8 @@ results and the Surefire XML reports and writes the run page's job summary:
 - a **table per test ID** with TypeScript and Java results side by side and whether the ID runs in both.
 
 Java reports carry display names (`U6: ...`, `S2: ... › gift-card`) via Surefire's phrased names, so both sides are
-matched by test ID. Journeys must appear in both columns; the parity architecture test enforces that before any
+matched by test ID. Every A, U and S ID must appear in both columns: the parity architecture test (and the
+tier check in `check:tags`) enforce that before any
 test runs ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)).
 
 ## Tags and suites
