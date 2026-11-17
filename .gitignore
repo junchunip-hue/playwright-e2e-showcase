@@ -12,3 +12,6 @@ java/target/
 # Visual baselines are generated on Linux in CI; local OS baselines stay local
 *-win32.png
 *-darwin.png
+
+# CI result files for the pipeline summary
+reports/

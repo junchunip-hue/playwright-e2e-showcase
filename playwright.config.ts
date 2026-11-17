@@ -24,8 +24,9 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: isPublicDemo ? 2 : undefined,
+  // In CI the JSON results feed the pipeline summary (scripts/pipeline-summary.mjs).
   reporter: isCI
-    ? [['html', { open: 'never' }], ['github'], ['list']]
+    ? [['html', { open: 'never' }], ['github'], ['list'], ['json', { outputFile: 'reports/ts-results.json' }]]
     : [['html', { open: 'never' }], ['list']],
 
   // Visual baselines are generated on Linux in CI against the pinned Toolshop; the {platform} suffix keeps

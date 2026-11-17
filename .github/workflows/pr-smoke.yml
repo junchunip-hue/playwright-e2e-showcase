@@ -59,6 +59,14 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
+      - name: Upload results for the summary
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: ts-results
+          path: reports/ts-results.json
+          retention-days: 14
+
   smoke-java:
     name: smoke (Java)
     runs-on: ubuntu-latest
@@ -88,3 +96,33 @@ jobs:
           name: junit-reports
           path: java/target/surefire-reports/
           retention-days: 14
+
+  # Shows the run as a diagram and compares TypeScript and Java per test ID (job summary on the run page).
+  summary:
+    name: pipeline summary
+    if: ${{ !cancelled() }}
+    needs: [smoke, smoke-java]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download TypeScript results
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: ts-results
+          path: results/ts
+
+      - name: Download Java results
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: junit-reports
+          path: results/java
+
+      - name: Write pipeline summary
+        env:
+          TS_JOB: ${{ needs.smoke.result }}
+          JAVA_JOB: ${{ needs.smoke-java.result }}
+        run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java

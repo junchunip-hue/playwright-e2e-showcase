@@ -62,6 +62,12 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
+        <configuration>
+          <!-- Record display names ("U6: ...") in the XML reports, so the CI summary can match tests to IDs. -->
+          <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
+            <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
+          </statelessTestsetReporter>
+        </configuration>
       </plugin>
       <!-- Runs Playwright's CLI, e.g. to install browsers: see README "Java suite". -->
       <plugin>

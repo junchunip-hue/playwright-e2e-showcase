@@ -30,8 +30,8 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 | **S7** | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
 **Order:** S2 ✅ → S3 → S6 → S4 → S5 → S7. S2 extends the flagship directly, S3 is the strongest demo story
-(two roles, API + UI), and S6 shows a technique (mocking) the suite does not use yet. Java mirrors only S1 and S2
-(flagship + data-driven), in line with the two-language rule.
+(two roles, API + UI), and S6 shows a technique (mocking) the suite does not use yet. **Every journey ships in
+TypeScript and Java** ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1 and S2 already do.
 
 Every scenario follows the same contract: **arrange via API, act via UI, assert via UI and API**. Each one gets
 its own throwaway data and is tagged `@regression @e2e` (nightly), except the one PR-gate representative per area.
@@ -51,11 +51,15 @@ minute, and long scenarios read as business steps rather than clicks.
 | **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (8 ADRs) |
 
 **Not planned:** a BDD/Gherkin layer (adds a translation step without a business author), more browsers for
-a11y/visual (no extra signal), more Java scenarios beyond S1/S2 (maintenance doubles for little demo value).
+a11y/visual (no extra signal).
 
-**Conventions for what comes next:** a new journey goes to `tests/e2e` with an `S` ID in the test plan, uses flows
-from `src/flows` and builders from `src/data`, and adds API calls as a method on the matching resource in
-`src/api/resources`. A new decision gets the next ADR number.
+**Conventions for what comes next:** a new journey gets an `S` ID in the test plan and is written twice, with the
+same steps and data:
+- TypeScript: `tests/e2e`, flows from `src/flows`, builders from `src/data`, API calls on `src/api/resources`
+- Java: `java/.../tests`, `flows/`, `data/`, `ApiClient`, with `@RegressionCases`/`@Journey` and the same display name
+- Test plan row marked "Java ✅". The parity architecture test fails until both exist.
+
+A new decision gets the next ADR number.
 
 ## 4. Guard rails that already keep this manageable
 

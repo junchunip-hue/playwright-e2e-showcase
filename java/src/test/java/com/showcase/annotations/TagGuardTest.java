@@ -17,6 +17,8 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.platform.commons.support.AnnotationSupport;
 
 /**
@@ -28,7 +30,7 @@ import org.junit.platform.commons.support.AnnotationSupport;
 class TagGuardTest {
   private static final String TESTS_PACKAGE = "com.showcase.tests";
   private static final Set<String> TIERS = Set.of(Tags.SMOKE, Tags.REGRESSION);
-  private static final Set<String> KNOWN = Set.of(Tags.SMOKE, Tags.REGRESSION, Tags.NEGATIVE);
+  private static final Set<String> KNOWN = Set.of(Tags.SMOKE, Tags.REGRESSION, Tags.NEGATIVE, Tags.E2E);
   private static final Pattern TEST_ID = Pattern.compile("([ASUN]\\d+): ");
   private static final Pattern PLAN_ROW = Pattern.compile("(?m)^\\|\\s*\\**([ASUN]\\d+)\\**\\s*\\|");
 
@@ -51,11 +53,12 @@ class TagGuardTest {
 
     for (Class<?> testClass : classes) {
       for (Method method : testClass.getDeclaredMethods()) {
-        if (!AnnotationSupport.isAnnotated(method, Test.class)) continue;
+        // @ParameterizedTest is a @TestTemplate, so data-driven tests are checked too.
+        if (!AnnotationSupport.isAnnotated(method, Test.class) && !AnnotationSupport.isAnnotated(method, TestTemplate.class)) continue;
         String where = testClass.getSimpleName() + "." + method.getName();
 
-        if (method.isAnnotationPresent(Test.class)) {
-          problems.add(where + ": raw @Test, use @SmokeTest or @RegressionTest");
+        if (method.isAnnotationPresent(Test.class) || method.isAnnotationPresent(ParameterizedTest.class)) {
+          problems.add(where + ": raw @Test/@ParameterizedTest, use @SmokeTest, @RegressionTest or @RegressionCases");
         }
         // org.junit.jupiter.api.Tags is JUnit's container for repeated @Tag (not this package's Tags).
         if (method.isAnnotationPresent(Tag.class) || method.isAnnotationPresent(org.junit.jupiter.api.Tags.class)) {

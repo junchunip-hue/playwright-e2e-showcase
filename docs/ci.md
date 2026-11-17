@@ -25,6 +25,16 @@ project only runs in shards that contain UI tests. A PR that changes the workflo
 **Local runs** default to Chromium. Firefox and WebKit are opt-in (`ALL_BROWSERS=1`), because Playwright's Firefox
 failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-browser coverage is a CI concern.
 
+## Pipeline summary
+Both workflows end with a `pipeline summary` job (`scripts/pipeline-summary.mjs`). It reads the Playwright JSON
+results and the Surefire XML reports and writes the run page's job summary:
+- a **Mermaid diagram of the run**: the TypeScript and Java lanes with their pass/fail counts, coloured by job result;
+- a **table per test ID** with TypeScript and Java results side by side and whether the ID runs in both.
+
+Java reports carry display names (`U6: ...`, `S2: ... › gift-card`) via Surefire's phrased names, so both sides are
+matched by test ID. Journeys must appear in both columns; the parity architecture test enforces that before any
+test runs ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)).
+
 ## Tags and suites
 - `src/tags.ts` defines every tag and suite. Specs use `Tag.*` (a typo is a compile error). CI and npm scripts pass
   only a suite name (`SUITE=pr`), and `playwright.config.ts` turns it into `grep`/`grepInvert`, adding `@setup`

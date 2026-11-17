@@ -10,6 +10,7 @@ import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.RequestOptions;
 import com.showcase.config.Env;
+import com.showcase.data.Payments;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,12 @@ public final class ApiClient implements AutoCloseable {
       @SerializedName("is_rental") boolean isRental) {}
 
   public record Paginated<T>(@SerializedName("current_page") int currentPage, List<T> data, int total) {}
+
+  public record Invoice(
+      String id,
+      @SerializedName("invoice_number") String invoiceNumber,
+      double total,
+      @SerializedName("billing_country") String billingCountry) {}
 
   private final APIRequestContext request;
 
@@ -92,6 +99,36 @@ public final class ApiClient implements AutoCloseable {
         .filter(p -> p.inStock() && !p.isRental())
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("No in-stock product found on page 1 of /products"));
+  }
+
+  /** GET /invoices: the signed-in customer's own invoices (twin of api.invoices.list). */
+  public Paginated<Invoice> invoices(String token) {
+    APIResponse res = request.get("/invoices", RequestOptions.create().setHeader("Authorization", "Bearer " + token));
+    ensureOk(res, "GET /invoices");
+    return GSON.fromJson(res.text(), TypeToken.getParameterized(Paginated.class, Invoice.class).getType());
+  }
+
+  /** POST /payment/check, raw response (twin of api.payments.checkRequest). No login needed. */
+  public APIResponse paymentCheckRequest(Payments.Payment payment) {
+    return request.post("/payment/check", RequestOptions.create()
+        .setHeader("Accept", "application/json")
+        .setData(Map.of("payment_method", payment.method(), "payment_details", payment.details())));
+  }
+
+  /** Succeeds only for "Payment was successful" (twin of api.payments.check). */
+  public void checkPayment(Payments.Payment payment) {
+    APIResponse res = paymentCheckRequest(payment);
+    ensureOk(res, "POST /payment/check");
+    String message = GSON.fromJson(res.text(), JsonObject.class).get("message").getAsString();
+    if (!"Payment was successful".equals(message)) {
+      throw new IllegalStateException("POST /payment/check: unexpected message " + message);
+    }
+  }
+
+  /** Field names of a rejected payment check, e.g. payment_details.credit_card_number (Laravel's 422 body). */
+  public List<String> paymentRejectedFields(APIResponse res) {
+    JsonObject errors = GSON.fromJson(res.text(), JsonObject.class).getAsJsonObject("errors");
+    return errors.keySet().stream().sorted().toList();
   }
 
   private Paginated<Product> getProductPage(String path, RequestOptions options) {

@@ -1,6 +1,6 @@
 # 0002 – TypeScript is primary; Java mirrors the smoke scenarios
 
-**Status:** Accepted
+**Status:** Accepted, amended by [0009](0009-every-journey-in-both-languages.md) (journeys now ship in both languages)
 
 **Context:** Playwright Test (fixtures, projects, retries, sharding, HTML report, trace) and newer tooling such as
 Test Agents exist only for Node. Many teams, however, run Java stacks (JUnit/TestNG, Maven).
