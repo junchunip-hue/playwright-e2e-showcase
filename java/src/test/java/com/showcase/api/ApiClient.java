@@ -1,6 +1,7 @@
 package com.showcase.api;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
@@ -41,6 +42,18 @@ public final class ApiClient implements AutoCloseable {
       @SerializedName("invoice_number") String invoiceNumber,
       double total,
       @SerializedName("billing_country") String billingCountry) {}
+
+  public record InvoiceDetail(
+      String id,
+      @SerializedName("invoice_number") String invoiceNumber,
+      double total,
+      String status,
+      @SerializedName("status_message") String statusMessage) {}
+
+  /** A brand, category or image reference; {@code parentId} is set for sub-categories only. */
+  public record Ref(String id, String name, @SerializedName("parent_id") String parentId) {}
+
+  public record CreatedProduct(String id, String name, double price) {}
 
   private final APIRequestContext request;
 
@@ -141,6 +154,66 @@ public final class ApiClient implements AutoCloseable {
     JsonObject body = parse(request.get("/invoices", RequestOptions.create().setHeader("Authorization", "Bearer " + token)),
         "GET /invoices", b -> Contracts.paginator(b, Contracts.invoiceItem()));
     return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Invoice.class).getType());
+  }
+
+  public InvoiceDetail invoice(String token, String id) {
+    JsonObject body = parse(request.get("/invoices/" + id, auth(token)), "GET /invoices/{id}", Contracts::invoiceDetail);
+    return GSON.fromJson(body, InvoiceDetail.class);
+  }
+
+  /** Search on invoice number, billing street and status (an admin sees every customer's invoices). */
+  public Paginated<Invoice> searchInvoices(String token, String query) {
+    JsonObject body = parse(request.get("/invoices/search", auth(token).setQueryParam("q", query)),
+        "GET /invoices/search", b -> Contracts.paginator(b, Contracts.invoiceItem()));
+    return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Invoice.class).getType());
+  }
+
+  /** The invoice with this number as the token's user sees it (TS: api.invoices.findByNumber). */
+  public InvoiceDetail findInvoiceByNumber(String token, String invoiceNumber) {
+    Invoice match = searchInvoices(token, invoiceNumber).data().stream()
+        .filter(i -> i.invoiceNumber().equals(invoiceNumber))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("invoice " + invoiceNumber + " not found"));
+    return invoice(token, match.id());
+  }
+
+  /** PUT /invoices/{id}/status; status is one of AWAITING_FULFILLMENT, ON_HOLD, AWAITING_SHIPMENT, SHIPPED, COMPLETED. */
+  public void updateInvoiceStatus(String token, String id, String status, String message) {
+    parse(request.put("/invoices/" + id + "/status", json(Map.of("status", status, "status_message", message))
+        .setHeader("Authorization", "Bearer " + token)), "PUT /invoices/{id}/status", Contracts::statusUpdated);
+  }
+
+  // --- admin: catalogue (TS: api.catalog, api.products.create) ---
+
+  public List<Ref> brands() {
+    return refs("/brands", Contracts.brandItem());
+  }
+
+  public List<Ref> categories() {
+    return refs("/categories", Contracts.categoryItem());
+  }
+
+  public List<Ref> images() {
+    return refs("/images", Contracts.imageItem());
+  }
+
+  /** POST /products; payload from {@link com.showcase.data.Products}. */
+  public CreatedProduct createProduct(String token, Map<String, Object> product) {
+    JsonObject body = parse(request.post("/products", json(product).setHeader("Authorization", "Bearer " + token)),
+        "POST /products", Contracts::createdProduct);
+    return GSON.fromJson(body, CreatedProduct.class);
+  }
+
+  private List<Ref> refs(String path, java.util.function.BiConsumer<Contracts.Check, JsonObject> item) {
+    APIResponse res = request.get(path);
+    ensureOk(res, "GET " + path);
+    JsonArray items = GSON.fromJson(res.text(), JsonArray.class);
+    Contracts.require("GET " + path, Contracts.list(items, item));
+    return GSON.fromJson(items, new TypeToken<List<Ref>>() {}.getType());
+  }
+
+  private static RequestOptions auth(String token) {
+    return RequestOptions.create().setHeader("Authorization", "Bearer " + token);
   }
 
   /** POST /payment/check, raw response. No login needed. */

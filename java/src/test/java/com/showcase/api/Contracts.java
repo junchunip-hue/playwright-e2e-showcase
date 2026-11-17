@@ -1,5 +1,6 @@
 package com.showcase.api;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
@@ -88,6 +89,68 @@ public final class Contracts {
       c.nullableNumber(i, "subtotal");
       c.number(i, "total", false);
       c.string(i, "status", 1);
+    };
+  }
+
+  /** GET /invoices/{id} (TS: InvoiceDetailSchema): the list fields plus the status message. */
+  public static List<String> invoiceDetail(JsonObject b) {
+    Check c = new Check();
+    invoiceItem().accept(c, b);
+    c.nullableString(b, "status_message");
+    return c.problems;
+  }
+
+  /** PUT /invoices/{id}/status (TS: StatusUpdatedSchema). */
+  public static List<String> statusUpdated(JsonObject b) {
+    Check c = new Check();
+    JsonElement v = b.get("success");
+    if (v == null || !v.isJsonPrimitive() || !v.getAsJsonPrimitive().isBoolean() || !v.getAsBoolean()) c.problem("success", "expected true", v);
+    return c.problems;
+  }
+
+  /** POST /products (TS: CreatedProductSchema): the stored product, relations not loaded yet. */
+  public static List<String> createdProduct(JsonObject b) {
+    Check c = new Check();
+    c.matches(b, "id", ULID, "expected a ULID");
+    c.string(b, "name", 1);
+    c.number(b, "price", false);
+    return c.problems;
+  }
+
+  /** A non-empty plain array with every item checked (TS: BrandListSchema, CategoryListSchema, ImageListSchema). */
+  public static List<String> list(JsonArray items, BiConsumer<Check, JsonObject> item) {
+    Check c = new Check();
+    if (items.isEmpty()) c.problem("(root)", "expected at least one item", items);
+    for (int i = 0; i < items.size(); i++) {
+      JsonElement e = items.get(i);
+      if (!e.isJsonObject()) c.problem("[" + i + "]", "expected an object", e);
+      else item.accept(c.at("[" + i + "]."), e.getAsJsonObject());
+    }
+    return c.problems;
+  }
+
+  public static BiConsumer<Check, JsonObject> brandItem() {
+    return (c, o) -> {
+      c.matches(o, "id", ULID, "expected a ULID");
+      c.string(o, "name", 1);
+      c.string(o, "slug", 1);
+    };
+  }
+
+  public static BiConsumer<Check, JsonObject> categoryItem() {
+    return (c, o) -> {
+      brandItem().accept(c, o);
+      JsonElement parent = o.get("parent_id");
+      if (parent != null && !parent.isJsonNull()) c.matches(o, "parent_id", ULID, "expected a ULID or null");
+      else if (parent == null) c.problem("parent_id", "expected a ULID or null", null);
+    };
+  }
+
+  public static BiConsumer<Check, JsonObject> imageItem() {
+    return (c, o) -> {
+      c.matches(o, "id", ULID, "expected a ULID");
+      c.string(o, "file_name", 1);
+      for (String f : List.of("title", "by_name", "by_url", "source_name", "source_url")) c.string(o, f, 0);
     };
   }
 

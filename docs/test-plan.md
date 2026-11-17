@@ -43,7 +43,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ⬜ |
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ⬜ |
-| A8 | Admin: product create/update/delete (admin token) | `@regression` | | ⬜ |
+| A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
 
 ### UI and journeys (`tests/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
 | ID | Test | Tag | Java | Status |
@@ -65,7 +65,12 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 |---|---|---|---|---|
 | S1 | First purchase (= U6) | `@smoke @e2e` | = U6 | ✅ |
 | S2 | Payment matrix: bank transfer, credit card, buy now pay later, gift card each end in an invoice at the cart total; a malformed or expired card is flagged in the form, cannot be submitted, is rejected by the API too, and creates no invoice | `@regression @e2e` | ✅ | ✅ |
-| S3 | Admin publishes a product, customer finds and buys it, admin sets the status | `@regression @e2e` | | 🟡 |
+| S3 | Admin publishes a product (API), customer finds and buys it (UI), admin ships it (API), customer sees it listed and SHIPPED (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
+
+**Findings while building S3 (pinned source, not asserted yet):** `POST /products` does not check the admin role
+(`StoreProduct::authorize()` returns true; only delete requires admin), and `PUT /invoices/{id}/status` only requires a
+signed-in user. S3 tests the intended flow (an admin acts). Candidate negative tests: a customer creating a product
+or changing an invoice status should be rejected.
 
 ### Non-functional (`tests/quality`, `tests/architecture`; Chromium only)
 | ID | Test | Where | Status |

@@ -15,8 +15,13 @@ export class Http {
   }
 
   /** Raw POST, for tests that assert on the status of a rejected request. */
-  post(path: string, data: unknown): Promise<APIResponse> {
-    return this.request.post(path, { data, headers: { Accept: 'application/json' } });
+  post(path: string, data: unknown, token?: string): Promise<APIResponse> {
+    return this.request.post(path, { data, headers: headers(token) });
+  }
+
+  /** Raw PUT. */
+  put(path: string, data: unknown, token?: string): Promise<APIResponse> {
+    return this.request.put(path, { data, headers: headers(token) });
   }
 
   /** Fails on a non-2xx status first, then on a body that breaks the contract (field paths and received values). */
@@ -41,6 +46,10 @@ export class Http {
   async body<S extends z.ZodType>(res: APIResponse, label: string, schema: S): Promise<z.infer<S>> {
     return validate(await res.json(), label, schema);
   }
+}
+
+function headers(token?: string): Record<string, string> {
+  return { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
 }
 
 function validate<S extends z.ZodType>(body: unknown, label: string, schema: S): z.infer<S> {

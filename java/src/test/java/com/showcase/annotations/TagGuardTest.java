@@ -30,7 +30,7 @@ import org.junit.platform.commons.support.AnnotationSupport;
 class TagGuardTest {
   private static final String TESTS_PACKAGE = "com.showcase.tests";
   private static final Set<String> TIERS = Set.of(Tags.SMOKE, Tags.REGRESSION);
-  private static final Set<String> KNOWN = Set.of(Tags.SMOKE, Tags.REGRESSION, Tags.NEGATIVE, Tags.E2E);
+  private static final Set<String> KNOWN = Set.of(Tags.SMOKE, Tags.REGRESSION, Tags.NEGATIVE, Tags.E2E, Tags.ADMIN);
   private static final Pattern TEST_ID = Pattern.compile("([ASUN]\\d+): ");
   private static final Pattern PLAN_ROW = Pattern.compile("(?m)^\\|\\s*\\**([ASUN]\\d+)\\**\\s*\\|");
 
