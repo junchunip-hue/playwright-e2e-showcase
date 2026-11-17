@@ -34,15 +34,16 @@ function planJavaIds(): Set<string> {
 }
 
 const sorted = (ids: Iterable<string>): string[] => [...ids].sort();
-const journeys = (ids: Set<string>): string[] => sorted([...ids].filter((id) => id.startsWith('S') || id === 'U6'));
+/** Scenario tests (API, UI, journeys) run in both languages; N = quality and architecture checks stay TypeScript-only. */
+const scenarios = (ids: Set<string>): string[] => sorted([...ids].filter((id) => /^[ASU]/.test(id)));
 
 test.describe('TypeScript/Java parity', { tag: [Tag.smoke, Tag.architecture] }, () => {
-  test('N3: every journey exists in both languages', () => {
+  test('N3: every scenario (A, U, S) exists in both languages', () => {
     const ts = typescriptIds();
     const java = javaIds();
 
-    expect(journeys(ts).length, 'no journeys found: the ID patterns no longer match').toBeGreaterThan(0);
-    expect(journeys(java), 'journeys in Java vs TypeScript').toEqual(journeys(ts));
+    expect(scenarios(ts).length, 'no scenarios found: the ID patterns no longer match').toBeGreaterThan(0);
+    expect(scenarios(java), 'scenario IDs in Java vs TypeScript').toEqual(scenarios(ts));
   });
 
   test('N3: the test plan\'s Java column matches the Java suite', () => {

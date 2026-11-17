@@ -36,10 +36,10 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A1 | `GET /products` is paginated and well-formed | `@smoke` | ✅ | ✅ |
 | A2 | Valid credentials return a token | `@smoke` | ✅ | ✅ |
 | A3 | Wrong password → 401 | `@regression @negative` | ✅ | ✅ |
-| A0 | Response contracts: every response validated against `src/api/schemas.ts` (zod); explicit checks for list/detail/search, empty paginator, login + invoices, postcode lookup, and the guard itself | `@smoke` | | ✅ |
-| A4 | Register: weak password → 422 listing every unmet rule | `@smoke @negative` | | ✅ |
-| A4 | Register: password from a data leak → 422 (external HIBP check, so nightly) | `@regression @negative` | | ✅ |
-| A5 | Register: duplicate email → **409** Conflict (not 422 as first assumed) | `@smoke @negative` | | ✅ |
+| A0 | Response contracts: every response validated against `src/api/schemas.ts` (zod); explicit checks for list/detail/search, empty paginator, login + invoices, postcode lookup, and the guard itself | `@smoke` | ✅ | ✅ |
+| A4 | Register: weak password → 422 listing every unmet rule | `@smoke @negative` | ✅ | ✅ |
+| A4 | Register: password from a data leak → 422 (external HIBP check, so nightly) | `@regression @negative` | ✅ | ✅ |
+| A5 | Register: duplicate email → **409** Conflict (not 422 as first assumed) | `@smoke @negative` | ✅ | ✅ |
 | A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ⬜ |
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ⬜ |
@@ -51,7 +51,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | U1 | Login with valid credentials | `@smoke` | ✅ | ✅ |
 | U2 | Login error for wrong password | `@smoke @negative` | ✅ | ✅ |
 | U3 | Search: every result matches the term | `@smoke` | ✅ | ✅ |
-| U4 | Search: UI results equal search API results | `@regression` | | ✅ |
+| U4 | Search: UI results equal search API results | `@regression` | ✅ | ✅ |
 | U5 | Add to cart updates the badge (product picked via API) | `@smoke` | ✅ | ✅ |
 | **U6** | **Checkout E2E: API-registered customer → cart → sign in → address (postcode lookup) → cash on delivery → invoice verified via API** | `@smoke @e2e` | ✅ | ✅ |
 | U7 | Checkout with each payment method → implemented as journey **S2** below | – | | ✅ |
