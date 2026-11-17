@@ -18,7 +18,7 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 |---|---|---|
 | Journey steps | `src/flows/CheckoutFlow.ts` | `flows/CheckoutFlow.java` |
 | Page objects | `src/pages/*.ts` | `pages/*.java` |
-| Test data | `src/data/customers.ts`, `payments.ts` | `data/Customers.java`, `Payments.java` |
+| Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
 | API client | `src/api/` (per resource) | `api/ApiClient.java` |
 | Response contracts | `src/api/schemas.ts` (zod) | `api/Contracts.java` (same rules, same failure format) |
 | Tags and tiers | `src/tags.ts`, `Tag.smoke` | `annotations/`, `@SmokeTest`, `@RegressionCases`, `@Journey` |
@@ -53,6 +53,10 @@ repository, not a scenario.
   the same one-line edit in both.
 - **Same Playwright release line.** `playwright.version` in `java/pom.xml` follows the minor version of
   `@playwright/test` (Java patch releases can lag behind Node).
+
+**Debugging a Java failure:** tests record a Playwright trace and keep it only on failure
+(`target/playwright/`); CI uploads it as `junit-reports-traces` (PR) or `junit-reports-nightly-traces`, next to the
+Surefire XML. Open it with `npx playwright show-trace <file>.zip`.
 
 **Known difference:** TypeScript logs in once for single-page tests (`setup` project + `storageState`); Java signs in
 inside the test. Journeys use fresh customers in both.

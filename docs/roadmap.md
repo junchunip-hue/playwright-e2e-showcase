@@ -31,7 +31,9 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 
 **Order:** S2 ✅ → S3 ✅ → S6 → S4 → S5 → S7. S2 extends the flagship directly, S3 is the strongest demo story
 (two roles, API + UI), and S6 shows a technique (mocking) the suite does not use yet. **Every journey ships in
-TypeScript and Java** ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1 and S2 already do.
+TypeScript and Java** ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1–S3 already do.
+
+**Also next:** negative tests for the two permission findings from S3 (A10, A11 in the [test plan](test-plan.md#3-test-inventory)).
 
 Every scenario follows the same contract: **arrange via API, act via UI, assert via UI and API**. Each one gets
 its own throwaway data and is tagged `@regression @e2e` (nightly), except the one PR-gate representative per area.
@@ -45,10 +47,10 @@ minute, and long scenarios read as business steps rather than clicks.
 |---|---|---|
 | **R1** ✅ | Split tests by intent | `tests/api`, `tests/ui` (single pages), `tests/e2e` (journeys), `tests/quality` (a11y, visual), `tests/architecture`; every suite lists the same tests as before |
 | **R2** ✅ | **Flows** layer for journeys | `src/flows/CheckoutFlow.ts`; U6 reads arrange/act/assert in 30 lines instead of 71. New scenarios (S2+) add flows such as `admin.publishProduct()` |
-| **R3** ✅ | `ApiClient` per resource | `src/api/http.ts` + `resources/{products,auth,customers,addresses,invoices}.ts` behind one `api` (`api.products.search(...)`) |
+| **R3** ✅ | `ApiClient` per resource | `src/api/http.ts` + `resources/{products,auth,customers,addresses,invoices,payments,catalog}.ts` behind one `api` (`api.products.search(...)`) |
 | **R4** ✅ | Test-plan ID in every title | `A4: ...`, `U6: ...`; `check:tags` and Java `TagGuardTest` fail on a missing ID or one not in the plan |
 | **R5** ✅ | README as a 3-minute tour | Tour, one Mermaid diagram, layout, how to run, "read more" by question |
-| **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (8 ADRs) |
+| **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (9 ADRs) |
 
 **Not planned:** a BDD/Gherkin layer (adds a translation step without a business author), more browsers for
 a11y/visual (no extra signal).

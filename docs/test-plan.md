@@ -14,17 +14,33 @@
 
 Why CI never uses the public demo: Cloudflare serves a bot challenge to CI runner IPs ([ADR 0001](decisions/0001-ci-runs-its-own-toolshop.md)).
 
-## 2. Pipeline order (one PR run, TypeScript job)
+## 2. Pipeline order (one PR run)
+
+```mermaid
+flowchart LR
+  subgraph TS["Job: smoke (TypeScript)"]
+    direction TB
+    T0["Toolshop build starts<br/>in the background"] --> T1["1 · Static: lint · tsc ·<br/>check:tags · architecture + parity"] --> T2["2 · Toolshop ready"] --> T3["3 · setup + api"] --> T4["4 · chromium<br/>smoke · a11y · visual"] --> T5["5 · HTML report<br/>ts-results.json"]
+  end
+  subgraph JV["Job: smoke (Java), in parallel"]
+    direction TB
+    J0["Toolshop build starts"] --> J1["JDK + Maven cache"] --> J2["2 · Toolshop ready"] --> J4["3–4 · JUnit 5<br/>-Dgroups=smoke"] --> J5["5 · Surefire XML<br/>traces on failure"]
+  end
+  T5 & J5 --> SUM["6 · Job: summary<br/>run diagram + TS vs Java per ID"]
+```
+
+Stages of the TypeScript lane:
 
 | # | Stage | Checks | Fails fast because |
 |---|---|---|---|
-| 1 | Static | ESLint (incl. Playwright rules), `tsc --noEmit`, tag check, architecture tests | Broken code or a looping pipeline never reaches a browser |
+| 1 | Static (TypeScript job, while Toolshop builds) | ESLint (incl. Playwright rules), `tsc --noEmit`, tag check, architecture tests | Broken code or a looping pipeline never reaches a browser |
 | 2 | Environment | Containers up, DB seeded, `/products` and UI return 200 | Infra problems are reported as infra, not as test failures |
 | 3 | `setup` + `api` (parallel) | Session for UI tests; API contract checks | Cheapest layer first |
 | 4 | `chromium` | UI smoke incl. checkout E2E, accessibility, visual (depends on `setup`) | Only runs when login works |
 | 5 | Report | HTML report + trace/video on failure, uploaded as artifact | Every failure is debuggable without re-running |
 
-The Java job runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test -Dgroups=smoke`).
+The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test -Dgroups=smoke`), and the summary job
+(stage 6) runs after both, whatever their result. Nightly runs the same shape with every tier: see [ci.md](ci.md#workflows).
 
 ## 3. Test inventory
 
@@ -43,6 +59,8 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ⬜ |
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ⬜ |
+| A10 | A customer cannot create a product (finding from S3: today it succeeds) | `@negative` | | ⬜ |
+| A11 | A customer cannot change an invoice status (finding from S3: today it succeeds) | `@negative` | | ⬜ |
 | A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
 
 ### UI and journeys (`tests/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
@@ -69,8 +87,7 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 
 **Findings while building S3 (pinned source, not asserted yet):** `POST /products` does not check the admin role
 (`StoreProduct::authorize()` returns true; only delete requires admin), and `PUT /invoices/{id}/status` only requires a
-signed-in user. S3 tests the intended flow (an admin acts). Candidate negative tests: a customer creating a product
-or changing an invoice status should be rejected.
+signed-in user. S3 tests the intended flow (an admin acts). Candidate negative tests: A10 and A11 above.
 
 ### Non-functional (`tests/quality`, `tests/architecture`; Chromium only)
 | ID | Test | Where | Status |
@@ -78,6 +95,28 @@ or changing an invoice status should be rejected.
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
 | N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job bounded | PR static stage | ✅ |
+
+### Where each ID runs (today)
+| ID | Tests | Tier | PR gate | Nightly | Browsers | Java class |
+|---|---|---|---|---|---|---|
+| A0 | 5 | smoke | ✅ | ✅ | API | `ContractsApiTest` |
+| A1, A2 | 1 + 1 | smoke | ✅ | ✅ | API | `ApiTest` |
+| A3 | 1 | regression | – | ✅ | API | `ApiTest` |
+| A4 | 2 | smoke (weak) + regression (leaked) | weak only | ✅ | API | `RegistrationApiTest` |
+| A5 | 1 | smoke | ✅ | ✅ | API | `RegistrationApiTest` |
+| A8 | 1 | smoke, admin | ✅ | ✅ | API | `AdminApiTest` |
+| A9 | 2 | smoke | ✅ | ✅ | API | `PaymentApiTest` |
+| U1, U2, U3, U5 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `LoginTest`, `SearchTest`, `CartTest` |
+| U4 | 1 | regression | – | ✅ | Chromium, Firefox, WebKit | `SearchTest` |
+| U6 (S1) | 1 | smoke, e2e | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `CheckoutJourneyTest` |
+| S2 | 6 | regression, e2e | – | ✅ | Chromium, Firefox, WebKit | `PaymentJourneyTest` |
+| S3 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `AdminToCustomerJourneyTest` |
+| N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
+| N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
+| N3 | 13 | smoke, architecture | static stage | ✅ | none | TypeScript only |
+
+"Tests" counts TypeScript test cases per ID (51 in total; data-driven cases count once each). The Java class
+covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
 selects it.
@@ -114,4 +153,7 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | A0 API schema validation (types derived from the schemas) | Contract testing |
 | ✅ | Negative login tests on throwaway accounts (the shared demo account locks after repeated failures) | Test data isolation |
 | ✅ | A4, A5 registration rules; N3 architecture tests | Negative testing, self-guarding pipeline |
-| Next 🟡 | Showcase scenarios S2–S7 and structure R1–R6 | See [`roadmap.md`](roadmap.md) |
+| ✅ | Structure R1–R6: test folders by intent, flows, per-resource API client, IDs in titles, docs by question | Readable at scale |
+| ✅ | S2 payment matrix, S3 admin → customer → admin (A8, A9) | Data-driven and cross-role journeys |
+| ✅ | Every A/U/S scenario in Java with the same tier; parity architecture test; TS vs Java pipeline summary | Two stacks, one plan |
+| Next 🟡 | S6 resilience (network mocking), A10/A11 permission negatives, then S4, S5, S7 | See [`roadmap.md`](roadmap.md) |
