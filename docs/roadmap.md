@@ -26,10 +26,10 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 | **S3** ✅ | Admin publishes, customer buys | Admin creates a product via API (A8) → customer finds it by search → buys it → admin ships the order via API → customer sees it listed and SHIPPED | A8, S1 | Cross-role E2E, two sessions in one test |
 | **S4** 🟡 | Guest checkout (U8) | Anonymous cart → guest email → address → pay → invoice via guest endpoint | S1 | Second entry path into the same flow |
 | **S5** (optional) | Returning customer | Login → favourites → compare two products → buy one → download the invoice PDF and check its status endpoint | S1 | Downloads, multi-tab/compare UI |
-| **S6** 🟡 | Resilience | `page.route` makes `/products` fail or slow down → UI shows its error/loading state, recovers on retry | – | Network mocking, failure UX |
+| **S6** ✅ | Resilience | `page.route` delays `/products` (products still appear), makes it fail (blank page, no error: finding) and makes search fail (shown as "no results": finding); each recovers on reload / next search | – | Network mocking, failure UX |
 | **S7** (optional) | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
-**Order:** S2 ✅ → S3 ✅ → A10/A11 ✅ → S6 → S4, then optionally S5 and S7 (see [§5](#5-definition-of-done)).
+**Order:** S2 ✅ → S3 ✅ → A10/A11 ✅ → S6 ✅ → S4, then optionally S5 and S7 (see [§5](#5-definition-of-done)).
 A10/A11 turned the two permission findings from S3 into tracked known defects, S6 shows a technique (mocking) the suite does not use
 yet, and S4 is the second entry path into checkout (P1). **Every journey ships in TypeScript and Java**
 ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1–S3 already do.
@@ -95,7 +95,7 @@ race with the postcode lookup, fixed in #17).
 - **Techniques:** each technique the demo should show is used at least once. Remaining:
   - ✅ A10/A11: role-based authorization, and known product defects tracked as tests
     ([ADR 0010](decisions/0010-known-defects-as-tests.md))
-  - S6: network mocking and failure UX
+  - ✅ S6: network mocking and failure UX
   - S4: a second entry path into checkout
 - **Stability:** five nightly runs in a row with no flaky or failed test in either language.
 - **Demo:** the README's 3-minute tour can be followed start to finish without other docs.
