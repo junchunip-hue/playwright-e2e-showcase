@@ -73,6 +73,17 @@ public class CheckoutFlow {
     checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
   }
 
+  /** Checks out without an account (TS: continueAsGuest): guest tab, email and name, then on to the address. */
+  public void continueAsGuest(String email, String firstName, String lastName) {
+    checkoutPage.guestTab.click();
+    checkoutPage.guestEmail.fill(email);
+    checkoutPage.guestFirstName.fill(firstName);
+    checkoutPage.guestLastName.fill(lastName);
+    checkoutPage.guestSubmit.click();
+    assertThat(checkoutPage.proceedAsGuest).isEnabled();
+    checkoutPage.proceed(checkoutPage.proceedAsGuest, checkoutPage.country);
+  }
+
   /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
   public void confirmAddress(Map<String, String> address) {
     checkoutPage.enterAddressForLookup(address);

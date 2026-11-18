@@ -8,11 +8,15 @@ import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.Response;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import java.net.URI;
+import com.microsoft.playwright.options.AriaRole;
 import java.util.Map;
+import java.util.regex.Pattern;
 import org.opentest4j.AssertionFailedError;
 
 /** Java twin of src/pages/CheckoutPage.ts: the 4-step wizard (cart, sign in, billing address, payment). */
 public class CheckoutPage {
+  /** POST /invoices, or POST /invoices/guest for a guest (S4). */
+  private static final Pattern INVOICE_POST = Pattern.compile("/invoices(/guest)?$");
   private final Page page;
   // Step 1: cart
   public final Locator productTitles;
@@ -23,6 +27,13 @@ public class CheckoutPage {
   public final Locator password;
   public final Locator loginSubmit;
   public final Locator proceedFromSignIn;
+  // Step 2, guest tab: checkout without an account (S4)
+  public final Locator guestTab;
+  public final Locator guestEmail;
+  public final Locator guestFirstName;
+  public final Locator guestLastName;
+  public final Locator guestSubmit;
+  public final Locator proceedAsGuest;
   // Step 3: billing address
   public final Locator country;
   public final Locator postalCode;
@@ -51,6 +62,13 @@ public class CheckoutPage {
     this.loginSubmit = page.getByTestId("login-submit");
     this.proceedFromSignIn = page.getByTestId("proceed-2");
 
+    this.guestTab = page.getByRole(AriaRole.TAB, new Page.GetByRoleOptions().setName(Pattern.compile("guest", Pattern.CASE_INSENSITIVE)));
+    this.guestEmail = page.getByTestId("guest-email");
+    this.guestFirstName = page.getByTestId("guest-first-name");
+    this.guestLastName = page.getByTestId("guest-last-name");
+    this.guestSubmit = page.getByTestId("guest-submit");
+    this.proceedAsGuest = page.getByTestId("proceed-2-guest");
+
     this.country = page.getByTestId("country");
     this.postalCode = page.getByTestId("postal_code");
     this.houseNumber = page.getByTestId("house_number");
@@ -77,15 +95,17 @@ public class CheckoutPage {
   }
 
   /**
-   * Second click on Finish: the app creates the invoice (POST /invoices) and only then shows the confirmation.
+   * Second click on Finish: the app creates the invoice (POST /invoices, or /invoices/guest for a guest) and only then
+   * shows the confirmation.
    * Waits for that response, so a slow backend is waited for and a failing one is reported as the API error.
    */
   public void placeOrder() {
     Response response = page.waitForResponse(
-        res -> "POST".equals(res.request().method()) && res.url().replaceAll("\\?.*$", "").endsWith("/invoices"),
+        res -> "POST".equals(res.request().method()) && INVOICE_POST.matcher(URI.create(res.url()).getPath()).find(),
         finish::click);
     if (!response.ok()) {
-      throw new IllegalStateException("POST /invoices failed: " + response.status() + "\n" + response.text());
+      String path = URI.create(response.url()).getPath();
+      throw new IllegalStateException("POST " + path + " failed: " + response.status() + "\n" + response.text());
     }
   }
 

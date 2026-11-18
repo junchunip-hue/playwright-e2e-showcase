@@ -53,6 +53,19 @@ export class CheckoutFlow {
     });
   }
 
+  /** Checks out without an account: the guest tab takes email and name, then the wizard moves on to the address. */
+  async continueAsGuest(guest: Pick<NewCustomer, 'email' | 'first_name' | 'last_name'>): Promise<void> {
+    await test.step('continue as guest', async () => {
+      await this.checkoutPage.guestTab.click();
+      await this.checkoutPage.guestEmail.fill(guest.email);
+      await this.checkoutPage.guestFirstName.fill(guest.first_name);
+      await this.checkoutPage.guestLastName.fill(guest.last_name);
+      await this.checkoutPage.guestSubmit.click();
+      await expect(this.checkoutPage.proceedAsGuest).toBeEnabled();
+      await this.checkoutPage.proceed(this.checkoutPage.proceedAsGuest, this.checkoutPage.country);
+    });
+  }
+
   /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
   async confirmAddress(address: Address): Promise<void> {
     await test.step('billing address via postcode lookup', async () => {

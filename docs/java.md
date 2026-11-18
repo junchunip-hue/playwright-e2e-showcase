@@ -33,6 +33,7 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 | A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
 | S3 | Admin publishes, customer buys, admin ships (own Toolshop only) | `tests/e2e/admin-to-customer.spec.ts` | `AdminToCustomerJourneyTest` |
 | A8 | Admin publishes a product (own Toolshop only) | `tests/api/admin.api.spec.ts` | `AdminApiTest` |
+| S4 | Guest checkout, order checked as admin (own Toolshop only) | `tests/e2e/guest-checkout.spec.ts` | `GuestCheckoutJourneyTest` |
 | S6 | Resilience: slow or failing catalogue and search, then recovery (`page.route`) | `tests/e2e/resilience.spec.ts` | `ResilienceTest` |
 | A10, A11 | A customer cannot publish a product or change an order: known defects (own Toolshop only) | `tests/api/permissions.api.spec.ts` | `PermissionsApiTest` |
 | U1, U2 | Login (valid / wrong password) | `tests/ui/login.spec.ts` | `LoginTest` |

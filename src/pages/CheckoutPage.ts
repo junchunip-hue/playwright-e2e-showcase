@@ -11,6 +11,13 @@ export class CheckoutPage {
   // Step 2: sign in
   readonly signInForm: LoginForm;
   readonly proceedFromSignIn: Locator;
+  // Step 2, guest tab: checkout without an account (S4)
+  readonly guestTab: Locator;
+  readonly guestEmail: Locator;
+  readonly guestFirstName: Locator;
+  readonly guestLastName: Locator;
+  readonly guestSubmit: Locator;
+  readonly proceedAsGuest: Locator;
   // Step 3: billing address
   readonly country: Locator;
   readonly postalCode: Locator;
@@ -35,6 +42,13 @@ export class CheckoutPage {
 
     this.signInForm = new LoginForm(page);
     this.proceedFromSignIn = page.getByTestId('proceed-2');
+
+    this.guestTab = page.getByRole('tab', { name: /guest/i }); // Bootstrap tab link, no data-test
+    this.guestEmail = page.getByTestId('guest-email');
+    this.guestFirstName = page.getByTestId('guest-first-name');
+    this.guestLastName = page.getByTestId('guest-last-name');
+    this.guestSubmit = page.getByTestId('guest-submit');
+    this.proceedAsGuest = page.getByTestId('proceed-2-guest');
 
     this.country = page.getByTestId('country');
     this.postalCode = page.getByTestId('postal_code');
@@ -66,19 +80,21 @@ export class CheckoutPage {
   }
 
   /**
-   * Second click on Finish: the app creates the invoice (POST /invoices) and only then shows the confirmation.
+   * Second click on Finish: the app creates the invoice (POST /invoices, or POST /invoices/guest for a guest) and only
+   * then shows the confirmation.
    * Waiting for that response instead of a fixed assertion timeout means a slow backend (e.g. three browsers
    * checking out at once in the nightly run) is waited for, and a failing one is reported as the API error.
    */
   async placeOrder(): Promise<void> {
     const [response] = await Promise.all([
       this.page.waitForResponse(
-        (res) => res.request().method() === 'POST' && new URL(res.url()).pathname.endsWith('/invoices'),
+        (res) => res.request().method() === 'POST' && /\/invoices(\/guest)?$/.test(new URL(res.url()).pathname),
       ),
       this.finish.click(),
     ]);
     if (!response.ok()) {
-      throw new Error(`POST /invoices failed: ${response.status()}\n${(await response.text()).slice(0, 500)}`);
+      const path = new URL(response.url()).pathname;
+      throw new Error(`POST ${path} failed: ${response.status()}\n${(await response.text()).slice(0, 500)}`);
     }
   }
 

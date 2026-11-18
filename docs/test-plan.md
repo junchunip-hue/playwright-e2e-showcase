@@ -84,6 +84,7 @@ Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadm
 | S1 | First purchase (= U6) | `@smoke @e2e` | = U6 | ✅ |
 | S2 | Payment matrix: bank transfer, credit card, buy now pay later, gift card each end in an invoice at the cart total; a malformed or expired card is flagged in the form, cannot be submitted, is rejected by the API too, and creates no invoice | `@regression @e2e` | ✅ | ✅ |
 | S3 | Admin publishes a product (API), customer finds and buys it (UI), admin ships it (API), customer sees it listed and SHIPPED (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
+| S4 | Guest checkout: a never-registered guest buys through the guest tab (email and name), the postcode lookup fills the address, the order goes to `POST /invoices/guest`; the admin finds it at the cart total with the guest's billing address (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
 | S6 | Resilience with network mocking (`page.route`): a 3 s slower catalogue still shows its products; a failed catalogue (500) shows no products, and a reload recovers; a failed search (500) is shown as "no results", and the next search works | `@regression` (+ `@negative`) | ✅ | ✅ |
 
 **Findings while building S3 (pinned source), tracked as known defects by A10 and A11:**
@@ -95,6 +96,11 @@ Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadm
 S3 tests the intended flow (an admin acts). A10 and A11 assert the intended rule through `expectKnownDefect` /
 `KnownDefect` ([ADR 0010](decisions/0010-known-defects-as-tests.md)): they pass while the API answers exactly as
 today, and fail once it is fixed, so the marker is then replaced by a plain assertion.
+
+**Finding while building S4 (pinned source, not asserted):** a guest's email and name are not stored with the
+order. `POST /invoices/guest` validates them, but `Invoice::$fillable` has no guest fields, so they only reach the
+confirmation-email job. The saved invoice has `user_id: null` and a billing address, and nothing to contact the
+customer with. S4 checks what is stored (total, billing address).
 
 **Findings while building S6 (pinned UI source, UX, pinned by S6):** the catalogue page has no error state.
 `OverviewComponent.getProducts()` subscribes without an error handler, so a failed `GET /products` leaves the page
@@ -125,12 +131,13 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | U6 (S1) | 1 | smoke, e2e | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `CheckoutJourneyTest` |
 | S2 | 6 | regression, e2e | – | ✅ | Chromium, Firefox, WebKit | `PaymentJourneyTest` |
 | S3 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `AdminToCustomerJourneyTest` |
+| S4 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `GuestCheckoutJourneyTest` |
 | S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `ResilienceTest` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 13 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (56 in total; data-driven cases count once each). The Java class
+"Tests" counts TypeScript test cases per ID (57 in total; data-driven cases count once each). The Java class
 covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
@@ -173,4 +180,5 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | Every A/U/S scenario in Java with the same tier; parity architecture test; TS vs Java pipeline summary | Two stacks, one plan |
 | ✅ | A10/A11 permission negatives as tracked known defects | Security findings turned into tests |
 | ✅ | S6 resilience with network mocking: slow and failing catalogue, failing search, recovery | Network mocking, failure UX |
-| Next 🟡 | S4 guest checkout; S5, S7 optional; rest backlog | See [`roadmap.md`](roadmap.md) |
+| ✅ | S4 guest checkout: second entry into checkout, guest invoice checked as admin | Every demo technique shown once |
+| Next 🟡 | Stability: five clean nightlies in a row; README tour check. S5, S7 optional; rest backlog | See [`roadmap.md`](roadmap.md) |
