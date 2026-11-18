@@ -19,7 +19,7 @@ export const Tag = {
   a11y: '@a11y',
   visual: '@visual',
   architecture: '@architecture', // static rules about the pipeline and code, no browser or Toolshop
-  admin: '@admin', // signs in as admin and changes catalogue/orders: only against our own Toolshop
+  admin: '@admin', // signs in as admin or can change catalogue/orders: only against our own Toolshop
 } as const;
 
 export type TagValue = (typeof Tag)[keyof typeof Tag];

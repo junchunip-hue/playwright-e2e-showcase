@@ -1,3 +1,4 @@
+import type { APIResponse } from '@playwright/test';
 import type { Http } from '../http';
 import {
   InvoiceDetailSchema,
@@ -34,7 +35,13 @@ export class InvoicesApi {
 
   /** PUT /invoices/{id}/status (5-50 character message). */
   async updateStatus(token: string, id: string, status: InvoiceStatus, message: string): Promise<void> {
-    const res = await this.http.put(`/invoices/${encodeURIComponent(id)}/status`, { status, status_message: message }, token);
+    const res = await this.updateStatusRequest(token, id, status, message);
     await this.http.parse(res, `PUT /invoices/${id}/status`, StatusUpdatedSchema);
+  }
+
+  /** PUT /invoices/{id}/status, raw response: for tests that check who may change it. The message is optional. */
+  updateStatusRequest(token: string, id: string, status: InvoiceStatus, message?: string): Promise<APIResponse> {
+    const body = message === undefined ? { status } : { status, status_message: message };
+    return this.http.put(`/invoices/${encodeURIComponent(id)}/status`, body, token);
   }
 }

@@ -54,7 +54,11 @@ failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-
 Both workflows end with a `pipeline summary` job (`scripts/pipeline-summary.mjs`). It reads the Playwright JSON
 results and the Surefire XML reports and writes the run page's job summary:
 - a **Mermaid diagram of the run**: the TypeScript and Java lanes with their pass/fail counts, coloured by job result;
-- a **table per test ID** with TypeScript and Java results side by side and whether the ID runs in both.
+- a **table per test ID** with TypeScript and Java results side by side and whether the ID runs in both;
+- a **Known defects** table (when any test tracks one): per defect and language, 🟨 still present (the test passes
+  because the API answers exactly as today), 🟥 fixed (the test fails on purpose: replace the marker with a plain
+  assertion), or ❌ anything else. TS reads the `known defect` annotation from the JSON report, Java the
+  `known defect: …` line the test prints, which Surefire keeps in the XML ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
 
 Java reports carry display names (`U6: ...`, `S2: ... › gift-card`) via Surefire's phrased names, so both sides are
 matched by test ID. Every A, U and S ID must appear in both columns: the parity architecture test (and the
@@ -67,8 +71,11 @@ test runs ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)).
   where a login is needed.
 - **Tiers:** every test has exactly one of `@smoke` (PR gate), `@regression` (nightly), `@setup`, `@seed`.
   **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, and `@admin`. An `@admin` test signs in as
-  the seeded admin and changes catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
-  fixture, Java: `@Admin`) and runs against our own Toolshop only.
+  the seeded admin or can change catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
+  fixture or `test.skip(isPublicDemo, ...)`, Java: `@Admin`) and runs against our own Toolshop only.
+- **Known defects:** A10 and A11 assert the intended rule through `expectKnownDefect` (TS) / `KnownDefect` (Java):
+  green while the API answers exactly as today, red when it is fixed or answers anything else. The report shows a
+  `known defect` annotation ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. The Java `TagGuardTest` applies the same rules to JUnit.

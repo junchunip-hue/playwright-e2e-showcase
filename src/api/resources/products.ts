@@ -1,3 +1,4 @@
+import type { APIResponse } from '@playwright/test';
 import type { Http } from '../http';
 import {
   CreatedProductSchema,
@@ -38,16 +39,20 @@ export class ProductsApi {
     return this.http.get(`/products/search?q=${encodeURIComponent(query)}`, ProductSearchPageSchema);
   }
 
+  /** POST /products (an admin action in the UI; the pinned API itself does not check the role, see A10). */
+  async create(token: string, product: NewProduct): Promise<{ id: string; name: string; price: number }> {
+    return this.http.parse(await this.createRequest(token, product), 'POST /products', CreatedProductSchema);
+  }
+
+  /** POST /products, raw response: for tests that check who may create a product. */
+  createRequest(token: string, product: NewProduct): Promise<APIResponse> {
+    return this.http.post('/products', product, token);
+  }
+
   /**
    * A purchasable product. Stock changes over time on a shared server, so UI tests ask the API
    * for an in-stock item instead of hard-coding a product name.
    */
-  /** POST /products (an admin action in the UI; the pinned API itself does not check the role). */
-  async create(token: string, product: NewProduct): Promise<{ id: string; name: string; price: number }> {
-    const res = await this.http.post('/products', product, token);
-    return this.http.parse(res, 'POST /products', CreatedProductSchema);
-  }
-
   async findInStock(): Promise<Product> {
     const product = (await this.list()).data.find((p) => p.in_stock && !p.is_rental);
     if (!product) throw new Error('No in-stock product found on page 1 of /products');

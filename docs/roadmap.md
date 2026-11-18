@@ -29,8 +29,8 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 | **S6** 🟡 | Resilience | `page.route` makes `/products` fail or slow down → UI shows its error/loading state, recovers on retry | – | Network mocking, failure UX |
 | **S7** (optional) | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
-**Order:** S2 ✅ → S3 ✅ → A10/A11 → S6 → S4, then optionally S5 and S7 (see [§5](#5-definition-of-done)).
-A10/A11 turn the two permission findings from S3 into tests, S6 shows a technique (mocking) the suite does not use
+**Order:** S2 ✅ → S3 ✅ → A10/A11 ✅ → S6 → S4, then optionally S5 and S7 (see [§5](#5-definition-of-done)).
+A10/A11 turned the two permission findings from S3 into tracked known defects, S6 shows a technique (mocking) the suite does not use
 yet, and S4 is the second entry path into checkout (P1). **Every journey ships in TypeScript and Java**
 ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1–S3 already do.
 
@@ -93,7 +93,8 @@ race with the postcode lookup, fixed in #17).
 - **Risks:** every P1/P2 risk in [test-strategy.md](test-strategy.md#2-risk-based-prioritisation) is checked at the
   right layer (met today).
 - **Techniques:** each technique the demo should show is used at least once. Remaining:
-  - A10/A11: role-based authorization, and a known product defect tracked as a test (`test.fail()` until fixed)
+  - ✅ A10/A11: role-based authorization, and known product defects tracked as tests
+    ([ADR 0010](decisions/0010-known-defects-as-tests.md))
   - S6: network mocking and failure UX
   - S4: a second entry path into checkout
 - **Stability:** five nightly runs in a row with no flaky or failed test in either language.
