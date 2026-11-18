@@ -26,22 +26,24 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 | Tag/ID guard | `npm run check:tags` | `TagGuardTest` |
 
 ## What runs in both
+In test-plan order (A, then U, then S):
+
 | ID | Scenario | TypeScript | Java |
 |---|---|---|---|
-| U6 (S1) | First purchase journey | `tests/e2e/checkout.spec.ts` | `CheckoutJourneyTest` |
-| S2 | Payment matrix journey (4 methods + 2 invalid cards) | `tests/e2e/payments.spec.ts` | `PaymentJourneyTest` |
-| A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
-| S3 | Admin publishes, customer buys, admin ships (own Toolshop only) | `tests/e2e/admin-to-customer.spec.ts` | `AdminToCustomerJourneyTest` |
+| A0 | Response contracts (5 checks incl. the guard itself) | `tests/api/contracts.api.spec.ts` | `ContractsApiTest` |
+| A1–A3 | Products and auth API | `tests/api/products.api.spec.ts` | `ApiTest` |
+| A4, A5 | Registration rules (weak / leaked password, duplicate email) | `tests/api/registration.api.spec.ts` | `RegistrationApiTest` |
 | A8 | Admin publishes a product (own Toolshop only) | `tests/api/admin.api.spec.ts` | `AdminApiTest` |
-| S4 | Guest checkout, order checked as admin (own Toolshop only) | `tests/e2e/guest-checkout.spec.ts` | `GuestCheckoutJourneyTest` |
-| S6 | Resilience: slow or failing catalogue and search, then recovery (`page.route`) | `tests/e2e/resilience.spec.ts` | `ResilienceTest` |
+| A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
 | A10, A11 | A customer cannot publish a product or change an order: known defects (own Toolshop only) | `tests/api/permissions.api.spec.ts` | `PermissionsApiTest` |
 | U1, U2 | Login (valid / wrong password) | `tests/ui/login.spec.ts` | `LoginTest` |
 | U3, U4 | Search results match the term; UI agrees with the search API | `tests/ui/search.spec.ts` | `SearchTest` |
 | U5 | Add to cart updates the badge | `tests/ui/cart.spec.ts` | `CartTest` |
-| A1–A3 | Products and auth API | `tests/api/products.api.spec.ts` | `ApiTest` |
-| A0 | Response contracts (5 checks incl. the guard itself) | `tests/api/contracts.api.spec.ts` | `ContractsApiTest` |
-| A4, A5 | Registration rules (weak / leaked password, duplicate email) | `tests/api/registration.api.spec.ts` | `RegistrationApiTest` |
+| U6 (S1) | First purchase journey | `tests/e2e/checkout.spec.ts` | `CheckoutJourneyTest` |
+| S2 | Payment matrix journey (4 methods + 2 invalid cards) | `tests/e2e/payments.spec.ts` | `PaymentJourneyTest` |
+| S3 | Admin publishes, customer buys, admin ships (own Toolshop only) | `tests/e2e/admin-to-customer.spec.ts` | `AdminToCustomerJourneyTest` |
+| S4 | Guest checkout, order checked as admin (own Toolshop only) | `tests/e2e/guest-checkout.spec.ts` | `GuestCheckoutJourneyTest` |
+| S6 | Resilience: slow or failing catalogue and search, then recovery (`page.route`) | `tests/e2e/resilience.spec.ts` | `ResilienceTest` |
 
 TypeScript only, by design: accessibility (N2), visual (N1) and architecture (N3). They check rendering or the
 repository, not a scenario.

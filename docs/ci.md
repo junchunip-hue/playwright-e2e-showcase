@@ -105,5 +105,6 @@ afterwards to re-run the PR gate. The PNG diff in the PR is the review step
 - composite actions, npm scripts, Playwright project dependencies or TypeScript imports form a cycle
 - a job has no `timeout-minutes` ≤ 60, or a shell step uses `while`/`until` instead of a bounded `for … in $(seq …)`
 - a step installs browsers with `playwright install` directly instead of the bounded `scripts/install-browsers.sh`
+- an A/U/S ID exists in only one language, or the test plan's "Java" column disagrees with `java/` (parity)
 
 See [ADR 0008](decisions/0008-architecture-tests.md) for what they found on their first run.

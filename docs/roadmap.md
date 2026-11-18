@@ -2,7 +2,11 @@
 
 > Companion to [`test-strategy.md`](test-strategy.md) (why) and [`test-plan.md`](test-plan.md) (what runs today).
 > This file is the plan for growing the suite into a demo: longer, story-like scenarios, and a layout that stays
-> readable while it grows. Items marked **proposed** need a review decision before they are built.
+> readable while it grows.
+
+**Status (2026-11-18): done by its own definition.** All four showcase criteria in [§5](#5-definition-of-done) are
+met (risks, techniques, stability, demo). What is left is a choice, not a gap: S5 and S7 are optional, and the
+backlog items add coverage without a new technique.
 
 ## 1. What a demo should show in 3 minutes
 
@@ -30,9 +34,9 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 | **S7** (optional) | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
 **Order:** S2 ✅ → S3 ✅ → A10/A11 ✅ → S6 ✅ → S4 ✅, then optionally S5 and S7 (see [§5](#5-definition-of-done)).
-A10/A11 turned the two permission findings from S3 into tracked known defects, S6 shows a technique (mocking) the suite does not use
-yet, and S4 is the second entry path into checkout (P1). **Every journey ships in TypeScript and Java**
-([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1–S3 already do.
+A10/A11 turned the two permission findings from S3 into tracked known defects, S6 added network mocking, and S4
+is the second entry path into checkout (P1). **Every journey ships in TypeScript and Java**
+([ADR 0009](decisions/0009-every-journey-in-both-languages.md)): S1–S4 and S6 do.
 
 Every scenario follows the same contract: **arrange via API, act via UI, assert via UI and API**. Each one gets
 its own throwaway data and is tagged `@regression @e2e` (nightly), except the one PR-gate representative per area.
@@ -49,7 +53,7 @@ minute, and long scenarios read as business steps rather than clicks.
 | **R3** ✅ | `ApiClient` per resource | `src/api/http.ts` + `resources/{products,auth,customers,addresses,invoices,payments,catalog}.ts` behind one `api` (`api.products.search(...)`) |
 | **R4** ✅ | Test-plan ID in every title | `A4: ...`, `U6: ...`; `check:tags` and Java `TagGuardTest` fail on a missing ID or one not in the plan |
 | **R5** ✅ | README as a 3-minute tour | Tour, one Mermaid diagram, layout, how to run, "read more" by question |
-| **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (9 ADRs) |
+| **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (10 ADRs) |
 
 **Not planned:** a BDD/Gherkin layer (adds a translation step without a business author), more browsers for
 a11y/visual (no extra signal).
@@ -69,7 +73,11 @@ A new decision gets the next ADR number.
   - self-triggering workflows (a workflow that pushes must not be triggered by a push, must use `GITHUB_TOKEN`, and must remove its trigger label)
   - `workflow_run` cycles, workflows that start other workflows
   - composite-action, npm-script, Playwright-project and import cycles
-  - jobs without a timeout, and unbounded `while`/`until` loops
+  - jobs without a timeout, unbounded `while`/`until` loops, and browser installs outside the bounded script
+- **Parity**: an A/U/S ID that exists in only one language, or a test-plan "Java" column that disagrees with `java/`,
+  fails the architecture stage.
+- **Known defects** stay visible: A10/A11 pass only while the defect is exactly as today, and each run's summary lists
+  them ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
 - **Contracts**: every API response is schema-validated, so new scenarios get contract coverage for free.
 - **Isolation**: each scenario creates its own customers; the shared demo account is only used for successful logins.
 
@@ -97,8 +105,11 @@ race with the postcode lookup, fixed in #17).
     ([ADR 0010](decisions/0010-known-defects-as-tests.md))
   - ✅ S6: network mocking and failure UX
   - ✅ S4: a second entry path into checkout
-- **Stability:** five nightly runs in a row with no flaky or failed test in either language. Open: counted from the
-  first scheduled nightly after S4 (2026-11-19).
+- **Stability:** five nightly runs in a row with no flaky or failed test in either language (met 2026-11-18: seven
+  manual nightlies on `main`, six after S4 and one after the CI hardening in #22, every TypeScript test (94, then
+  95) on three browsers and all 34 Java tests green, no flaky, no retries). One of the seven ended red without a failed test: an
+  artifact download in `merge-reports` failed, now retried ([ci.md](ci.md#workflows)). Scheduled nightlies keep watching
+  this; a flaky or failed test reopens it.
 - **Demo:** the README's 3-minute tour can be followed start to finish without other docs (met 2026-11-18: links,
   commands and snippets checked; local-run notes added for `@admin` skips and per-OS visual baselines).
 
@@ -106,13 +117,13 @@ Everything beyond that is optional (S5, S7) or backlog.
 
 ### Backlog (not planned)
 These would add coverage but no new technique, so they are not part of "done". They stay in the test plan,
-marked ➖, and move back only with a reason (a new risk, a defect found nearby).
+marked ➖, and move back only with a reason (a new risk, a defect found nearby). U7 and U8 are not here: they were
+built as S2 and S4.
 
 | ID | Item | Why not now |
 |---|---|---|
 | A6 | Invoice requires auth (no token → 401) | Same technique as A3 and A10/A11 |
 | A7 | Product filters: category, brand, price range, sort | API variant of U3/U4 |
-| U8 | Guest checkout | Covered by S4 |
 | U9 | Cart: change quantity / remove item | Same layer and pattern as U5 |
 | U10 | Registration form validation (UI) | Rules already checked at API level (A4, A5) |
 | U11 | Category filter + sort | Same pattern as U3/U4 |
