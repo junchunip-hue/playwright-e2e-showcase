@@ -41,6 +41,8 @@ public final class ApiClient implements AutoCloseable {
       String id,
       @SerializedName("invoice_number") String invoiceNumber,
       double total,
+      @SerializedName("billing_street") String billingStreet,
+      @SerializedName("billing_city") String billingCity,
       @SerializedName("billing_country") String billingCountry) {}
 
   public record InvoiceDetail(
