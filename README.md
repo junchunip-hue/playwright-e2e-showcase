@@ -106,5 +106,6 @@ and each CI run ends with a summary that draws the run and compares TypeScript a
 | What runs, where, and which IDs exist? | [docs/test-plan.md](docs/test-plan.md) |
 | How does the pipeline work and protect itself? | [docs/ci.md](docs/ci.md) |
 | Which decisions were made, and why? | [docs/decisions/](docs/decisions/) |
+| Where do I see the latest results? | [Nightly report](https://junchunip-hue.github.io/playwright-e2e-showcase/) (3 browsers) · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram + TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
 | What comes next? | [docs/roadmap.md](docs/roadmap.md) |
-| How does the Java twin stay in sync? | [docs/java.md](docs/java.md) |
+| How do the TypeScript and Java lanes stay in sync? | [docs/java.md](docs/java.md) |
