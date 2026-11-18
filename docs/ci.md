@@ -67,8 +67,11 @@ test runs ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)).
   where a login is needed.
 - **Tiers:** every test has exactly one of `@smoke` (PR gate), `@regression` (nightly), `@setup`, `@seed`.
   **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, and `@admin`. An `@admin` test signs in as
-  the seeded admin and changes catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
-  fixture, Java: `@Admin`) and runs against our own Toolshop only.
+  the seeded admin or can change catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
+  fixture or `test.skip(isPublicDemo, ...)`, Java: `@Admin`) and runs against our own Toolshop only.
+- **Known defects:** A10 and A11 assert the intended rule through `expectKnownDefect` (TS) / `KnownDefect` (Java):
+  green while the API answers exactly as today, red when it is fixed or answers anything else. The report shows a
+  `known defect` annotation ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. The Java `TagGuardTest` applies the same rules to JUnit.

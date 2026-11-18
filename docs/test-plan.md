@@ -59,8 +59,8 @@ Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadm
 | A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ➖ |
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ➖ |
-| A10 | A customer cannot create a product (finding from S3: today it succeeds) | `@negative` | | 🟡 |
-| A11 | A customer cannot change an invoice status (finding from S3: today it succeeds) | `@negative` | | 🟡 |
+| A10 | A customer cannot publish a product: intended 403, **known defect** today 201 ([ADR 0010](decisions/0010-known-defects-as-tests.md); own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
+| A11 | A customer cannot change the status of another customer's order: intended 403, **known defect** today 200; sends the current status, so nothing changes (own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
 | A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
 
 ### UI and journeys (`tests/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
@@ -85,9 +85,15 @@ Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadm
 | S2 | Payment matrix: bank transfer, credit card, buy now pay later, gift card each end in an invoice at the cart total; a malformed or expired card is flagged in the form, cannot be submitted, is rejected by the API too, and creates no invoice | `@regression @e2e` | ✅ | ✅ |
 | S3 | Admin publishes a product (API), customer finds and buys it (UI), admin ships it (API), customer sees it listed and SHIPPED (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
 
-**Findings while building S3 (pinned source, not asserted yet):** `POST /products` does not check the admin role
-(`StoreProduct::authorize()` returns true; only delete requires admin), and `PUT /invoices/{id}/status` only requires a
-signed-in user. S3 tests the intended flow (an admin acts). Candidate negative tests: A10 and A11 above.
+**Findings while building S3 (pinned source), tracked as known defects by A10 and A11:**
+- `POST /products` checks no role: `StoreProduct::authorize()` returns true, and `ProductController` requires the
+  admin role for `destroy` only.
+- `PUT /invoices/{id}/status` only requires a signed-in user: `InvoiceService::updateInvoiceStatus` updates by ID
+  without a role or owner check, so any customer can change any order.
+
+S3 tests the intended flow (an admin acts). A10 and A11 assert the intended rule through `expectKnownDefect` /
+`KnownDefect` ([ADR 0010](decisions/0010-known-defects-as-tests.md)): they pass while the API answers exactly as
+today, and fail once it is fixed, so the marker is then replaced by a plain assertion.
 
 ### Non-functional (`tests/quality`, `tests/architecture`; Chromium only)
 | ID | Test | Where | Status |
@@ -106,6 +112,7 @@ signed-in user. S3 tests the intended flow (an admin acts). Candidate negative t
 | A5 | 1 | smoke | ✅ | ✅ | API | `RegistrationApiTest` |
 | A8 | 1 | smoke, admin | ✅ | ✅ | API | `AdminApiTest` |
 | A9 | 2 | smoke | ✅ | ✅ | API | `PaymentApiTest` |
+| A10, A11 | 1 + 1 | smoke, admin (known defects) | ✅ | ✅ | API | `PermissionsApiTest` |
 | U1, U2, U3, U5 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `LoginTest`, `SearchTest`, `CartTest` |
 | U4 | 1 | regression | – | ✅ | Chromium, Firefox, WebKit | `SearchTest` |
 | U6 (S1) | 1 | smoke, e2e | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `CheckoutJourneyTest` |
@@ -115,7 +122,7 @@ signed-in user. S3 tests the intended flow (an admin acts). Candidate negative t
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 13 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (51 in total; data-driven cases count once each). The Java class
+"Tests" counts TypeScript test cases per ID (53 in total; data-driven cases count once each). The Java class
 covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
@@ -156,4 +163,5 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | Structure R1–R6: test folders by intent, flows, per-resource API client, IDs in titles, docs by question | Readable at scale |
 | ✅ | S2 payment matrix, S3 admin → customer → admin (A8, A9) | Data-driven and cross-role journeys |
 | ✅ | Every A/U/S scenario in Java with the same tier; parity architecture test; TS vs Java pipeline summary | Two stacks, one plan |
-| Next 🟡 | A10/A11 permission negatives, S6 resilience (network mocking), S4 guest checkout; S5, S7 optional; rest backlog | See [`roadmap.md`](roadmap.md) |
+| ✅ | A10/A11 permission negatives as tracked known defects | Security findings turned into tests |
+| Next 🟡 | S6 resilience (network mocking), S4 guest checkout; S5, S7 optional; rest backlog | See [`roadmap.md`](roadmap.md) |
