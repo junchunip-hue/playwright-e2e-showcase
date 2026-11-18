@@ -23,4 +23,5 @@ runs:
     - name: Install browsers
       if: ${{ inputs.browsers != '' }}
       shell: bash
-      run: npx playwright install --with-deps ${{ inputs.browsers }}
+      # Bounded and retried: a slow Ubuntu mirror must not stall the job (see the script).
+      run: bash scripts/install-browsers.sh ${{ inputs.browsers }}

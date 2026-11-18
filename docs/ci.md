@@ -35,6 +35,14 @@ flowchart LR
 Every job has its own Toolshop and a timeout of at most 60 minutes. `summary` and `merge-reports` run even when a
 lane fails (`!cancelled()`), so a red run still shows which IDs failed in which language.
 
+Two infrastructure hiccups seen in six back-to-back nightlies (2026-11-18) are absorbed so they cannot turn a green
+test run red or stall it:
+- **Browser install:** `playwright install --with-deps` waits on the Ubuntu package mirror, which once took 29 minutes
+  instead of one. [`scripts/install-browsers.sh`](../scripts/install-browsers.sh) gives each attempt 6 minutes and
+  tries 3 times; every workflow installs browsers through it (an architecture test enforces that).
+- **Report merge:** artifact storage once failed one blob download even after the action's own retries, although the
+  blob downloaded fine minutes later. `merge-reports` tries once more after a minute.
+
 | Artifact | From | Contents |
 |---|---|---|
 | `playwright-report` / `regression-report` | PR / nightly | HTML report with traces, screenshots and video on failure |
@@ -93,5 +101,6 @@ afterwards to re-run the PR gate. The PNG diff in the PR is the review step
 - `workflow_run` triggers form a cycle, or a step starts or re-runs a workflow
 - composite actions, npm scripts, Playwright project dependencies or TypeScript imports form a cycle
 - a job has no `timeout-minutes` ≤ 60, or a shell step uses `while`/`until` instead of a bounded `for … in $(seq …)`
+- a step installs browsers with `playwright install` directly instead of the bounded `scripts/install-browsers.sh`
 
 See [ADR 0008](decisions/0008-architecture-tests.md) for what they found on their first run.

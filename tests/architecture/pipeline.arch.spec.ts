@@ -72,4 +72,14 @@ test.describe('Pipeline architecture', { tag: [Tag.smoke, Tag.architecture] }, (
 
     expect(offenders, 'unbounded shell loops').toEqual([]);
   });
+
+  test('N3: browsers are installed only through the bounded install script', () => {
+    // A raw `playwright install --with-deps` waits on the Ubuntu mirror without limit (once 29 minutes).
+    // scripts/install-browsers.sh caps each attempt and retries.
+    const offenders = allSteps()
+      .filter(({ step }) => /playwright\s+install/.test(step.run ?? ''))
+      .map(({ where, step }) => `${where}: ${step.name ?? step.run?.split('\n')[0]}`);
+
+    expect(offenders, 'browser installs outside scripts/install-browsers.sh').toEqual([]);
+  });
 });

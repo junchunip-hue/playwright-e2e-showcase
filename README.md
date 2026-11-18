@@ -5,7 +5,8 @@
 · [Latest regression report](https://junchunip-hue.github.io/playwright-e2e-showcase/)
 
 A test automation framework built the way I would set it up in a real team, with **Playwright + TypeScript**
-(and a Java + JUnit 5 twin). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
+and the same scenarios in **Java + JUnit 5**. It targets the open-source [Toolshop](https://practicesoftwaretesting.com)
+demo shop.
 
 ## The 3-minute tour
 
@@ -25,11 +26,16 @@ const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 **2. Quality beyond "it works"**
 - Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
+- Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.spec.ts`](tests/e2e/resilience.spec.ts)).
+- Defects the tests found are tracked as tests: green while the defect exists, red once it is fixed
+  ([`permissions.api.spec.ts`](tests/api/permissions.api.spec.ts), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
 
 **3. A pipeline that guards itself**
 - Tags and suites live in one registry ([`src/tags.ts`](src/tags.ts)), and every test title carries its test-plan ID.
 - [Architecture tests](tests/architecture/) fail if a workflow could trigger itself, a dependency loops, or a job could hang.
+- Every scenario runs in a TypeScript lane and a Java lane. A summary on each CI run compares them per test ID and lists
+  the known defects (see "How it runs").
 
 ## How it runs
 
@@ -74,14 +80,17 @@ src/
   data/         test data builders (fresh customers per test)
   fixtures/     everything above, injected into tests
   tags.ts       tag and suite registry
+  known-defects.ts  tracked product defects (ADR 0010)
   a11y/ visual/ reporters/ config/
 tests/
-  api/          contract, auth and registration tests
+  api/          contracts, auth, registration, payments, admin and permissions
   ui/           single-page behaviour (login, search, cart)
-  e2e/          journeys across pages, API and UI
+  e2e/          journeys across pages, API and UI (checkout, payments, admin, guest, resilience)
   quality/      accessibility and visual regression
   architecture/ rules about the pipeline and the code itself
 java/           Playwright for Java + JUnit 5: every A/U/S scenario, same IDs and tiers
+scripts/        suite runner, bounded browser install and the CI pipeline summary
+docs/           strategy, test plan, CI, Java, roadmap, decisions (ADRs)
 .github/        workflows (PR, nightly, baselines) and shared actions
 ```
 
@@ -92,9 +101,15 @@ npm install && npx playwright install && cp .env.example .env
 npm run test:pr             # what the PR gate runs (API + Chromium)
 npm run test:architecture   # pipeline/code rules, no browser
 npm run check:tags          # tag counts; fails on unknown tags, missing tier or ID
-npm test                    # everything
+npm test                    # everything (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
 npm run report              # open the HTML report
 ```
+Locally the tests run against the public demo, which other people use too:
+- **`@admin` tests are skipped** there: they change catalogue or orders, so they run against our own Toolshop only (CI).
+- **Visual baselines are per OS and stay local:** CI compares the committed Linux ones. Your first run creates baselines
+  for your OS, and the demo's shared data (e.g. new brands in the filter list) can make them stale later. Refresh them
+  with `npx playwright test tests/quality/visual.spec.ts --update-snapshots`
+  ([why](docs/decisions/0004-visual-baselines-from-ci.md)).
 Java: `cd java && ./mvnw test` (JDK 21+, see [docs/java.md](docs/java.md)). Every scenario exists in both languages,
 and each CI run ends with a summary that draws the run and compares TypeScript and Java per test ID.
 

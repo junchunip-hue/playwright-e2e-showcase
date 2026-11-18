@@ -71,7 +71,23 @@ jobs:
 
       - uses: ./.github/actions/setup-node-suite
 
+      # Artifact storage occasionally fails one download even after the action's own retries (the blob was fine
+      # minutes later), which would turn a green run red. One more attempt after a pause rides that out.
       - name: Download blob reports
+        id: download-blobs
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Wait before retrying the download
+        if: ${{ steps.download-blobs.outcome == 'failure' }}
+        run: sleep 60
+
+      - name: Download blob reports (retry)
+        if: ${{ steps.download-blobs.outcome == 'failure' }}
         uses: actions/download-artifact@v8
         with:
           path: all-blob-reports

@@ -92,13 +92,15 @@ race with the postcode lookup, fixed in #17).
 ### The showcase is done when
 - **Risks:** every P1/P2 risk in [test-strategy.md](test-strategy.md#2-risk-based-prioritisation) is checked at the
   right layer (met today).
-- **Techniques:** each technique the demo should show is used at least once. Remaining:
+- **Techniques:** each technique the demo should show is used at least once (met 2026-11-18, last three were:)
   - ✅ A10/A11: role-based authorization, and known product defects tracked as tests
     ([ADR 0010](decisions/0010-known-defects-as-tests.md))
   - ✅ S6: network mocking and failure UX
   - ✅ S4: a second entry path into checkout
-- **Stability:** five nightly runs in a row with no flaky or failed test in either language.
-- **Demo:** the README's 3-minute tour can be followed start to finish without other docs.
+- **Stability:** five nightly runs in a row with no flaky or failed test in either language. Open: counted from the
+  first scheduled nightly after S4 (2026-11-19).
+- **Demo:** the README's 3-minute tour can be followed start to finish without other docs (met 2026-11-18: links,
+  commands and snippets checked; local-run notes added for `@admin` skips and per-OS visual baselines).
 
 Everything beyond that is optional (S5, S7) or backlog.
 
