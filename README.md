@@ -8,6 +8,10 @@ A test automation framework built the way I would set it up in a real team, with
 and the same scenarios in **Java + JUnit 5**. It targets the open-source [Toolshop](https://practicesoftwaretesting.com)
 demo shop.
 
+**Status:** done by its own [definition](docs/roadmap.md#5-definition-of-done): every P1/P2 risk covered, every demo
+technique shown, seven clean nightlies in a row in both languages. Test IDs (A = API, U = UI, S = journey,
+N = non-functional) are explained in the [test plan](docs/test-plan.md#how-ids-work).
+
 ## The 3-minute tour
 
 **1. A journey that reads like the story it tests:** [`tests/e2e/checkout.spec.ts`](tests/e2e/checkout.spec.ts)

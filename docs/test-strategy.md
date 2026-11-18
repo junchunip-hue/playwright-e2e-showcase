@@ -10,14 +10,17 @@
   Local runs can target the public demo.
 
 ## 2. Risk-based prioritisation
-| Journey | Business impact | Change frequency | Priority | Layer |
-|---|---|---|---|---|
-| Login / session | High (blocks everything) | Low | P1 | UI smoke + API |
-| Product search & filter | High (revenue entry point) | Medium | P1 | UI + API consistency |
-| Add to cart → checkout | Critical (revenue) | Medium | P1 | E2E journey |
-| Registration | Medium | Low | P2 | API rules, data setup |
-| Admin product management → customer purchase | Medium | Low | P2 | API + journey (S3, own Toolshop only) |
-| Contact form, i18n | Low | Low | Later (roadmap S7) | – |
+| Journey | Business impact | Change frequency | Priority | Layer | Covered by |
+|---|---|---|---|---|---|
+| Login / session | High (blocks everything) | Low | P1 | UI smoke + API | U1, U2, A2, A3 |
+| Product search & filter | High (revenue entry point) | Medium | P1 | UI + API consistency | U3, U4, A1 |
+| Add to cart → checkout | Critical (revenue) | Medium | P1 | E2E journey | U5, U6/S1, S2, S4, S6, A9 |
+| Who may change products and orders | High (integrity) | Low | P1 | API negatives | A10, A11 (known defects) |
+| Registration | Medium | Low | P2 | API rules, data setup | A4, A5 |
+| Admin product management → customer purchase | Medium | Low | P2 | API + journey (own Toolshop only) | A8, S3 |
+| Contact form, i18n | Low | Low | Later | – | S7 (optional) |
+
+Every API response is also contract-checked (A0); rendering and accessibility are N1 and N2.
 
 ## 3. Layers
 - **API first:** contracts, validation and negative cases are faster and more stable at API level

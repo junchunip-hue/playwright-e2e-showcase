@@ -44,24 +44,48 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 
 ## 3. Test inventory
 
-Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadmap §5](roadmap.md#5-definition-of-done)). **Java** marks scenarios mirrored in `java/` (JUnit 5).
+### How IDs work
+| Prefix | Layer | Where |
+|---|---|---|
+| **A** | API: contracts, rules, permissions | `tests/api` |
+| **U** | UI: one page or one widget | `tests/ui` (U6, the first journey, sits in `tests/e2e`) |
+| **S** | Story: a journey across pages, roles or layers | `tests/e2e` |
+| **N** | Non-functional: visual, accessibility, architecture | `tests/quality`, `tests/architecture` |
+
+- **IDs are stable:** never renumbered or reused, so links, reports and commit messages keep pointing at the same test.
+  That is why there are gaps: a gap is a backlog or optional item, listed below with its status.
+- **A0** is the contract guard that applies to every API response, so it comes before the numbered API checks.
+- **Aliases:** U6 is also S1 (the first journey). U7 and U8 were planned as UI tests and became journeys S2 and S4;
+  they keep their row so old references still resolve.
+- One ID can have several test cases (e.g. A4: weak and leaked password). Every title starts with its ID, which
+  `check:tags` and the Java `TagGuardTest` enforce.
+
+**Status:** ✅ done · ↪ done under another ID · ⬜ optional · ➖ backlog, not planned
+([roadmap §5](roadmap.md#5-definition-of-done)). **Java ✅** marks scenarios mirrored in `java/` (JUnit 5).
+
+| Layer | Done | Optional | Backlog |
+|---|---|---|---|
+| API | A0–A5, A8–A11 | – | A6, A7 |
+| UI | U1–U6 (U7 ↪ S2, U8 ↪ S4) | – | U9–U11 |
+| Journeys | S1 (= U6), S2, S3, S4, S6 | S5, S7 | – |
+| Non-functional | N1–N3 | – | – |
 
 ### API (`tests/api`, project `api`, no browser)
 | ID | Test | Tag | Java | Status |
 |---|---|---|---|---|
+| A0 | Response contracts: every response validated against `src/api/schemas.ts` (zod); explicit checks for list/detail/search, empty paginator, login + invoices, postcode lookup, and the guard itself | `@smoke` | ✅ | ✅ |
 | A1 | `GET /products` is paginated and well-formed | `@smoke` | ✅ | ✅ |
 | A2 | Valid credentials return a token | `@smoke` | ✅ | ✅ |
 | A3 | Wrong password → 401 | `@regression @negative` | ✅ | ✅ |
-| A0 | Response contracts: every response validated against `src/api/schemas.ts` (zod); explicit checks for list/detail/search, empty paginator, login + invoices, postcode lookup, and the guard itself | `@smoke` | ✅ | ✅ |
 | A4 | Register: weak password → 422 listing every unmet rule | `@smoke @negative` | ✅ | ✅ |
 | A4 | Register: password from a data leak → 422 (external HIBP check, so nightly) | `@regression @negative` | ✅ | ✅ |
 | A5 | Register: duplicate email → **409** Conflict (not 422 as first assumed) | `@smoke @negative` | ✅ | ✅ |
-| A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
 | A6 | Invoice requires auth (no token → 401) | `@negative` | | ➖ |
 | A7 | Product filters: category, brand, price range, sort | `@regression` | | ➖ |
+| A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
+| A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
 | A10 | A customer cannot publish a product: intended 403, **known defect** today 201 ([ADR 0010](decisions/0010-known-defects-as-tests.md); own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
 | A11 | A customer cannot change the status of another customer's order: intended 403, **known defect** today 200; sends the current status, so nothing changes (own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
-| A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
 
 ### UI and journeys (`tests/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
 | ID | Test | Tag | Java | Status |
@@ -72,8 +96,8 @@ Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadm
 | U4 | Search: UI results equal search API results | `@regression` | ✅ | ✅ |
 | U5 | Add to cart updates the badge (product picked via API) | `@smoke` | ✅ | ✅ |
 | **U6** | **Checkout E2E: API-registered customer → cart → sign in → address (postcode lookup) → cash on delivery → invoice verified via API** | `@smoke @e2e` | ✅ | ✅ |
-| U7 | Checkout with each payment method → implemented as journey **S2** below | – | | ✅ |
-| U8 | Guest checkout → becomes journey **S4** | – | | ➖ |
+| U7 | Checkout with each payment method → built as journey **S2** | – | | ↪ S2 |
+| U8 | Guest checkout → built as journey **S4** | – | | ↪ S4 |
 | U9 | Cart: change quantity / remove item, totals update | `@regression` | | ➖ |
 | U10 | Registration form validation (UI) | `@regression` | | ➖ |
 | U11 | Category filter + sort on the catalogue | `@regression` | | ➖ |
@@ -81,11 +105,13 @@ Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadm
 ### Journeys (`tests/e2e`, see [roadmap.md](roadmap.md) §2)
 | ID | Journey | Tag | Java | Status |
 |---|---|---|---|---|
-| S1 | First purchase (= U6) | `@smoke @e2e` | = U6 | ✅ |
+| S1 | First purchase: the same test as U6 | `@smoke @e2e` | = U6 | ✅ |
 | S2 | Payment matrix: bank transfer, credit card, buy now pay later, gift card each end in an invoice at the cart total; a malformed or expired card is flagged in the form, cannot be submitted, is rejected by the API too, and creates no invoice | `@regression @e2e` | ✅ | ✅ |
 | S3 | Admin publishes a product (API), customer finds and buys it (UI), admin ships it (API), customer sees it listed and SHIPPED (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
 | S4 | Guest checkout: a never-registered guest buys through the guest tab (email and name), the postcode lookup fills the address, the order goes to `POST /invoices/guest`; the admin finds it at the cart total with the guest's billing address (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
+| S5 | Returning customer: favourites, compare, invoice PDF ([roadmap §2](roadmap.md#2-showcase-scenarios-longer-journeys)) | – | | ⬜ |
 | S6 | Resilience with network mocking (`page.route`): a 3 s slower catalogue still shows its products; a failed catalogue (500) shows no products, and a reload recovers; a failed search (500) is shown as "no results", and the next search works | `@regression` (+ `@negative`) | ✅ | ✅ |
+| S7 | Languages: key pages translated, a11y and visual still pass ([roadmap §2](roadmap.md#2-showcase-scenarios-longer-journeys)) | – | | ⬜ |
 
 **Findings while building S3 (pinned source), tracked as known defects by A10 and A11:**
 - `POST /products` checks no role: `StoreProduct::authorize()` returns true, and `ProductController` requires the
@@ -113,7 +139,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 |---|---|---|---|
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
-| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job bounded | PR static stage | ✅ |
+| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan | PR static stage | ✅ |
 
 ### Where each ID runs (today)
 | ID | Tests | Tier | PR gate | Nightly | Browsers | Java class |
@@ -135,9 +161,9 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `ResilienceTest` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
-| N3 | 13 | smoke, architecture | static stage | ✅ | none | TypeScript only |
+| N3 | 14 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (57 in total; data-driven cases count once each). The Java class
+"Tests" counts TypeScript test cases per ID (58 in total; data-driven cases count once each). The Java class
 covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
@@ -181,4 +207,4 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | A10/A11 permission negatives as tracked known defects | Security findings turned into tests |
 | ✅ | S6 resilience with network mocking: slow and failing catalogue, failing search, recovery | Network mocking, failure UX |
 | ✅ | S4 guest checkout: second entry into checkout, guest invoice checked as admin | Every demo technique shown once |
-| Next 🟡 | Stability: five clean nightlies in a row; README tour check. S5, S7 optional; rest backlog | See [`roadmap.md`](roadmap.md) |
+| ✅ | Seven clean nightlies in a row; CI hardened (bounded browser install, report-merge retry); README tour checked | Showcase done ([roadmap §5](roadmap.md#5-definition-of-done)); S5, S7 optional |
