@@ -53,9 +53,9 @@ flowchart LR
 
 | Layer | IDs | What it proves | Languages |
 |---|---|---|---|
-| API | A0–A5, A8, A9 | Contracts, auth, registration rules, payment check, admin publishing | TS + Java |
+| API | A0–A5, A8–A11 | Contracts, auth, registration rules, payment check, admin publishing; customer-vs-admin permissions as tracked known defects | TS + Java |
 | UI | U1–U5 | Login, search (incl. UI = API), cart | TS + Java |
-| Journeys | U6/S1, S2, S3 | First purchase, every payment method, admin → customer → admin | TS + Java |
+| Journeys | U6/S1, S2, S3, S6 | First purchase, every payment method, admin → customer → admin, slow or failing backend (network mocking) | TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | TS |
 | Architecture | N3 | Pipeline cannot loop, TS/Java parity | TS |
 
