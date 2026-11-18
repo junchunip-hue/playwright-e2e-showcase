@@ -38,7 +38,7 @@ jobs:
           npm run test:architecture
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: bash scripts/install-browsers.sh chromium
 
       - uses: ./.github/actions/toolshop-ready
 
