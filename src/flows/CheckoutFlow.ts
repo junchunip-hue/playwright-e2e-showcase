@@ -40,7 +40,7 @@ export class CheckoutFlow {
       await this.checkoutPage.goto();
       await expect(this.checkoutPage.productTitles).toHaveText(products.map((p) => p.name));
       const total = Number((await this.checkoutPage.cartTotal.textContent())?.replace(/[^0-9.]/g, ''));
-      await this.checkoutPage.proceedFromCart.click();
+      await this.checkoutPage.proceed(this.checkoutPage.proceedFromCart, this.checkoutPage.signInForm.email);
       return total;
     });
   }
@@ -49,11 +49,11 @@ export class CheckoutFlow {
     await test.step('sign in', async () => {
       await this.checkoutPage.signIn(customer.email, customer.password);
       await expect(this.checkoutPage.proceedFromSignIn).toBeEnabled();
-      await this.checkoutPage.proceedFromSignIn.click();
+      await this.checkoutPage.proceed(this.checkoutPage.proceedFromSignIn, this.checkoutPage.country);
     });
   }
 
-  /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest. */
+  /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
   async confirmAddress(address: Address): Promise<void> {
     await test.step('billing address via postcode lookup', async () => {
       await this.checkoutPage.enterAddressForLookup(address);
@@ -63,7 +63,7 @@ export class CheckoutFlow {
       await expect(this.checkoutPage.city).toHaveValue(address.city);
       await expect(this.checkoutPage.state).toHaveValue(address.state);
       await expect(this.checkoutPage.proceedFromAddress).toBeEnabled();
-      await this.checkoutPage.proceedFromAddress.click();
+      await this.checkoutPage.proceed(this.checkoutPage.proceedFromAddress, this.checkoutPage.paymentMethod);
     });
   }
 

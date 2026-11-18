@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import type { Address } from '../api/ApiClient';
 import { LoginForm } from './components/LoginForm';
 
@@ -19,6 +19,7 @@ export class CheckoutPage {
   readonly city: Locator;
   readonly state: Locator;
   readonly proceedFromAddress: Locator;
+  readonly postcodeLookupError: Locator;
   // Step 4: payment
   readonly paymentMethod: Locator;
   readonly finish: Locator;
@@ -42,6 +43,7 @@ export class CheckoutPage {
     this.city = page.getByTestId('city');
     this.state = page.getByTestId('state');
     this.proceedFromAddress = page.getByTestId('proceed-3');
+    this.postcodeLookupError = page.getByTestId('postcode-lookup-error');
 
     this.paymentMethod = page.getByTestId('payment-method');
     this.finish = page.getByTestId('finish');
@@ -80,10 +82,32 @@ export class CheckoutPage {
     }
   }
 
-  /** Enters country + postcode + house number; the app's postcode lookup fills street, city and state. */
+  /**
+   * Enters country + postcode + house number and waits for the app's postcode lookup, which fills street, city and
+   * state. Without the wait, the fields already hold the customer's saved address (GET /users/me), so the checks
+   * would pass before the lookup ran, and its late result would rewrite the form while "proceed" is clicked.
+   */
   async enterAddressForLookup(address: Address): Promise<void> {
+    const lookup = this.page.waitForResponse((res) => new URL(res.url()).pathname.endsWith('/postcode-lookup'));
     await this.country.selectOption(address.country);
     await this.postalCode.fill(address.postal_code);
     await this.houseNumber.fill(address.house_number);
+    const response = await lookup;
+    if (!response.ok()) throw new Error(`GET /postcode-lookup failed: ${response.status()}: ${await response.text()}`);
+    await expect(this.postcodeLookupError).toBeHidden();
+  }
+
+  /**
+   * Clicks a wizard "proceed" button until the next step shows. The address form is rewritten by async results
+   * (saved address, postcode lookups, each debounced), and a click that lands while the form updates can leave the
+   * wizard on the same step (nightly 2026-11-18, WebKit). The step change is the real "done", so it is asserted,
+   * and the click is repeated only while the button is still on screen; a step that never changes fails here, by
+   * name, instead of as a timeout in the next step.
+   */
+  async proceed(button: Locator, nextStep: Locator): Promise<void> {
+    await expect(async () => {
+      if (await button.isVisible()) await button.click({ timeout: 2_000 });
+      await expect(nextStep).toBeVisible({ timeout: 2_000 });
+    }, `the wizard did not move on after clicking ${button}`).toPass({ timeout: 15_000 });
   }
 }

@@ -1,8 +1,15 @@
 package com.showcase.pages;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.Response;
+import com.microsoft.playwright.assertions.LocatorAssertions;
+import java.net.URI;
+import java.util.Map;
+import org.opentest4j.AssertionFailedError;
 
 /** Java twin of src/pages/CheckoutPage.ts: the 4-step wizard (cart, sign in, billing address, payment). */
 public class CheckoutPage {
@@ -24,6 +31,7 @@ public class CheckoutPage {
   public final Locator city;
   public final Locator state;
   public final Locator proceedFromAddress;
+  public final Locator postcodeLookupError;
   // Step 4: payment
   public final Locator paymentMethod;
   public final Locator finish;
@@ -50,6 +58,7 @@ public class CheckoutPage {
     this.city = page.getByTestId("city");
     this.state = page.getByTestId("state");
     this.proceedFromAddress = page.getByTestId("proceed-3");
+    this.postcodeLookupError = page.getByTestId("postcode-lookup-error");
 
     this.paymentMethod = page.getByTestId("payment-method");
     this.finish = page.getByTestId("finish");
@@ -77,6 +86,45 @@ public class CheckoutPage {
         finish::click);
     if (!response.ok()) {
       throw new IllegalStateException("POST /invoices failed: " + response.status() + "\n" + response.text());
+    }
+  }
+
+  /**
+   * Enters country + postcode + house number and waits for the app's postcode lookup, which fills street, city and
+   * state. Without the wait, the fields already hold the customer's saved address (GET /users/me), so the checks
+   * would pass before the lookup ran, and its late result would rewrite the form while "proceed" is clicked.
+   */
+  public void enterAddressForLookup(Map<String, String> address) {
+    Response response = page.waitForResponse(
+        res -> URI.create(res.url()).getPath().endsWith("/postcode-lookup"),
+        () -> {
+          country.selectOption(address.get("country"));
+          postalCode.fill(address.get("postal_code"));
+          houseNumber.fill(address.get("house_number"));
+        });
+    if (!response.ok()) {
+      throw new IllegalStateException("GET /postcode-lookup failed: " + response.status() + ": " + response.text());
+    }
+    assertThat(postcodeLookupError).isHidden();
+  }
+
+  /**
+   * Clicks a wizard "proceed" button until the next step shows (twin of CheckoutPage.proceed in TypeScript). The
+   * address form is rewritten by async results, and a click that lands while it updates can leave the wizard on the
+   * same step. The step change is asserted, and the click is repeated only while the button is still on screen.
+   */
+  public void proceed(Locator button, Locator nextStep) {
+    long deadline = System.currentTimeMillis() + 15_000;
+    while (true) {
+      try {
+        if (button.isVisible()) button.click(new Locator.ClickOptions().setTimeout(2_000));
+        assertThat(nextStep).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(2_000));
+        return;
+      } catch (AssertionFailedError | PlaywrightException e) {
+        if (System.currentTimeMillis() > deadline) {
+          throw new AssertionError("the wizard did not move on after clicking " + button, e);
+        }
+      }
     }
   }
 }
