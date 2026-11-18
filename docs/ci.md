@@ -38,8 +38,10 @@ lane fails (`!cancelled()`), so a red run still shows which IDs failed in which 
 Two infrastructure hiccups seen in six back-to-back nightlies (2026-11-18) are absorbed so they cannot turn a green
 test run red or stall it:
 - **Browser install:** `playwright install --with-deps` waits on the Ubuntu package mirror, which once took 29 minutes
-  instead of one. [`scripts/install-browsers.sh`](../scripts/install-browsers.sh) gives each attempt 6 minutes and
-  tries 3 times; every workflow installs browsers through it (an architecture test enforces that).
+  instead of one. [`scripts/install-browsers.sh`](../scripts/install-browsers.sh) gives each attempt 8 minutes and
+  tries 3 times. Between attempts it stops the leftover `apt-get` (it outlives the timeout and holds the dpkg lock);
+  apt's download cache lets the retry continue where the last attempt stopped. Every workflow installs browsers
+  through it (an architecture test enforces that).
 - **Report merge:** artifact storage once failed one blob download even after the action's own retries, although the
   blob downloaded fine minutes later. `merge-reports` tries once more after a minute.
 
