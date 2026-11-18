@@ -61,7 +61,7 @@ public class CheckoutFlow {
     checkoutPage.navigate();
     assertThat(checkoutPage.productTitles).hasText(products.stream().map(Product::name).toArray(String[]::new));
     double total = Double.parseDouble(checkoutPage.cartTotal.textContent().replaceAll("[^0-9.]", ""));
-    checkoutPage.proceedFromCart.click();
+    checkoutPage.proceed(checkoutPage.proceedFromCart, checkoutPage.email);
     return total;
   }
 
@@ -70,21 +70,19 @@ public class CheckoutFlow {
     checkoutPage.password.fill(customer.password());
     checkoutPage.loginSubmit.click();
     assertThat(checkoutPage.proceedFromSignIn).isEnabled();
-    checkoutPage.proceedFromSignIn.click();
+    checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
   }
 
-  /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest. */
+  /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
   public void confirmAddress(Map<String, String> address) {
-    checkoutPage.country.selectOption(address.get("country"));
-    checkoutPage.postalCode.fill(address.get("postal_code"));
-    checkoutPage.houseNumber.fill(address.get("house_number"));
+    checkoutPage.enterAddressForLookup(address);
     // The country is checked too: the order is rejected (422) when it does not match the postcode.
     assertThat(checkoutPage.country).hasValue(address.get("country"));
     assertThat(checkoutPage.street).hasValue(address.get("street"));
     assertThat(checkoutPage.city).hasValue(address.get("city"));
     assertThat(checkoutPage.state).hasValue(address.get("state"));
     assertThat(checkoutPage.proceedFromAddress).isEnabled();
-    checkoutPage.proceedFromAddress.click();
+    checkoutPage.proceed(checkoutPage.proceedFromAddress, checkoutPage.paymentMethod);
   }
 
   /** Selects the payment method and fills its details, without submitting. */
