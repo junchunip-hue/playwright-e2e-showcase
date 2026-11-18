@@ -44,7 +44,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 
 ## 3. Test inventory
 
-Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored in `java/` (JUnit 5).
+Status: ✅ done · 🟡 next · ⬜ planned · ➖ backlog, not planned ([roadmap §5](roadmap.md#5-definition-of-done)). **Java** marks scenarios mirrored in `java/` (JUnit 5).
 
 ### API (`tests/api`, project `api`, no browser)
 | ID | Test | Tag | Java | Status |
@@ -57,10 +57,10 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | A4 | Register: password from a data leak → 422 (external HIBP check, so nightly) | `@regression @negative` | ✅ | ✅ |
 | A5 | Register: duplicate email → **409** Conflict (not 422 as first assumed) | `@smoke @negative` | ✅ | ✅ |
 | A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
-| A6 | Invoice requires auth (no token → 401) | `@negative` | | ⬜ |
-| A7 | Product filters: category, brand, price range, sort | `@regression` | | ⬜ |
-| A10 | A customer cannot create a product (finding from S3: today it succeeds) | `@negative` | | ⬜ |
-| A11 | A customer cannot change an invoice status (finding from S3: today it succeeds) | `@negative` | | ⬜ |
+| A6 | Invoice requires auth (no token → 401) | `@negative` | | ➖ |
+| A7 | Product filters: category, brand, price range, sort | `@regression` | | ➖ |
+| A10 | A customer cannot create a product (finding from S3: today it succeeds) | `@negative` | | 🟡 |
+| A11 | A customer cannot change an invoice status (finding from S3: today it succeeds) | `@negative` | | 🟡 |
 | A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
 
 ### UI and journeys (`tests/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
@@ -73,10 +73,10 @@ Status: ✅ done · 🟡 next · ⬜ planned. **Java** marks scenarios mirrored 
 | U5 | Add to cart updates the badge (product picked via API) | `@smoke` | ✅ | ✅ |
 | **U6** | **Checkout E2E: API-registered customer → cart → sign in → address (postcode lookup) → cash on delivery → invoice verified via API** | `@smoke @e2e` | ✅ | ✅ |
 | U7 | Checkout with each payment method → implemented as journey **S2** below | – | | ✅ |
-| U8 | Guest checkout | `@regression` | | ⬜ |
-| U9 | Cart: change quantity / remove item, totals update | `@regression` | | ⬜ |
-| U10 | Registration form validation (UI) | `@regression` | | ⬜ |
-| U11 | Category filter + sort on the catalogue | `@regression` | | ⬜ |
+| U8 | Guest checkout → becomes journey **S4** | – | | ➖ |
+| U9 | Cart: change quantity / remove item, totals update | `@regression` | | ➖ |
+| U10 | Registration form validation (UI) | `@regression` | | ➖ |
+| U11 | Category filter + sort on the catalogue | `@regression` | | ➖ |
 
 ### Journeys (`tests/e2e`, see [roadmap.md](roadmap.md) §2)
 | ID | Journey | Tag | Java | Status |
@@ -156,4 +156,4 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | Structure R1–R6: test folders by intent, flows, per-resource API client, IDs in titles, docs by question | Readable at scale |
 | ✅ | S2 payment matrix, S3 admin → customer → admin (A8, A9) | Data-driven and cross-role journeys |
 | ✅ | Every A/U/S scenario in Java with the same tier; parity architecture test; TS vs Java pipeline summary | Two stacks, one plan |
-| Next 🟡 | S6 resilience (network mocking), A10/A11 permission negatives, then S4, S5, S7 | See [`roadmap.md`](roadmap.md) |
+| Next 🟡 | A10/A11 permission negatives, S6 resilience (network mocking), S4 guest checkout; S5, S7 optional; rest backlog | See [`roadmap.md`](roadmap.md) |

@@ -23,17 +23,16 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 |---|---|---|---|---|
 | **S1** | First purchase (exists as U6) | API-registered customer → cart → sign in → postcode lookup → pay → invoice verified via API | ✅ | Hybrid API/UI, isolated data |
 | **S2** ✅ | Payment matrix (U7) | Same journey, data-driven over every payment method; invalid card is flagged, cannot be submitted, is rejected by the API (A9) and creates no invoice | S1 | Data-driven tests, negative path, one data model for UI and API |
-| **S3** ✅ | Admin publishes, customer buys | Admin creates a product via API (A8) → customer finds it with search + category filter (U11) → buys it → admin sets invoice status → customer sees the new status | A8, U11, S1 | Cross-role E2E, two sessions in one test |
-| **S4** | Guest checkout (U8) | Anonymous cart → guest email → address → pay → invoice via guest endpoint | S1 | Second entry path into the same flow |
-| **S5** | Returning customer | Login → favourites → compare two products → buy one → download the invoice PDF and check its status endpoint | S1 | Downloads, multi-tab/compare UI |
-| **S6** | Resilience | `page.route` makes `/products` fail or slow down → UI shows its error/loading state, recovers on retry | – | Network mocking, failure UX |
-| **S7** | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
+| **S3** ✅ | Admin publishes, customer buys | Admin creates a product via API (A8) → customer finds it by search → buys it → admin ships the order via API → customer sees it listed and SHIPPED | A8, S1 | Cross-role E2E, two sessions in one test |
+| **S4** 🟡 | Guest checkout (U8) | Anonymous cart → guest email → address → pay → invoice via guest endpoint | S1 | Second entry path into the same flow |
+| **S5** (optional) | Returning customer | Login → favourites → compare two products → buy one → download the invoice PDF and check its status endpoint | S1 | Downloads, multi-tab/compare UI |
+| **S6** 🟡 | Resilience | `page.route` makes `/products` fail or slow down → UI shows its error/loading state, recovers on retry | – | Network mocking, failure UX |
+| **S7** (optional) | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
-**Order:** S2 ✅ → S3 ✅ → S6 → S4 → S5 → S7. S2 extends the flagship directly, S3 is the strongest demo story
-(two roles, API + UI), and S6 shows a technique (mocking) the suite does not use yet. **Every journey ships in
-TypeScript and Java** ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1–S3 already do.
-
-**Also next:** negative tests for the two permission findings from S3 (A10, A11 in the [test plan](test-plan.md#3-test-inventory)).
+**Order:** S2 ✅ → S3 ✅ → A10/A11 → S6 → S4, then optionally S5 and S7 (see [§5](#5-definition-of-done)).
+A10/A11 turn the two permission findings from S3 into tests, S6 shows a technique (mocking) the suite does not use
+yet, and S4 is the second entry path into checkout (P1). **Every journey ships in TypeScript and Java**
+([ADR 0009](decisions/0009-every-journey-in-both-languages.md)); S1–S3 already do.
 
 Every scenario follows the same contract: **arrange via API, act via UI, assert via UI and API**. Each one gets
 its own throwaway data and is tagged `@regression @e2e` (nightly), except the one PR-gate representative per area.
@@ -73,3 +72,44 @@ A new decision gets the next ADR number.
   - jobs without a timeout, and unbounded `while`/`until` loops
 - **Contracts**: every API response is schema-validated, so new scenarios get contract coverage for free.
 - **Isolation**: each scenario creates its own customers; the shared demo account is only used for successful logins.
+
+## 5. Definition of done
+
+### A scenario is done when
+| # | Criterion | Enforced by |
+|---|---|---|
+| 1 | It has a row in [test-plan.md](test-plan.md) with its ID, tier and "Java ✅" | `check:tags`, parity test |
+| 2 | It exists in TypeScript and Java with the same ID, tier, steps and data | parity test, tier check in `check:tags` |
+| 3 | Arrange via API, act via UI, assert via UI and API (journeys) | review |
+| 4 | It creates its own data and passes alone and in parallel | review |
+| 5 | It passes in the PR gate (if smoke) and in nightly: three browsers and Java | CI |
+| 6 | **Three nightly runs in a row without a flaky or failed result** for its ID | nightly summary (checked by hand) |
+| 7 | Docs updated: test-plan row, `java.md` table, this roadmap; product defects found go to the test plan's findings | review |
+
+Criterion 6 exists because one green run is not proof: S2 passed for days, then timed out once on WebKit (a test
+race with the postcode lookup, fixed in #17).
+
+### The showcase is done when
+- **Risks:** every P1/P2 risk in [test-strategy.md](test-strategy.md#2-risk-based-prioritisation) is checked at the
+  right layer (met today).
+- **Techniques:** each technique the demo should show is used at least once. Remaining:
+  - A10/A11: role-based authorization, and a known product defect tracked as a test (`test.fail()` until fixed)
+  - S6: network mocking and failure UX
+  - S4: a second entry path into checkout
+- **Stability:** five nightly runs in a row with no flaky or failed test in either language.
+- **Demo:** the README's 3-minute tour can be followed start to finish without other docs.
+
+Everything beyond that is optional (S5, S7) or backlog.
+
+### Backlog (not planned)
+These would add coverage but no new technique, so they are not part of "done". They stay in the test plan,
+marked ➖, and move back only with a reason (a new risk, a defect found nearby).
+
+| ID | Item | Why not now |
+|---|---|---|
+| A6 | Invoice requires auth (no token → 401) | Same technique as A3 and A10/A11 |
+| A7 | Product filters: category, brand, price range, sort | API variant of U3/U4 |
+| U8 | Guest checkout | Covered by S4 |
+| U9 | Cart: change quantity / remove item | Same layer and pattern as U5 |
+| U10 | Registration form validation (UI) | Rules already checked at API level (A4, A5) |
+| U11 | Category filter + sort | Same pattern as U3/U4 |
