@@ -13,7 +13,7 @@ registration rules existed in TypeScript only, and nothing checked that the two 
   every pipeline the TypeScript and Java lanes run the same scenarios.
 - **Java gets the same layers as TypeScript:**
   - a flow (`flows.CheckoutFlow`) and page objects
-  - data builders (`data.Customers`, `data.Payments`)
+  - data builders (`data.Customers`, `data.Payments`, `data.Products`)
   - an API client that checks every response against **`api.Contracts`**, a rule-for-rule twin of the zod schemas in
     `src/api/schemas.ts`
 - **CI enforces it.** The parity architecture test fails when an A/U/S ID exists in only one language, or when the

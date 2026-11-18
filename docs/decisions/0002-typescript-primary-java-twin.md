@@ -1,6 +1,8 @@
-# 0002 – TypeScript is primary; Java mirrors the smoke scenarios
+# 0002 – TypeScript is primary, with a Java twin (originally smoke scenarios only)
 
-**Status:** Accepted, amended by [0009](0009-every-journey-in-both-languages.md) (journeys now ship in both languages)
+**Status:** Accepted, amended by [0009](0009-every-journey-in-both-languages.md): every scenario (A, U, S) now ships
+in both languages with the same tier, and Java checks every response against `api.Contracts`. The "smoke only" scope
+and the "no schema validation" consequence below are historical.
 
 **Context:** Playwright Test (fixtures, projects, retries, sharding, HTML report, trace) and newer tooling such as
 Test Agents exist only for Node. Many teams, however, run Java stacks (JUnit/TestNG, Maven).
