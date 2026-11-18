@@ -1,5 +1,6 @@
-// Writes the PR pipeline summary (GitHub job summary): a diagram of the run and a TypeScript-vs-Java table
-// per test ID. Inputs: Playwright JSON results, Surefire XML reports and the job results from `needs`.
+// Writes the PR pipeline summary (GitHub job summary): a diagram of the run, a TypeScript-vs-Java table per test
+// ID, and the known product defects (ADR 0010). Inputs: Playwright JSON results, Surefire XML reports and the job
+// results from `needs`.
 // Usage: node scripts/pipeline-summary.mjs <ts-results.json> <surefire-dir>   (env: TS_JOB, JAVA_JOB)
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,6 +12,24 @@ const ORDER = 'SUAN';
 /** id → { passed, failed, flaky, skipped } */
 const tally = () => ({ passed: 0, failed: 0, flaky: 0, skipped: 0 });
 
+/**
+ * Known defects (src/known-defects.ts, com.showcase.api.KnownDefect) report one line per check:
+ * "<summary> | <label> | answered <status> (today <today>, intended <intended>)". TS: test annotation "known defect";
+ * Java: "known defect: <line>" in the test's <system-out>.
+ */
+const DEFECT_LINE = /^(.*?) \| (.*?) \| answered (\d+) \(today (\d+), intended (\d+)\)$/;
+/** "id|summary" → { id, summary, ts?: check, java?: check }, where check = { label, answered, today, intended } */
+const defects = new Map();
+function recordDefect(id, lang, line) {
+  const m = DEFECT_LINE.exec(line.trim());
+  if (!m) return;
+  const [, summary, label, answered, today, intended] = m;
+  const key = `${id}|${summary}`;
+  const d = defects.get(key) ?? { id, summary };
+  d[lang] = { label, answered: Number(answered), today: Number(today), intended: Number(intended) };
+  defects.set(key, d);
+}
+
 function typescriptResults(file) {
   const byId = new Map();
   if (!file || !existsSync(file)) return byId;
@@ -19,6 +38,7 @@ function typescriptResults(file) {
       const id = ID.exec(spec.title)?.[1];
       if (!id) continue;
       for (const t of spec.tests ?? []) {
+        for (const a of t.annotations ?? []) if (a.type === 'known defect') recordDefect(id, 'ts', a.description ?? '');
         const r = byId.get(id) ?? tally();
         if (t.status === 'expected') r.passed++;
         else if (t.status === 'flaky') r.flaky++;
@@ -44,6 +64,7 @@ function javaResults(dir) {
       if (!id) continue;
       const r = byId.get(id) ?? tally();
       const body = m[3] ?? '';
+      for (const line of body.matchAll(/known defect: (.*)/g)) recordDefect(id, 'java', line[1]);
       if (/<(failure|error)\b/.test(body)) r.failed++;
       else if (/<skipped\b/.test(body)) r.skipped++;
       else r.passed++;
@@ -97,6 +118,33 @@ const flow = nightly
       `  J2 --> J3["Java JUnit smoke<br/>${javaSum.passed} passed · ${javaSum.failed} failed"]`,
     ];
 
+/** State of one language's check: still present (green, tracked), fixed (red: replace the marker), or unexpected. */
+const defectState = (c) => {
+  if (!c) return { icon: '–', text: '–' };
+  if (c.answered === c.today) return { icon: '🟨', text: `🟨 still present (${c.answered})` };
+  if (c.answered === c.intended) return { icon: '🟥', text: `🟥 **fixed** (${c.answered}): replace the marker with a plain assertion` };
+  return { icon: '❌', text: `❌ unexpected ${c.answered} (today ${c.today}, intended ${c.intended})` };
+};
+const defectRows = [...defects.values()].sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)));
+const defectsOpen = defectRows.filter((d) => [d.ts, d.java].some((c) => c && c.answered === c.today)).length;
+const defectSection = defectRows.length
+  ? [
+      `## Known defects (${defectsOpen} still present)`,
+      '',
+      '| ID | Defect | Request | TypeScript | Java |',
+      '|---|---|---|---|---|',
+      ...defectRows.map(
+        (d) =>
+          `| ${d.id} | ${d.summary} | ${(d.ts ?? d.java).label} | ${defectState(d.ts).text} | ${defectState(d.java).text} |`,
+      ),
+      '',
+      '🟨 the tests pass because the API still answers exactly as today: the defect is tracked, not fixed. 🟥 the API now',
+      'answers as intended and the test fails on purpose. ❌ anything else. See ADR 0010.',
+      '',
+    ]
+  : [];
+const knownIds = new Set(defectRows.map((d) => d.id));
+
 const md = [
   nightly ? '## Nightly regression' : '## PR pipeline',
   '',
@@ -117,10 +165,12 @@ const md = [
   '',
   '| ID | TypeScript | Java | Coverage |',
   '|---|---|---|---|',
-  ...ids.map((id) => `| ${id} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`),
+  ...ids.map((id) => `| ${knownIds.has(id) ? `${id} 🟨` : id} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`),
   '',
   'Every A, U and S ID must show results in both columns (same tier, so same pipeline); N IDs are TypeScript-only (ADR 0009).',
+  knownIds.size ? '🟨 = the ID tracks a known product defect (see below).' : '',
   '',
+  ...defectSection,
 ].join('\n');
 
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);

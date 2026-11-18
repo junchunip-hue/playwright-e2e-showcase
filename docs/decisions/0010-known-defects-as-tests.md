@@ -25,7 +25,8 @@ Requests that would change data while the defect exists are made harmless where 
 status it already has. A10 creates a product, so both run against our own Toolshop only (`@admin`).
 
 **Consequences:**
-- Findings stay visible in every run (PR gate and nightly) without turning CI red.
+- Findings stay visible in every run (PR gate and nightly) without turning CI red: the pipeline summary lists them in
+  a "Known defects" table per language (🟨 still present, 🟥 fixed, ❌ unexpected), so a green run never hides them.
 - Upgrading the pinned Toolshop to a version with the fix fails the PR that upgrades it, so the fix is noticed and the
   test is turned into a normal negative test in the same change.
 - Positive controls stay separate: A8 and S3 send the same requests as the admin, so a broken payload fails there.

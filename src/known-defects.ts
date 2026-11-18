@@ -21,7 +21,7 @@ export interface KnownDefect {
  * expected failure. Here only the exact defect keeps the test green.
  */
 export function expectKnownDefect(res: APIResponse, label: string, defect: KnownDefect): void {
-  test.info().annotations.push({ type: 'known defect', description: `${defect.summary} (${label} → ${res.status()})` });
+  test.info().annotations.push({ type: 'known defect', description: knownDefectLine(defect, label, res.status()) });
   expect(
     res.status(),
     `known defect fixed: ${label} now answers ${defect.intended}. Replace expectKnownDefect with a plain assertion.`,
@@ -29,4 +29,12 @@ export function expectKnownDefect(res: APIResponse, label: string, defect: Known
   expect(res.status(), `${label}: neither today's behaviour (${defect.today}) nor the fix (${defect.intended})`).toBe(
     defect.today,
   );
+}
+
+/**
+ * One line per check, read back by scripts/pipeline-summary.mjs (the Java twin prints the same line, prefixed with
+ * "known defect: "): "<summary> | <label> | answered <status> (today <today>, intended <intended>)".
+ */
+export function knownDefectLine(defect: KnownDefect, label: string, status: number): string {
+  return `${defect.summary} | ${label} | answered ${status} (today ${defect.today}, intended ${defect.intended})`;
 }
