@@ -288,7 +288,9 @@ if (process.env.GITHUB_OUTPUT) {
   const failed = tsState === 'bad' || javaState === 'bad';
   const flakyNames = flakyCases.map((f) => `${f.id} ${f.project}`).join(', ');
   const description = failed
-    ? `❌ Failed: ${failedTotal} test${failedTotal === 1 ? '' : 's'} (TS ${tsSum.failed}, Java ${javaSum.failed})`
+    ? failedTotal
+      ? `❌ Failed: ${failedTotal} test${failedTotal === 1 ? '' : 's'} (TS ${tsSum.failed}, Java ${javaSum.failed})`
+      : `❌ Failed: a job ended red without a failed test (TypeScript ${tsJob}, Java ${javaJob})`
     : flakyTotal
       ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}`
       : '✅ Passed: no failed and no flaky tests';

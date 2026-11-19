@@ -184,7 +184,7 @@ jobs:
   summary:
     name: pipeline summary
     if: ${{ !cancelled() }}
-    needs: [merge-reports, regression-java]
+    needs: [regression, merge-reports, regression-java]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -212,7 +212,9 @@ jobs:
         id: summary
         env:
           PIPELINE: nightly
-          TS_JOB: ${{ needs.merge-reports.result }}
+          # A failed shard fails the TypeScript lane even though merge-reports succeeds without it: the missing
+          # shard's tests are simply absent from the merged report (nightly 2026-11-19, apt mirrors unreachable).
+          TS_JOB: ${{ needs.regression.result != 'success' && needs.regression.result || needs.merge-reports.result }}
           JAVA_JOB: ${{ needs.regression-java.result }}
         run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java
 
