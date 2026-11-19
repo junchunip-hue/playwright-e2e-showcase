@@ -3,9 +3,10 @@
 > Companion to [`test-strategy.md`](test-strategy.md) (why) and [`test-plan.md`](test-plan.md) (what runs today).
 > This file is how the suite grew into a demo (§1–§4), when it counts as done (§5), and what comes next (§6).
 
-**Status (2026-11-18): done by its own definition.** All four showcase criteria in [§5](#5-definition-of-done) are
-met (risks, techniques, stability, demo). Nothing is in progress. What comes next is keeping it green and, only if
-wanted, the optional or backlog items: see [§6](#6-what-comes-next).
+**Status (2026-11-19): three of four showcase criteria met; stability reopened.** Risks, techniques and demo are met
+([§5](#5-definition-of-done)). Stability was met on 2026-11-18 and reopened on 2026-11-19 by a flaky S2 (a test race,
+fixed in #27): 2 of 5 clean nightlies on `main` since the fix. Nothing else is in progress. What comes next is keeping
+it green and, only if wanted, the optional or backlog items: see [§6](#6-what-comes-next).
 
 ## 1. What a demo should show in 3 minutes
 
@@ -91,11 +92,13 @@ A new decision gets the next ADR number.
 | 3 | Arrange via API, act via UI, assert via UI and API (journeys) | review |
 | 4 | It creates its own data and passes alone and in parallel | review |
 | 5 | It passes in the PR gate (if smoke) and in nightly: three browsers and Java | CI |
-| 6 | **Three nightly runs in a row without a flaky or failed result** for its ID | nightly summary (checked by hand) |
+| 6 | **Three nightly runs in a row without a flaky or failed result** for its ID | nightly verdict: summary and `test verdict / nightly` commit status ([ci.md](ci.md#pipeline-summary)) |
 | 7 | Docs updated: test-plan row, `java.md` table, this roadmap; product defects found go to the test plan's findings | review |
 
-Criterion 6 exists because one green run is not proof: S2 passed for days, then timed out once on WebKit (a test
-race with the postcode lookup, fixed in #17).
+Criterion 6 exists because one green run is not proof. S2 passed for days, then timed out once on WebKit (a test
+race with the postcode lookup, fixed in #17). It passed for days again, then failed once on Firefox and passed on the
+retry: the test typed the address while the app filled in the saved one (fixed in #27). That flake was the first one
+the new flaky list in the pipeline summary caught; before it, a retry would have hidden it.
 
 ### The showcase is done when
 - **Risks:** every P1/P2 risk in [test-strategy.md](test-strategy.md#2-risk-based-prioritisation) is checked at the
@@ -110,6 +113,10 @@ race with the postcode lookup, fixed in #17).
   95) on three browsers and all 34 Java tests green, no flaky, no retries). One of the seven ended red without a failed test: an
   artifact download in `merge-reports` failed, now retried ([ci.md](ci.md#workflows)). Scheduled nightlies keep watching
   this; a flaky or failed test reopens it.
+  **Reopened 2026-11-19:** a manual nightly on `main` passed with one flaky test, S2 credit-card on Firefox (run
+  44511396786; cause and fix in [test-plan findings](test-plan.md#3-test-inventory), #27). Clean nightlies on `main`
+  since the fix: 2 of 5 (`a1d29f3`, `0b77bfd`). TypeScript and Java now both retry twice in CI and report a test that
+  passed only on a retry as flaky, so "clean" means no failed and no flaky test in either language.
 - **Demo:** the README's 3-minute tour can be followed start to finish without other docs (met 2026-11-18: links,
   commands and snippets checked; local-run notes added for `@admin` skips and per-OS visual baselines).
 

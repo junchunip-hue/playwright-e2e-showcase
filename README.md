@@ -2,15 +2,26 @@
 
 [![PR Smoke Tests](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml)
 [![Nightly Regression](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml)
+[![Nightly tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fbadge.json)](https://junchunip-hue.github.io/playwright-e2e-showcase/)
 · [Latest regression report](https://junchunip-hue.github.io/playwright-e2e-showcase/)
 
 A test automation framework built the way I would set it up in a real team, with **Playwright + TypeScript**
 and the same scenarios in **Java + JUnit 5**. It targets the open-source [Toolshop](https://practicesoftwaretesting.com)
 demo shop.
 
-**Status:** done by its own [definition](docs/roadmap.md#5-definition-of-done): every P1/P2 risk covered, every demo
-technique shown, seven clean nightlies in a row in both languages. Next steps are in the
-[roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
+**At a glance:** 69 TypeScript test cases, run 107 times a night across Chromium, Firefox and WebKit · 44 Java tests ·
+every API, UI and journey ID in both languages · one verdict per run: ✅ passed, ⚠️ passed with flaky, ❌ failed.
+The "Nightly tests" badge above is the latest nightly's count, coloured like its verdict.
+
+<p align="center">
+  <img src="docs/images/checkout-journey.gif" width="720"
+       alt="U6 checkout journey: product page, cart, sign-in, saved billing address, cash on delivery, order confirmation with invoice number">
+  <br><sub>U6 as the test drives it, from the screencast of a real run's Playwright trace (Chromium, about 5 seconds).</sub>
+</p>
+
+**Status:** every P1/P2 risk covered and every demo technique shown ([definition of done](docs/roadmap.md#5-definition-of-done)).
+Stability is being re-earned: a flaky S2 on 2026-11-19 (a test race, fixed in [#27](https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27)) reopened the "five clean nightlies
+in a row" criterion, 2 of 5 so far. Next steps are in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
 some numbers are missing are explained in the [test plan](docs/test-plan.md#how-ids-work).
 
 ## The 3-minute tour
@@ -23,7 +34,7 @@ const product = await api.products.findInStock();
 await checkout.addToCart(product);                       // act via UI: business steps from src/flows
 const cartTotal = await checkout.reviewCart([product]);
 await checkout.signIn(customer);
-await checkout.confirmAddress(customer.address);
+await checkout.confirmSavedAddress(customer.address);    // the app fills in and looks up the saved address
 const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 // assert via API: the invoice exists, for this customer, at the cart total
 ```
@@ -61,6 +72,27 @@ flowchart LR
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
+
+Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every flaky test by name, and
+TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`).
+
+<p align="center">
+  <img src="docs/images/pipeline-summary.png" width="760"
+       alt="Pipeline summary of nightly 44511396786: Passed with 1 flaky test, run diagram with the TypeScript result node gold, and the flaky table naming S2 on Firefox with its attempts and first error">
+  <br><sub>Nightly 44511396786, rendered from its results by the same summary script (top part): it passed, but S2
+  failed once on Firefox and passed on the retry, so the verdict is gold and the test is listed with its first error.
+  That flake was a test race, fixed in <a href="https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27">#27</a>.</sub>
+</p>
+
+<details>
+<summary>The three verdicts, from three real nightlies</summary>
+<p align="center"><img src="docs/images/verdicts.png" width="760"
+  alt="Three run summaries: Passed (green), Passed with flaky (gold result node), Failed (red TypeScript lane after a shard could not install its browsers)"></p>
+<sub>Rendered from each run's results by the same summary script. Passed: 44526643813. Passed with flaky: 44511396786.
+Failed: 44520009695, where one shard could not reach any Ubuntu mirror to install its browsers, so no test failed but
+the TypeScript lane did. That run itself still said "Passed": it exposed the bug fixed in
+<a href="https://github.com/junchunip-hue/playwright-e2e-showcase/pull/28">#28</a>, and is shown here as scored since.</sub>
+</details>
 
 | Layer | IDs | What it proves | Languages |
 |---|---|---|---|

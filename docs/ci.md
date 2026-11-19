@@ -31,11 +31,14 @@ flowchart LR
   end
   subgraph NW["nightly-regression.yml"]
     direction LR
-    R["regression × 3 shards<br/>Chromium · Firefox · WebKit"] --> M["merge-reports<br/>HTML + JSON"] --> D["deploy-report<br/>main only"]
-    RJ["regression-java<br/>full suite"] --> S["summary"]
-    M --> S
+    R["regression × 3 shards<br/>Chromium · Firefox · WebKit"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
+    RJ["regression-java<br/>full suite"] --> S
+    S --> D["deploy-report<br/>report + badge.json, main only"]
   end
 ```
+The nightly's GitHub Pages site is the merged HTML report plus `badge.json`, which the README badge reads
+(shields.io endpoint): all test runs of both languages, coloured like the verdict (green passed, yellow passed with
+flaky, red failed). The `summary` job builds it, because only it has both languages' results.
 Every job has its own Toolshop and a timeout of at most 60 minutes. `summary` and `merge-reports` run even when a
 lane fails (`!cancelled()`), so a red run still shows which IDs failed in which language.
 
