@@ -82,6 +82,12 @@ results and the Surefire XML reports and writes the run page's job summary:
   A flaky test does not fail the run, but it is never silent: each one is listed under **Flaky tests** with its ID,
   browser, file and line, its attempts (❌ → ✅, ⏱️ = timed out) and the first error, and it gets a warning annotation
   on the run page and in the PR's checks. The HTML report's Flaky tab has the traces of the failed attempts.
+
+  The verdict is also posted as a **commit status** (`test verdict / PR smoke`, `test verdict / nightly`): a green
+  check with "✅ Passed: no failed and no flaky tests", a green check with "✅ Passed · ⚠️ 2 flaky: S5 firefox, A7
+  api", or a red cross with "❌ Failed: …". It shows next to the commit (commit list, branch list) and in the PR's
+  checks, linked to the run. The Actions run list itself cannot show it: there GitHub draws only the run's own
+  result (passed or failed) and a title fixed when the run starts.
 - a **Mermaid diagram of the run**: the TypeScript and Java lanes with their counts; the setup nodes follow the job
   result, the result node the verdict above (so a nightly whose tests failed is red even though its report merge
   succeeded);

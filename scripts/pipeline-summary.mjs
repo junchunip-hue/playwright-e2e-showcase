@@ -260,6 +260,22 @@ const md = [
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
 else process.stdout.write(md);
 
+// The verdict as a commit status (posted by the workflow): a green check for Passed and for Passed with flaky, whose
+// description names the flaky tests; a red cross for Failed. GitHub shows it next to the commit and in the PR checks.
+if (process.env.GITHUB_OUTPUT) {
+  const failed = tsState === 'bad' || javaState === 'bad';
+  const flakyNames = flakyCases.map((f) => `${f.id} ${f.project}`).join(', ');
+  const description = failed
+    ? `❌ Failed: ${failedTotal} test${failedTotal === 1 ? '' : 's'} (TS ${tsSum.failed}, Java ${javaSum.failed})`
+    : flakyTotal
+      ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}`
+      : '✅ Passed: no failed and no flaky tests';
+  const ran = [tsState, javaState].some((s) => s === 'ok' || s === 'flaky');
+  // GitHub cuts status descriptions at 140 characters. No state (both lanes skipped or cancelled) = no status.
+  const short = description.length > 140 ? `${description.slice(0, 139)}…` : description;
+  if (failed || ran) appendFileSync(process.env.GITHUB_OUTPUT, `state=${failed ? 'failure' : 'success'}\ndescription=${short}\n`);
+}
+
 // A warning annotation per flaky test: it shows on the run page and in the PR's checks without opening the summary.
 if (process.env.GITHUB_ACTIONS) {
   const esc = (s) => s.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');

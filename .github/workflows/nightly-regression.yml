@@ -185,6 +185,10 @@ jobs:
     needs: [merge-reports, regression-java]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      statuses: write # the verdict as a commit status
     steps:
       - uses: actions/checkout@v7
 
@@ -203,8 +207,23 @@ jobs:
           path: results/java
 
       - name: Write pipeline summary
+        id: summary
         env:
           PIPELINE: nightly
           TS_JOB: ${{ needs.merge-reports.result }}
           JAVA_JOB: ${{ needs.regression-java.result }}
         run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java
+
+      # Green check for Passed and for Passed with flaky (the description names the flaky tests), red cross for Failed.
+      # Shown next to the commit and in the PR checks: the Actions run list itself only has the run's own icon.
+      - name: Report the verdict on the commit
+        if: ${{ steps.summary.outputs.state != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          STATE: ${{ steps.summary.outputs.state }}
+          DESCRIPTION: ${{ steps.summary.outputs.description }}
+        run: >-
+          gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA"
+          -f state="$STATE" -f description="$DESCRIPTION" -f context="test verdict / nightly"
+          -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
