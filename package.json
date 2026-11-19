@@ -1,6 +1,7 @@
 {
   "name": "playwright-e2e-showcase",
   "version": "0.1.0",
+  "license": "MIT",
   "private": true,
   "description": "Production-style Playwright E2E + API test framework with CI/CD, targeting the public Practice Software Testing (Toolshop) demo app.",
   "scripts": {
@@ -12,7 +13,7 @@
     "test:a11y": "node scripts/run-suite.mjs a11y --project=chromium",
     "test:visual": "node scripts/run-suite.mjs visual --project=chromium",
     "test:architecture": "node scripts/run-suite.mjs architecture --project=architecture",
-    "check:tags":"playwright test --list --reporter=./src/reporters/tag-guard.ts",
+    "check:tags": "playwright test --list --reporter=./src/reporters/tag-guard.ts",
     "report": "playwright show-report",
     "codegen": "playwright codegen https://practicesoftwaretesting.com",
     "lint": "eslint .",

@@ -47,6 +47,20 @@ Every API response is also contract-checked (A0); rendering and accessibility ar
 - The public demo is shared: catalogue counts change, and other users' data appears (e.g. new brands in the
   filter list). Tests do not depend on exact counts, and local visual baselines are personal for that reason.
 
+### Retries and flaky tests
+- **CI retries a failed test twice, locally never**, in both languages (`retries: isCI ? 2 : 0`; Surefire reruns in
+  the `ci-retries` profile). A retry keeps one bad moment of shared infrastructure from turning a run red; locally a
+  failure stays a failure, so it is seen at once.
+- **Flaky is visible, never silent.** A test that failed and then passed on a retry is *flaky*: the run passes, but
+  its verdict turns ⚠️ (gold), the test is listed by ID, browser and file with its attempts and first error, and the
+  commit status names it. A test that fails every attempt fails the run.
+- **A flaky test is a bug** in the test or the product until shown otherwise. The fix is the cause (a race, shared
+  data, a missing wait), never more retries; an architecture test keeps the retry count equal in both languages.
+- Flakes found so far were all test races with the app's own async work (postcode lookup, saved-address fill-in):
+  the fixes wait for the state the user would see instead of a request, or stop racing the app.
+
+See [ADR 0011](decisions/0011-retries-and-flaky-tests.md) and the verdicts in [ci.md](ci.md#pipeline-summary).
+
 ## 6. Tags, suites and IDs
 Every test has one tier (`@smoke` for the PR gate, `@regression` nightly) and a test-plan ID in its title (`U6: ...`).
 Suites are selected by name (`SUITE=pr`), and a tag check keeps both honest
