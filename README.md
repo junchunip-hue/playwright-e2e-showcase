@@ -1,8 +1,7 @@
 # Playwright E2E Showcase
 
 [![PR Smoke Tests](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml)
-[![Nightly tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fbadge.json&label=nightly%20tests&logo=githubactions&logoColor=white)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml)
-[![Latest report](https://img.shields.io/badge/report-latest%20nightly-0969da?logo=githubpages&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/)
+[![Nightly tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fbadge.json&label=nightly%20tests&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/)
 
 A test automation framework built the way I would set it up in a real team, with **Playwright + TypeScript**
 and the same scenarios in **Java + JUnit 5**. It targets the open-source [Toolshop](https://practicesoftwaretesting.com)
@@ -10,7 +9,7 @@ demo shop.
 
 **At a glance:** 69 TypeScript test cases, run 107 times a night across Chromium, Firefox and WebKit · 44 Java tests ·
 every API, UI and journey ID in both languages · one verdict per run: ✅ passed, ⚠️ passed with flaky, ❌ failed.
-The "nightly tests" badge above is the latest nightly's count, coloured like its verdict; "report" opens its HTML report.
+The "nightly tests" badge above is the latest nightly's count, coloured like its verdict; click it for that run's HTML report.
 
 <p align="center">
   <img src="docs/images/checkout-journey.gif" width="720"
