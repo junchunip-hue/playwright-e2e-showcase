@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test as base } from 'playwright-bdd';
 import { WCAG_TAGS } from '../a11y/accessibility';
-import { ApiClient, type NewCustomer } from '../api/ApiClient';
+import { ApiClient, type NewCustomer, type Product } from '../api/ApiClient';
 import { CheckoutFlow } from '../flows/CheckoutFlow';
 import { ShopperFlow } from '../flows/ShopperFlow';
 import { createBdd } from 'playwright-bdd';
@@ -13,12 +13,12 @@ import { CheckoutPage } from '../pages/CheckoutPage';
 import { ComparisonPage } from '../pages/ComparisonPage';
 import { FavoritesPage } from '../pages/FavoritesPage';
 import { Footer } from '../pages/components/Footer';
-import { Header } from '../pages/components/Header';
+import { HeaderModule } from '../modules/header.module';
 import { ContactPage } from '../pages/ContactPage';
-import { HomePage } from '../pages/HomePage';
+import { HomePage } from '../pages/home.page';
 import { InvoiceDetailsPage } from '../pages/InvoiceDetailsPage';
 import { LoginPage } from '../pages/login.page';
-import { ProductPage } from '../pages/ProductPage';
+import { ProductPage } from '../pages/product.page';
 
 /**
  * What one scenario's steps hand to each other (e.g. the customer a Given step registered for a later When step).
@@ -26,6 +26,10 @@ import { ProductPage } from '../pages/ProductPage';
  */
 export interface ScenarioContext {
   customer?: NewCustomer;
+  /** A product picked through the API (e.g. one in stock right now). */
+  product?: Product;
+  /** Product names the search API returned, to compare with what the UI shows. */
+  searchApiNames?: string[];
 }
 
 type Fixtures = {
@@ -41,7 +45,7 @@ type Fixtures = {
   invoiceDetailsPage: InvoiceDetailsPage;
   comparisonPage: ComparisonPage;
   favoritesPage: FavoritesPage;
-  header: Header;
+  header: HeaderModule;
   footer: Footer;
   api: ApiClient;
   /** Business steps of the checkout journey (src/flows), built on the page objects above. */
@@ -76,7 +80,7 @@ export const test = base.extend<Fixtures>({
   invoiceDetailsPage: async ({ page }, use) => use(new InvoiceDetailsPage(page)),
   comparisonPage: async ({ page }, use) => use(new ComparisonPage(page)),
   favoritesPage: async ({ page }, use) => use(new FavoritesPage(page)),
-  header: async ({ page }, use) => use(new Header(page)),
+  header: async ({ page }, use) => use(new HeaderModule(page)),
   footer: async ({ page }, use) => use(new Footer(page)),
   checkout: async ({ productPage, header, checkoutPage }, use) => use(new CheckoutFlow(productPage, header, checkoutPage)),
   shopper: async ({ page, loginPage, productPage, comparisonPage, favoritesPage, accountInvoicesPage, invoiceDetailsPage }, use) =>

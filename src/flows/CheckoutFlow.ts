@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import type { Address, NewCustomer, Product } from '../api/ApiClient';
 import type { Payment } from '../data/payments';
 import type { CheckoutPage } from '../pages/CheckoutPage';
-import type { Header } from '../pages/components/Header';
-import type { ProductPage } from '../pages/ProductPage';
+import type { HeaderModule } from '../modules/header.module';
+import type { ProductPage } from '../pages/product.page';
 
 /**
  * The checkout journey as business steps, so long scenarios read like the story they test:
@@ -21,15 +21,15 @@ import type { ProductPage } from '../pages/ProductPage';
 export class CheckoutFlow {
   constructor(
     private readonly productPage: ProductPage,
-    private readonly header: Header,
+    private readonly header: HeaderModule,
     private readonly checkoutPage: CheckoutPage,
   ) {}
 
   /** Adds the product from its detail page; `cartCount` is the badge value expected afterwards. */
   async addToCart(product: Product, cartCount = 1): Promise<void> {
     await test.step(`add "${product.name}" to the cart`, async () => {
-      await this.productPage.goto(product.id);
-      await this.productPage.addToCart.click();
+      await this.productPage.open(product.id);
+      await this.productPage.addToCart();
       await expect(this.header.cartQuantity).toHaveText(String(cartCount));
     });
   }

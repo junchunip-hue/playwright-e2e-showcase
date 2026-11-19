@@ -3,7 +3,7 @@ package com.showcase.steps;
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 
 import com.showcase.config.Env;
-import com.showcase.pages.Header;
+import com.showcase.modules.HeaderModule;
 import com.showcase.pages.LoginPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -52,7 +52,7 @@ public class LoginSteps {
 
   @Then("the header shows my user menu")
   public void theHeaderShowsMyUserMenu() {
-    assertThat(new Header(playwright.page()).userMenu).isVisible();
+    assertThat(new HeaderModule(playwright.page()).userMenu).isVisible();
   }
 
   @Then("I see a login error")

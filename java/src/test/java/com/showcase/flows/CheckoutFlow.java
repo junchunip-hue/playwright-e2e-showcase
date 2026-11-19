@@ -7,7 +7,7 @@ import com.showcase.api.ApiClient.Product;
 import com.showcase.data.Customers.Customer;
 import com.showcase.data.Payments.Payment;
 import com.showcase.pages.CheckoutPage;
-import com.showcase.pages.Header;
+import com.showcase.modules.HeaderModule;
 import com.showcase.pages.ProductPage;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +32,12 @@ public class CheckoutFlow {
   private static final Pattern INVOICE_NUMBER = Pattern.compile("INV-\\d+");
 
   private final ProductPage productPage;
-  private final Header header;
+  private final HeaderModule header;
   private final CheckoutPage checkoutPage;
 
   public CheckoutFlow(Page page) {
     this.productPage = new ProductPage(page);
-    this.header = new Header(page);
+    this.header = new HeaderModule(page);
     this.checkoutPage = new CheckoutPage(page);
   }
 
@@ -47,8 +47,8 @@ public class CheckoutFlow {
 
   /** Adds the product from its detail page; the cart badge must then show {@code cartCount}. */
   public void addToCart(Product product, int cartCount) {
-    productPage.navigate(product.id());
-    productPage.addToCart.click();
+    productPage.open(product.id());
+    productPage.addToCart();
     assertThat(header.cartQuantity).hasText(String.valueOf(cartCount));
   }
 

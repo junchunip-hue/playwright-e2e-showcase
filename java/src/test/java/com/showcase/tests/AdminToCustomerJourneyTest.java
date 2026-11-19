@@ -45,9 +45,9 @@ class AdminToCustomerJourneyTest {
 
       // 2. Customer (UI): find it by name, buy it.
       HomePage homePage = new HomePage(page);
-      homePage.navigate();
+      homePage.open();
       homePage.search(published.name());
-      assertThat(homePage.productNames).hasText(new String[] {published.name()});
+      assertThat(homePage.ui.productNames).hasText(new String[] {published.name()});
 
       Product product = api.getProduct(published.id());
       CheckoutFlow checkout = new CheckoutFlow(page);

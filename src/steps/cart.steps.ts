@@ -1,0 +1,20 @@
+import { expect, Then, When } from '../fixtures';
+
+// Steps layer for features/ui/cart.feature. Java twin: java/src/test/java/com/showcase/steps/CartSteps.java.
+
+When("I open that product's page", async ({ productPage, ctx }) => {
+  if (!ctx.product) throw new Error('No product yet: add "Given a product that is in stock" first');
+  await productPage.open(ctx.product.id);
+});
+
+Then('the page shows that product', async ({ productPage, ctx }) => {
+  await expect(productPage.ui.name).toHaveText(ctx.product!.name);
+});
+
+When('I add it to the cart', async ({ productPage }) => {
+  await productPage.addToCart();
+});
+
+Then('the cart badge shows {int}', async ({ header }, count: number) => {
+  await expect(header.cartQuantity).toHaveText(String(count));
+});

@@ -28,9 +28,9 @@ test.describe('Visual regression', { tag: [Tag.visual, Tag.regression] }, () => 
   });
 
   test('N1: catalogue filters', async ({ homePage }) => {
-    await homePage.goto();
-    await expect(homePage.productNames.first()).toBeVisible();
-    await expect(homePage.filtersPanel).toHaveScreenshot('catalogue-filters.png');
+    await homePage.open();
+    await expect(homePage.ui.productNames.first()).toBeVisible();
+    await expect(homePage.ui.filtersPanel).toHaveScreenshot('catalogue-filters.png');
   });
 
   // Full-page example: anything that changes between runs is masked rather than compared.

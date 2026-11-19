@@ -6,7 +6,7 @@ import type { ComparisonPage } from '../pages/ComparisonPage';
 import type { FavoritesPage } from '../pages/FavoritesPage';
 import type { InvoiceDetailsPage } from '../pages/InvoiceDetailsPage';
 import type { LoginPage } from '../pages/login.page';
-import type { ProductPage } from '../pages/ProductPage';
+import type { ProductPage } from '../pages/product.page';
 
 /** How long the invoice PDF may take: a background job writes it, and the page polls its status every 20 s. */
 const PDF_READY_TIMEOUT = 180_000;
@@ -46,9 +46,9 @@ export class ShopperFlow {
   /** Adds the product from its detail page and waits until the API has stored it. */
   async addToFavorites(product: Product): Promise<void> {
     await test.step(`add "${product.name}" to favourites`, async () => {
-      await this.pages.product.goto(product.id);
+      await this.pages.product.open(product.id);
       const stored = this.page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/favorites'));
-      await this.pages.product.addToFavorites.click();
+      await this.pages.product.ui.addToFavorites.click();
       expect((await stored).status(), 'POST /favorites').toBe(201);
     });
   }
@@ -66,8 +66,8 @@ export class ShopperFlow {
   async compare(products: Product[]): Promise<Map<string, number>> {
     return test.step(`compare ${products.map((p) => `"${p.name}"`).join(' and ')}`, async () => {
       for (const product of products) {
-        await this.pages.product.goto(product.id);
-        await this.pages.product.addToCompare.click();
+        await this.pages.product.open(product.id);
+        await this.pages.product.ui.addToCompare.click();
       }
       await this.pages.comparison.goto();
       await expect(this.pages.comparison.productNames).toHaveText(products.map((p) => p.name));

@@ -116,7 +116,7 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ so far; journeys and API follow
+features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ (U1–U5); journeys and API follow
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd)
   pages/        what a user does on a page (*.page.ts), built on its module; older page objects until migrated
@@ -130,7 +130,7 @@ src/
   a11y/ visual/ reporters/ config/
 tests/
   api/          contracts, auth, registration, invoices, filters, payments, admin and permissions
-  ui/           single-page behaviour (login, search, cart)
+  ui/           the Playwright Test Agents' seed (UI scenarios are in features/ui)
   e2e/          journeys across pages, API and UI (checkout, payments, admin, guest, returning customer, resilience)
   quality/      accessibility and visual regression
   architecture/ rules about the pipeline and the code itself
