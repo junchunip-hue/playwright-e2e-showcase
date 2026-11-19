@@ -41,14 +41,21 @@ class ResilienceTest {
   void slowCatalogue(Page page) {
     AtomicInteger delayed = new AtomicInteger();
     page.route(CATALOGUE, route -> {
-      APIResponse response = route.fetch(); // the real answer from Toolshop...
+      // The real answer from Toolshop, copied into memory before the delay: the fetched response can be disposed
+      // while we wait (TS on Firefox, nightly 2026-11-19: "Fetch response has been disposed"), which left the
+      // request unanswered and the test hanging until its timeout.
+      APIResponse response = route.fetch();
+      Route.FulfillOptions answer = new Route.FulfillOptions()
+          .setStatus(response.status())
+          .setHeaders(response.headers())
+          .setBodyBytes(response.body());
       try {
         Thread.sleep(3_000); // ...delivered 3 s late
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
       delayed.incrementAndGet();
-      route.fulfill(new Route.FulfillOptions().setResponse(response));
+      route.fulfill(answer);
     });
     HomePage homePage = new HomePage(page);
 

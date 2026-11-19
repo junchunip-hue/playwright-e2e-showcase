@@ -150,6 +150,12 @@ selected the postcode, the saved `90210` landed, and the typed `90210` was appen
 into the lookup form is covered by S4, the guest, whose form starts empty. The first sign was the new flaky list in
 the pipeline summary.
 
+**Finding from a PR nightly of 2026-11-19 (test, fixed):** S6 "slow catalogue" was flaky on Firefox: the first
+attempt hit the 30 s timeout with `route.fulfill: Fetch response has been disposed`. The test fetched the real
+response, waited 3 s, then answered with that response object, which the browser had disposed in the meantime, so
+the request was never answered. Both languages now copy status, headers and body into memory before the delay and
+answer with the copy.
+
 **Findings while building S6 (pinned UI source, UX, pinned by S6):** the catalogue page has no error state.
 `OverviewComponent.getProducts()` subscribes without an error handler, so a failed `GET /products` leaves the page
 blank without a message. The search's error handler replaces the results with an empty page, so a server error is
