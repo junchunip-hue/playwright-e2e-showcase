@@ -52,7 +52,7 @@ class PaymentJourneyTest {
       checkout.addToCart(product);
       double cartTotal = checkout.reviewCart(List.of(product));
       checkout.signIn(customer);
-      checkout.confirmAddress(customer.address());
+      checkout.confirmSavedAddress(customer.address());
       String invoiceNumber = checkout.pay(payment);
 
       Invoice invoice = Invoices.find(api, customer, invoiceNumber);
@@ -74,7 +74,7 @@ class PaymentJourneyTest {
       checkout.addToCart(product);
       checkout.reviewCart(List.of(product));
       checkout.signIn(customer);
-      checkout.confirmAddress(customer.address());
+      checkout.confirmSavedAddress(customer.address());
       checkout.enterPayment(card.payment());
 
       // The form flags the field and cannot be submitted.

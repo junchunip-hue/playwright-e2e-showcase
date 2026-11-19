@@ -11,7 +11,7 @@ import type { ProductPage } from '../pages/ProductPage';
  *   await checkout.addToCart(product);
  *   const total = await checkout.reviewCart([product]);
  *   await checkout.signIn(customer);
- *   await checkout.confirmAddress(customer.address);
+ *   await checkout.confirmSavedAddress(customer.address);
  *   const invoice = await checkout.pay(payments.cashOnDelivery());
  *
  * Page objects stay locator-only; flows add the order of actions and the waits that make each step safe to
@@ -76,7 +76,11 @@ export class CheckoutFlow {
     });
   }
 
-  /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
+  /**
+   * For a guest (empty form): enters country, postcode and house number; the app's postcode lookup must fill in the
+   * rest (waited for). Not for a signed-in customer: the app fills the form with the saved address at a moment of its
+   * own, and typing at the same time corrupts the field (use confirmSavedAddress).
+   */
   async confirmAddress(address: Address): Promise<void> {
     await test.step('billing address via postcode lookup', async () => {
       await this.checkoutPage.enterAddressForLookup(address);
@@ -85,11 +89,14 @@ export class CheckoutFlow {
   }
 
   /**
-   * After continueSignedIn: the app fills in the customer's saved address and looks it up by itself, at a moment
-   * that differs per browser (before or after the step opens; nightly 2026-11-19). Typing the same values again
-   * triggers no new lookup, so there is no request to wait for. The saved address is the looked-up one, so the
-   * form shows the same values before and after the lookup: checking them (auto-waiting) is enough, and `proceed`
-   * repeats the click if the lookup rewrites the form at that moment.
+   * For a signed-in customer (signIn or continueSignedIn): the app fills in the saved address (GET /users/me) and
+   * looks it up by itself, at a moment that differs per browser. Nothing is typed:
+   *   - typing races that fill-in: `fill` selected the postcode, the saved "90210" landed, and the typed one was
+   *     appended, so the app looked up "9021090210" and got a 422 (S2, Firefox, nightly 2026-11-19);
+   *   - typing the same values again triggers no new lookup, so there is no request to wait for (S5).
+   * The saved address is the looked-up one (test customers are registered with a lookup result), so checking the
+   * fields (auto-waiting) proves the fill-in and lookup happened; `proceed` repeats the click if the lookup rewrites
+   * the form at that moment.
    */
   async confirmSavedAddress(address: Address): Promise<void> {
     await test.step('saved billing address', async () => {
@@ -100,6 +107,7 @@ export class CheckoutFlow {
   private async checkAddressAndProceed(address: Address): Promise<void> {
     // The country is checked too: the order is rejected (422) when it does not match the postcode.
     await expect(this.checkoutPage.country).toHaveValue(address.country);
+    await expect(this.checkoutPage.postalCode).toHaveValue(address.postal_code);
     await expect(this.checkoutPage.street).toHaveValue(address.street);
     await expect(this.checkoutPage.city).toHaveValue(address.city);
     await expect(this.checkoutPage.state).toHaveValue(address.state);

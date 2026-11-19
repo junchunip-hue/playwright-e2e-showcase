@@ -19,7 +19,7 @@ test.describe('Payment methods', { tag: [Tag.regression, Tag.e2e] }, () => {
       await checkout.addToCart(product);
       const cartTotal = await checkout.reviewCart([product]);
       await checkout.signIn(customer);
-      await checkout.confirmAddress(customer.address);
+      await checkout.confirmSavedAddress(customer.address);
       const invoiceNumber = await checkout.pay(payment);
 
       await test.step('invoice exists in the backend', async () => {
@@ -39,7 +39,7 @@ test.describe('Payment methods', { tag: [Tag.regression, Tag.e2e] }, () => {
       await checkout.addToCart(product);
       await checkout.reviewCart([product]);
       await checkout.signIn(customer);
-      await checkout.confirmAddress(customer.address);
+      await checkout.confirmSavedAddress(customer.address);
       await checkout.enterPayment(card.payment);
 
       await test.step('the form flags the field and cannot be submitted', async () => {
