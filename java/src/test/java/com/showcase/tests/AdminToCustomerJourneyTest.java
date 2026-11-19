@@ -54,7 +54,7 @@ class AdminToCustomerJourneyTest {
       checkout.addToCart(product);
       double cartTotal = checkout.reviewCart(List.of(product));
       checkout.signIn(customer);
-      checkout.confirmAddress(customer.address());
+      checkout.confirmSavedAddress(customer.address());
       String invoiceNumber = checkout.pay(Payments.cashOnDelivery());
 
       // 3. Admin (API): ship the order.

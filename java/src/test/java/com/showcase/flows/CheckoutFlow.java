@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
  *   checkout.addToCart(product);
  *   double total = checkout.reviewCart(List.of(product));
  *   checkout.signIn(customer);
- *   checkout.confirmAddress(customer.address());
+ *   checkout.confirmSavedAddress(customer.address());
  *   String invoice = checkout.pay(Payments.cashOnDelivery());
  * </pre>
  *
@@ -91,16 +91,22 @@ public class CheckoutFlow {
     checkoutPage.proceed(checkoutPage.proceedAsGuest, checkoutPage.country);
   }
 
-  /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
+  /**
+   * For a guest (empty form): enters country, postcode and house number; the app's postcode lookup must fill in the
+   * rest (waited for). Not for a signed-in customer: the app fills the form with the saved address at a moment of its
+   * own, and typing at the same time corrupts the field (use confirmSavedAddress).
+   */
   public void confirmAddress(Map<String, String> address) {
     checkoutPage.enterAddressForLookup(address);
     checkAddressAndProceed(address);
   }
 
   /**
-   * After continueSignedIn (TS: confirmSavedAddress): the app fills in and looks up the saved address by itself, at a
-   * moment that differs per browser, and typing the same values triggers no new lookup. The saved address is the
-   * looked-up one, so checking the fields (auto-waiting) is enough; proceed repeats the click if the form changes.
+   * For a signed-in customer (signIn or continueSignedIn; TS: confirmSavedAddress): the app fills in and looks up the
+   * saved address by itself, at a moment that differs per browser. Nothing is typed: typing races that fill-in (the
+   * postcode became "9021090210" and the lookup answered 422; TS, Firefox, nightly 2026-11-19), and typing the same
+   * values triggers no new lookup to wait for. The saved address is the looked-up one, so checking the fields
+   * (auto-waiting) is enough; proceed repeats the click if the form changes.
    */
   public void confirmSavedAddress(Map<String, String> address) {
     checkAddressAndProceed(address);
@@ -109,6 +115,7 @@ public class CheckoutFlow {
   private void checkAddressAndProceed(Map<String, String> address) {
     // The country is checked too: the order is rejected (422) when it does not match the postcode.
     assertThat(checkoutPage.country).hasValue(address.get("country"));
+    assertThat(checkoutPage.postalCode).hasValue(address.get("postal_code"));
     assertThat(checkoutPage.street).hasValue(address.get("street"));
     assertThat(checkoutPage.city).hasValue(address.get("city"));
     assertThat(checkoutPage.state).hasValue(address.get("state"));

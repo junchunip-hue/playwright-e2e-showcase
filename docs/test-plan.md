@@ -100,7 +100,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | U3 | Search: every result matches the term | `@smoke` | ✅ | ✅ |
 | U4 | Search: UI results equal search API results | `@regression` | ✅ | ✅ |
 | U5 | Add to cart updates the badge (product picked via API) | `@smoke` | ✅ | ✅ |
-| **U6** | **Checkout E2E: API-registered customer → cart → sign in → address (postcode lookup) → cash on delivery → invoice verified via API** | `@smoke @e2e` | ✅ | ✅ |
+| **U6** | **Checkout E2E: API-registered customer → cart → sign in → saved address (filled in and looked up by the app) → cash on delivery → invoice verified via API** | `@smoke @e2e` | ✅ | ✅ |
 | U7 | Checkout with each payment method → built as journey **S2** | – | | ↪ S2 |
 | U8 | Guest checkout → built as journey **S4** | – | | ↪ S4 |
 | U9 | Cart: change quantity / remove item, totals update | `@regression` | | ➖ |
@@ -141,6 +141,14 @@ The public demo starts the job but did not finish a PDF within 4 minutes (measur
 our own Toolshop only. A customer who signs in before checkout gets the saved address filled in and looked up as soon
 as the address step opens, at a moment that differs per browser; typing the same values again triggers no new
 lookup. S5 therefore checks the saved address instead of waiting for a lookup request.
+
+**Finding from the nightly of 2026-11-19 (test, fixed):** S2 credit-card was flaky on Firefox. The app fills a
+signed-in customer's saved address in (`GET /users/me`) while the test was typing the same address: `fill` had
+selected the postcode, the saved `90210` landed, and the typed `90210` was appended, so the app looked up
+`9021090210` and got a 422 ("format is not valid for the selected country"). Since then every signed-in journey
+(U6, S2, S3, S5) checks the saved address the app filled in and looked up, and types nothing; typing an address
+into the lookup form is covered by S4, the guest, whose form starts empty. The first sign was the new flaky list in
+the pipeline summary.
 
 **Findings while building S6 (pinned UI source, UX, pinned by S6):** the catalogue page has no error state.
 `OverviewComponent.getProducts()` subscribes without an error handler, so a failed `GET /products` leaves the page

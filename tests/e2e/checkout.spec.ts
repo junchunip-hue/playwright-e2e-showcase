@@ -18,7 +18,7 @@ test.describe('Checkout', () => {
     await checkout.addToCart(product);
     const cartTotal = await checkout.reviewCart([product]); // discounts applied: the expected invoice amount
     await checkout.signIn(customer);
-    await checkout.confirmAddress(customer.address);
+    await checkout.confirmSavedAddress(customer.address);
     const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 
     // Assert (API): the order really exists in the backend, for this customer, at the right price.

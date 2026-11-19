@@ -25,7 +25,7 @@ test.describe('Admin to customer', { tag: [Tag.regression, Tag.e2e, Tag.admin] }
     await checkout.addToCart(product);
     const cartTotal = await checkout.reviewCart([product]);
     await checkout.signIn(customer);
-    await checkout.confirmAddress(customer.address);
+    await checkout.confirmSavedAddress(customer.address);
     const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 
     // 3. Admin (API): ship the order.

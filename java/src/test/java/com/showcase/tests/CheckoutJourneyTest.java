@@ -39,7 +39,7 @@ class CheckoutJourneyTest {
       checkout.addToCart(product);
       double cartTotal = checkout.reviewCart(List.of(product)); // discounts applied: the expected invoice amount
       checkout.signIn(customer);
-      checkout.confirmAddress(customer.address());
+      checkout.confirmSavedAddress(customer.address());
       String invoiceNumber = checkout.pay(Payments.cashOnDelivery());
 
       // Assert (API): the order really exists in the backend, for this customer, at the right price.
