@@ -20,7 +20,7 @@ itself and would race S3 and A11.
 |---|---|---|---|
 | `pr-smoke.yml` | Every PR and push to `main` | **Static:** lint, typecheck, `check:tags`, `test:architecture`<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and the Java smoke suite, in parallel | Chromium |
 | `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed) in 3 shards, plus the full Java suite | Chromium, Firefox, WebKit |
-| `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR | Chromium |
+| `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR, and comments how to get PR checks on that commit (GitHub runs no workflow for a push made by Actions) | Chromium |
 
 ```mermaid
 flowchart LR
@@ -39,7 +39,11 @@ flowchart LR
 The nightly's GitHub Pages site is the merged HTML report plus `badge.json`, which the README badge reads
 (shields.io endpoint): all test runs of both languages, coloured like the verdict (green passed, yellow passed with
 flaky, red failed). The `summary` job builds it, because only it has both languages' results.
-Every job has its own Toolshop and a timeout of at most 60 minutes. `summary` and `merge-reports` run even when a
+**Merging:** a ruleset on `main` makes the PR pipeline a real gate: every change goes through a pull request, and
+`smoke (TypeScript)`, `smoke (Java)` and `test verdict / PR smoke` must pass before it merges (no bypass, also not for
+admins). The nightly is not required: it runs after merge.
+
+Every test job has its own Toolshop; every job has a timeout of at most 60 minutes. `summary` and `merge-reports` run even when a
 lane fails (`!cancelled()`), so a red run still shows which IDs failed in which language.
 
 Two infrastructure hiccups seen in six back-to-back nightlies (2026-11-18) are absorbed so they cannot turn a green
@@ -98,6 +102,15 @@ results and the Surefire XML reports and writes the run page's job summary:
   verdict, the commit status and the badge. A job that dies before its tests (e.g. a browser install) therefore turns
   its IDs ⛔, not ✅, and the run red. Java writes no results when its job dies early; it runs the same A/U/S IDs as
   TypeScript (ADR 0009), so those show ⛔ not run in the Java column.
+- **A skip in CI counts as not run.** The only skips are for the public demo (`@admin` checks, S5), which CI never
+  uses; a skip in CI means a test silently did not run (e.g. a wrong `BASE_URL`), so it turns the run red.
+- **No list, no "Passed".** If the planned-test list cannot be made, the summary cannot see tests that never ran: the
+  verdict is ⚠️ Unverified (yellow badge, status says so) instead of ✅ Passed.
+- **Clean streak.** On `main`, the nightly adds its verdict to `history.json` on Pages (read back from there on the
+  next run; `scripts/nightly-history-seed.json` holds the runs before it existed) and publishes `streak.json`, the
+  README's "clean nightlies" badge: passed runs in a row, the stability criterion of roadmap §5.
+- The Actions run list shows only each job's result: a run with a flaky test is ✅ there. The verdict is in the
+  summary, the commit status and the badges.
 - a **Mermaid diagram of the run**: the TypeScript and Java lanes with their counts; the setup nodes follow the job
   result, the result node the verdict above (so a nightly whose tests failed is red even though its report merge
   succeeded);

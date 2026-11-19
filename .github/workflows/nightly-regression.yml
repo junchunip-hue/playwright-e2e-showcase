@@ -212,7 +212,9 @@ jobs:
 
       # The tests this run planned (same suite and projects as the test job, no browser needed), so a test that never
       # ran shows as "not run" instead of disappearing from the counts.
+      # Only the planned-test list needs it: if npm fails, the summary still runs and says the list is missing.
       - name: Set up Node and dependencies
+        continue-on-error: true
         uses: ./.github/actions/setup-node-suite
 
       - name: List the planned TypeScript tests
@@ -231,7 +233,7 @@ jobs:
         run: |
           mkdir -p results/jobs
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" > results/jobs/jobs.json
-          for id in $(jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .id' results/jobs/jobs.json); do
+          for id in $(jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "cancelled") | .id' results/jobs/jobs.json); do
             gh api "repos/$GITHUB_REPOSITORY/check-runs/$id/annotations" > "results/jobs/annotations-$id.json"
           done
 
@@ -271,6 +273,20 @@ jobs:
       - name: Add the badge to the site
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
         run: cp badge.json site/badge.json
+
+      # history.json and streak.json ("clean nightlies in a row", roadmap §5) live on Pages: read the last ones back,
+      # add this run. Before the first publish, scripts/nightly-history-seed.json holds the earlier runs.
+      - name: Update the nightly history
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        env:
+          VERDICT: ${{ steps.summary.outputs.verdict }}
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ID: ${{ github.run_id }}
+          SHA: ${{ github.sha }}
+        run: |
+          curl -fsSL "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/history.json" -o previous-history.json             || echo "No published history yet: starting from the seed"
+          node scripts/nightly-history.mjs previous-history.json scripts/nightly-history-seed.json site
 
       - name: Upload GitHub Pages artifact
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}

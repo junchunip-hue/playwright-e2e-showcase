@@ -5,7 +5,8 @@
 
 **Status (2026-11-19): three of four showcase criteria met; stability reopened.** Risks, techniques and demo are met
 ([§5](#5-definition-of-done)). Stability was met on 2026-11-18 and reopened on 2026-11-19 by a flaky S2 (a test race,
-fixed in #27): 2 of 5 clean nightlies on `main` since the fix. Nothing else is in progress. What comes next is keeping
+fixed in #27); the "clean nightlies" README badge counts the streak after every nightly (4 of 5 on 2026-11-19:
+#40, #44, #47, #50). Nothing else is in progress. What comes next is keeping
 it green and, only if wanted, the optional or backlog items: see [§6](#6-what-comes-next).
 
 ## 1. What a demo should show in 3 minutes
@@ -115,8 +116,10 @@ the new flaky list in the pipeline summary caught; before it, a retry would have
   this; a flaky or failed test reopens it.
   **Reopened 2026-11-19:** a manual nightly on `main` passed with one flaky test, S2 credit-card on Firefox (run
   44511396786; cause and fix in [test-plan findings](test-plan.md#3-test-inventory), #27). Clean nightlies on `main`
-  since the fix: 2 of 5 (`a1d29f3`, `0b77bfd`). TypeScript and Java now both retry twice in CI and report a test that
-  passed only on a retry as flaky, so "clean" means no failed and no flaky test in either language.
+  since the fix: counted by the nightly itself (`scripts/nightly-history.mjs`: `history.json` and the "clean
+  nightlies" badge on Pages; 4 of 5 on 2026-11-19). TypeScript and Java both retry twice in CI and report a test that
+  passed only on a retry as flaky, so "clean" means no failed, flaky, skipped or not-run test in either language, and
+  a verified test list.
 - **Demo:** the README's 3-minute tour can be followed start to finish without other docs (met 2026-11-18: links,
   commands and snippets checked; local-run notes added for `@admin` skips and per-OS visual baselines).
 

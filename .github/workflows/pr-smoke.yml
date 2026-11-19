@@ -146,7 +146,9 @@ jobs:
 
       # The tests this run planned (same suite and projects as the test job, no browser needed), so a test that never
       # ran shows as "not run" instead of disappearing from the counts.
+      # Only the planned-test list needs it: if npm fails, the summary still runs and says the list is missing.
       - name: Set up Node and dependencies
+        continue-on-error: true
         uses: ./.github/actions/setup-node-suite
 
       - name: List the planned TypeScript tests
@@ -154,7 +156,7 @@ jobs:
         env:
           BASE_URL: http://localhost:4200 # our own Toolshop, as in the test job (not the public demo)
           PLAYWRIGHT_JSON_OUTPUT_FILE: results/ts-planned.json
-        run: node scripts/run-suite.mjs pr --project=api --project=chromium --list --reporter=json
+        run: npm run test:pr -- --list --reporter=json # the same suite definition as the test job
 
       # Which job and step failed, and the error it reported, so the summary can name it before anything else.
       - name: Collect failed jobs
@@ -164,7 +166,7 @@ jobs:
         run: |
           mkdir -p results/jobs
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" > results/jobs/jobs.json
-          for id in $(jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .id' results/jobs/jobs.json); do
+          for id in $(jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "cancelled") | .id' results/jobs/jobs.json); do
             gh api "repos/$GITHUB_REPOSITORY/check-runs/$id/annotations" > "results/jobs/annotations-$id.json"
           done
 
