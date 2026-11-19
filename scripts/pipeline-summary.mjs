@@ -2,7 +2,7 @@
 // ID, and the known product defects (ADR 0010). Inputs: Playwright JSON results, Surefire XML reports and the job
 // results from `needs`.
 // Usage: node scripts/pipeline-summary.mjs <ts-results.json> <surefire-dir>   (env: TS_JOB, JAVA_JOB)
-import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const [tsFile, javaDir] = process.argv.slice(2);
@@ -59,11 +59,20 @@ const xmlText = (s) =>
     code ? String.fromCharCode(Number(code)) : { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' }[name],
   );
 
+/** All test runs per language, with an ID or not (e.g. the login setup); the per-ID tables count only tests with an ID. */
+const totals = { ts: null, java: null };
+const countRun = (lang, outcome) => {
+  totals[lang] ??= { passed: 0, flaky: 0, failed: 0 };
+  if (outcome !== 'skipped') totals[lang][outcome]++;
+};
+
 function typescriptResults(file) {
   const byId = new Map();
   if (!file || !existsSync(file)) return byId;
+  const OUTCOME = { expected: 'passed', flaky: 'flaky', skipped: 'skipped' };
   const walk = (suite) => {
     for (const spec of suite.specs ?? []) {
+      for (const t of spec.tests ?? []) countRun('ts', OUTCOME[t.status] ?? 'failed');
       const id = ID.exec(spec.title)?.[1];
       if (!id) continue;
       for (const t of spec.tests ?? []) {
@@ -92,10 +101,14 @@ function javaResults(dir) {
     const xml = readFileSync(join(dir, f), 'utf8');
     for (const m of xml.matchAll(/<testcase\b([^>]*?)(\/>|>([\s\S]*?)<\/testcase>)/g)) {
       const name = /name="([^"]*)"/.exec(m[1])?.[1] ?? '';
+      const body = m[3] ?? '';
+      countRun(
+        'java',
+        /<(failure|error)\b/.test(body) ? 'failed' : /<flaky(Failure|Error)\b/.test(body) ? 'flaky' : /<skipped\b/.test(body) ? 'skipped' : 'passed',
+      );
       const id = ID.exec(name)?.[1];
       if (!id) continue;
       const r = byId.get(id) ?? tally();
-      const body = m[3] ?? '';
       for (const line of body.matchAll(/known defect: (.*)/g)) recordDefect(id, 'java', line[1]);
       // CI reruns a failed test (pom.xml, profile ci-retries). Failed on every attempt: <failure>/<error> (plus
       // <rerunFailure>s). Passed on a rerun: only <flakyFailure>/<flakyError>, one per failed attempt.
@@ -298,6 +311,25 @@ if (process.env.GITHUB_OUTPUT) {
   // GitHub cuts status descriptions at 140 characters. No state (both lanes skipped or cancelled) = no status.
   const short = description.length > 140 ? `${description.slice(0, 139)}…` : description;
   if (failed || ran) appendFileSync(process.env.GITHUB_OUTPUT, `state=${failed ? 'failure' : 'success'}\ndescription=${short}\n`);
+}
+
+// The nightly's README badge (shields.io endpoint format), published next to the report on GitHub Pages: test runs
+// in both languages, and the same verdict colour as above (green passed, yellow passed with flaky, red failed).
+if (process.env.BADGE_FILE) {
+  const all = ['passed', 'flaky', 'failed'].map((k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0));
+  const [passed, flaky, failedRuns] = all;
+  const failed = tsState === 'bad' || javaState === 'bad';
+  const badge = {
+    schemaVersion: 1,
+    label: 'nightly',
+    message: failed
+      ? failedRuns
+        ? `${failedRuns} failed · ${passed} passed`
+        : 'failed (a job ended red)'
+      : `${passed + flaky} passed · ${flaky} flaky`,
+    color: failed ? 'red' : flaky ? 'yellow' : 'brightgreen',
+  };
+  writeFileSync(process.env.BADGE_FILE, `${JSON.stringify(badge)}\n`);
 }
 
 // A warning annotation per flaky test: it shows on the run page and in the PR's checks without opening the summary.

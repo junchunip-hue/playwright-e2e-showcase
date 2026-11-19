@@ -188,7 +188,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 15 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (68 in total; data-driven cases count once each). The Java class
+"Tests" counts TypeScript test cases per ID (69 in total; data-driven cases count once each). The Java class
 covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
@@ -234,3 +234,4 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | S4 guest checkout: second entry into checkout, guest invoice checked as admin | Every demo technique shown once |
 | ✅ | Seven clean nightlies in a row; CI hardened (bounded browser install, report-merge retry); README tour checked | Showcase done ([roadmap §5](roadmap.md#5-definition-of-done)) |
 | ✅ | Numbering gaps filled: A6 invoice authentication, A7 product filters, S5 returning customer with PDF download; CI runs Toolshop's background jobs | Every planned A and S item built; downloads and waiting on background work |
+| ✅ | Browser OS packages cached (#25); one verdict per run, ✅ passed / ⚠️ passed with flaky / ❌ failed, with every flaky test listed and a commit status (#26); S2 race found by that list and fixed (#27); Java retries like TypeScript, and a failed shard fails the verdict (#28) | Flaky is visible, never silent; same meaning of "passed" in both languages |

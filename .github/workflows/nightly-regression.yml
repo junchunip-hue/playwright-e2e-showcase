@@ -114,18 +114,12 @@ jobs:
           path: playwright-report/
           retention-days: 30
 
-      - name: Upload report for GitHub Pages
-        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: playwright-report/
-
-  # Publishes the latest merged report at the repository's GitHub Pages URL.
-  # Requires Settings → Pages → Source: "GitHub Actions".
+  # Publishes the latest merged report and the README badge at the repository's GitHub Pages URL. The site is put
+  # together by the summary job, which has both languages' results. Requires Settings → Pages → Source: "GitHub Actions".
   deploy-report:
     name: publish report
-    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.merge-reports.result == 'success' }}
-    needs: [merge-reports]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.summary.result == 'success' }}
+    needs: [summary]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -212,6 +206,7 @@ jobs:
         id: summary
         env:
           PIPELINE: nightly
+          BADGE_FILE: badge.json
           # A failed shard fails the TypeScript lane even though merge-reports succeeds without it: the missing
           # shard's tests are simply absent from the merged report (nightly 2026-11-19, apt mirrors unreachable).
           TS_JOB: ${{ needs.regression.result != 'success' && needs.regression.result || needs.merge-reports.result }}
@@ -231,3 +226,21 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/statuses/$SHA"
           -f state="$STATE" -f description="$DESCRIPTION" -f context="test verdict / nightly"
           -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+      # GitHub Pages: the merged HTML report, plus badge.json for the README badge (shields.io endpoint).
+      - name: Download HTML report for GitHub Pages
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: regression-report
+          path: site
+
+      - name: Add the badge to the site
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        run: cp badge.json site/badge.json
+
+      - name: Upload GitHub Pages artifact
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/
