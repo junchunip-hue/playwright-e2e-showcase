@@ -52,6 +52,11 @@ const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 - [Architecture tests](tests/architecture/) fail if a workflow could trigger itself, a dependency loops, or a job could hang.
 - Every scenario runs in a TypeScript lane and a Java lane. A summary on each CI run compares them per test ID and lists
   the known defects (see "How it runs").
+- Flaky is visible, never silent: both lanes retry a failed test twice in CI, and a test that passed only on a retry
+  turns the verdict gold (⚠️ passed with flaky) and is listed by name with its first error, as an annotation and in the
+  commit status ([ADR 0011](docs/decisions/0011-retries-and-flaky-tests.md)).
+- Browser installs are bounded, retried on other mirrors and served from a package cache, so a slow Ubuntu mirror
+  cannot stall a run ([ci.md](docs/ci.md#workflows)).
 
 ## How it runs
 
@@ -61,14 +66,14 @@ flowchart LR
     direction LR
     S["Static: lint · types ·<br/>tag check · architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
     J["Java: JUnit 5 smoke<br/>(same scenario IDs)"]
-    TS --> SUM["Summary: run diagram +<br/>TS vs Java per test ID"]
+    TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>flaky tests · TS vs Java per ID<br/>+ commit status"]
     J --> SUM
   end
   subgraph N["Nightly 02:00 UTC"]
     direction LR
-    SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> P["GitHub Pages"]
-    NJ["Java: full suite,<br/>all journeys"] --> NS["Summary"]
-    M --> NS
+    SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> NS["Summary: verdict<br/>+ commit status"]
+    NJ["Java: full suite,<br/>all journeys"] --> NS
+    NS --> P["GitHub Pages:<br/>report + badge"]
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
@@ -100,7 +105,7 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 | UI | U1–U5 | Login, search (incl. UI = API), cart | TS + Java |
 | Journeys | U6/S1, S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | TS |
-| Architecture | N3 | Pipeline cannot loop, TS/Java parity | TS |
+| Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), TS/Java parity, equal CI retries | TS |
 
 Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).
 
@@ -161,3 +166,9 @@ and each CI run ends with a summary that draws the run and compares TypeScript a
 | Where do I see the latest results? | [Nightly report](https://junchunip-hue.github.io/playwright-e2e-showcase/) (3 browsers) · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram + TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
 | What comes next? | [docs/roadmap.md §6](docs/roadmap.md#6-what-comes-next): keep it green, optional S7, ranked candidates, backlog |
 | How do the TypeScript and Java lanes stay in sync? | [docs/java.md](docs/java.md) |
+
+## License
+
+[MIT](LICENSE) for the code in this repository. Toolshop, the application under test, is
+[testsmith-io/practice-software-testing](https://github.com/testsmith-io/practice-software-testing) under its own
+license; the GIF and summary images show its UI and results from runs against it.
