@@ -55,4 +55,20 @@ test.describe('TypeScript/Java parity', { tag: [Tag.smoke, Tag.architecture] }, 
 
     expect(sorted([...javaIds()].filter((id) => !ts.has(id))), 'Java-only IDs').toEqual([]);
   });
+
+  test('N3: both suites retry a failed test equally often in CI, and never locally', () => {
+    // Same retries = same meaning of "flaky" in the pipeline summary: a test that passed only on a retry.
+    const config = readFileSync(join(ROOT, 'playwright.config.ts'), 'utf8');
+    const pom = readFileSync(join(ROOT, 'java', 'pom.xml'), 'utf8');
+    const ts = /retries:\s*isCI\s*\?\s*(\d+)\s*:\s*0\b/.exec(config)?.[1];
+    // The rerun count lives only in the profile that the CI environment variable switches on.
+    const profile = /<profile>\s*<id>ci-retries<\/id>[\s\S]*?<\/profile>/.exec(pom)?.[0] ?? '';
+    const java = /<surefire\.rerunFailingTestsCount>(\d+)</.exec(profile)?.[1];
+    const javaOutsideProfile = pom.replace(profile, '').includes('rerunFailingTestsCount');
+
+    expect(ts, 'playwright.config.ts: retries: isCI ? <n> : 0').toBeDefined();
+    expect(profile, 'java/pom.xml: profile ci-retries').toMatch(/<name>env\.CI<\/name>/);
+    expect(java, 'Java reruns (pom.xml, profile ci-retries) vs TypeScript retries').toBe(ts);
+    expect(javaOutsideProfile, 'Java reruns set outside the CI-only profile').toBe(false);
+  });
 });
