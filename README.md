@@ -1,7 +1,6 @@
 # Playwright E2E Showcase
 
 [![PR Smoke Tests](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml)
-[![Nightly Regression](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml)
 [![Nightly tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fbadge.json&label=nightly%20tests&logo=githubactions&logoColor=white)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/nightly-regression.yml)
 [![Latest report](https://img.shields.io/badge/report-latest%20nightly-0969da?logo=githubpages&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/)
 
