@@ -18,10 +18,11 @@ The "nightly tests" badge above is the latest nightly's count, coloured like its
   <br><sub>U6 as the test drives it, from the screencast of a real run's Playwright trace (Chromium, about 5 seconds).</sub>
 </p>
 
-**Status:** every P1/P2 risk covered and every demo technique shown ([definition of done](docs/roadmap.md#5-definition-of-done)).
-Stability is re-earned run by run: a flaky S2 on 2026-11-19 (a test race, fixed in [#27](https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27)) reset the "five clean nightlies
-in a row" criterion, and the "clean nightlies" badge above counts it after every nightly (the runs are in its
-`history.json`). Next steps are in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
+**Status:** done by its own [definition](docs/roadmap.md#5-definition-of-done): every P1/P2 risk covered, every demo
+technique shown, five clean nightlies in a row in both languages. A flaky S2 on 2026-11-19 (a test race, fixed in
+[#27](https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27)) reset that count the same day it was first
+met; it was earned again with nightlies #40–#53. The "clean nightlies" badge above keeps counting after every nightly
+(the runs are in its `history.json`). Next steps are in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
 some numbers are missing are explained in the [test plan](docs/test-plan.md#how-ids-work).
 
 ## The 3-minute tour
