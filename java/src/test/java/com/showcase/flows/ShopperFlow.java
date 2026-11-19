@@ -65,10 +65,10 @@ public class ShopperFlow {
 
   /** Adds the product from its detail page and waits until the API has stored it. */
   public void addToFavorites(Product product) {
-    productPage.navigate(product.id());
+    productPage.open(product.id());
     Response stored = page.waitForResponse(
         r -> "POST".equals(r.request().method()) && r.url().endsWith("/favorites"),
-        productPage.addToFavorites::click);
+        productPage.ui.addToFavorites::click);
     if (stored.status() != 201) throw new AssertionError("POST /favorites answered " + stored.status());
   }
 
@@ -82,8 +82,8 @@ public class ShopperFlow {
   /** Marks each product for comparison, opens the comparison and returns the price shown per product name. */
   public Map<String, Double> compare(List<Product> products) {
     for (Product product : products) {
-      productPage.navigate(product.id());
-      productPage.addToCompare.click();
+      productPage.open(product.id());
+      productPage.ui.addToCompare.click();
     }
     comparisonPage.navigate();
     assertThat(comparisonPage.productNames).hasText(products.stream().map(Product::name).toArray(String[]::new));

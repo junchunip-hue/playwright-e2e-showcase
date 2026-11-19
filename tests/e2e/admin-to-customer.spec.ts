@@ -16,9 +16,9 @@ test.describe('Admin to customer', { tag: [Tag.regression, Tag.e2e, Tag.admin] }
 
     // 2. Customer (UI): find it by name, buy it.
     await test.step('customer finds the new product by search', async () => {
-      await homePage.goto();
+      await homePage.open();
       await homePage.search(published.name);
-      await expect(homePage.productNames).toHaveText([published.name]);
+      await expect(homePage.ui.productNames).toHaveText([published.name]);
     });
 
     const product = await api.products.get(published.id);

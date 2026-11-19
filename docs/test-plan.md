@@ -48,7 +48,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | Prefix | Layer | Where |
 |---|---|---|
 | **A** | API: contracts, rules, permissions | `tests/api` |
-| **U** | UI: one page or one widget | `tests/ui` (U6, the first journey, sits in `tests/e2e`) |
+| **U** | UI: one page or one widget | `features/ui` (U6, the first journey, sits in `tests/e2e`) |
 | **S** | Story: a journey across pages, roles or layers | `tests/e2e` |
 | **N** | Non-functional: visual, accessibility, architecture | `tests/quality`, `tests/architecture` |
 
@@ -92,7 +92,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | A10 | A customer cannot publish a product: intended 403, **known defect** today 201 ([ADR 0010](decisions/0010-known-defects-as-tests.md); own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
 | A11 | A customer cannot change the status of another customer's order: intended 403, **known defect** today 200; sends the current status, so nothing changes (own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
 
-### UI and journeys (`tests/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
+### UI and journeys (`features/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
 | ID | Test | Tag | Java | Status |
 |---|---|---|---|---|
 | U1 | Login with valid credentials | `@smoke` | ✅ | ✅ |
@@ -183,8 +183,8 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | A9 | 2 | smoke | ✅ | ✅ | API | `PaymentApiTest` |
 | A10, A11 | 1 + 1 | smoke, admin (known defects) | ✅ | ✅ | API | `PermissionsApiTest` |
 | U1, U2 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/login.feature` (Gherkin, both languages) |
-| U3, U5 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `SearchTest`, `CartTest` |
-| U4 | 1 | regression | – | ✅ | Chromium, Firefox, WebKit | `SearchTest` |
+| U3, U5 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/search.feature`, `features/ui/cart.feature` (Gherkin, both languages) |
+| U4 | 1 | regression | – | ✅ | Chromium, Firefox, WebKit | `features/ui/search.feature` (Gherkin, both languages) |
 | U6 (S1) | 1 | smoke, e2e | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `CheckoutJourneyTest` |
 | S2 | 6 | regression, e2e | – | ✅ | Chromium, Firefox, WebKit | `PaymentJourneyTest` |
 | S3 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `AdminToCustomerJourneyTest` |

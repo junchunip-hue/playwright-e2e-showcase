@@ -5,8 +5,8 @@ import { expect, Tag, test } from '../../src/fixtures';
 // Tagged @seed and excluded by the "nightly" suite (src/tags.ts); agents run it by file path.
 test.describe('Seed', { tag: [Tag.seed] }, () => {
   test('seed', async ({ homePage, header }) => {
-    await homePage.goto();
+    await homePage.open();
     await expect(header.userMenu).toBeVisible();
-    await expect(homePage.productNames.first()).toBeVisible();
+    await expect(homePage.ui.productNames.first()).toBeVisible();
   });
 });

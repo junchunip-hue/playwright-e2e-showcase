@@ -59,11 +59,11 @@ class ResilienceTest {
     });
     HomePage homePage = new HomePage(page);
 
-    homePage.navigate();
+    homePage.open();
 
     // Web-first assertions wait for the late response; no fixed sleep in the test itself.
-    assertThat(homePage.productNames.first()).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10_000));
-    assertThat(homePage.noResults).isHidden();
+    assertThat(homePage.ui.productNames.first()).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10_000));
+    assertThat(homePage.ui.noResults).isHidden();
     assertTrue(delayed.get() > 0, "the catalogue request went through the delay");
   }
 
@@ -74,16 +74,16 @@ class ResilienceTest {
     page.route(CATALOGUE, ResilienceTest::serverError);
     HomePage homePage = new HomePage(page);
 
-    Response failed = page.waitForResponse(res -> CATALOGUE.test(res.url()), homePage::navigate);
+    Response failed = page.waitForResponse(res -> CATALOGUE.test(res.url()), homePage::open);
     assertEquals(500, failed.status());
 
     // Finding: no error message, no "no results" either: the list is simply empty.
-    assertThat(homePage.productNames).hasCount(0);
-    assertThat(homePage.noResults).isHidden();
+    assertThat(homePage.ui.productNames).hasCount(0);
+    assertThat(homePage.ui.noResults).isHidden();
 
     page.unroute(CATALOGUE);
     page.reload();
-    assertThat(homePage.productNames.first()).isVisible();
+    assertThat(homePage.ui.productNames.first()).isVisible();
   }
 
   @RegressionTest
@@ -91,18 +91,18 @@ class ResilienceTest {
   @DisplayName("S6: a failed search is shown as \"no results\"; the next search works")
   void failedSearch(Page page) {
     HomePage homePage = new HomePage(page);
-    homePage.navigate();
-    assertThat(homePage.productNames.first()).isVisible();
+    homePage.open();
+    assertThat(homePage.ui.productNames.first()).isVisible();
 
     page.route(SEARCH, ResilienceTest::serverError);
     homePage.submitSearch("pliers");
 
     // Finding: the server error reaches the customer as "There are no products found".
-    assertThat(homePage.noResults).isVisible();
-    assertThat(homePage.productNames).hasCount(0);
+    assertThat(homePage.ui.noResults).isVisible();
+    assertThat(homePage.ui.productNames).hasCount(0);
 
     page.unroute(SEARCH);
     homePage.search("pliers");
-    assertThat(homePage.productNames.first()).containsText(Pattern.compile("pliers", Pattern.CASE_INSENSITIVE));
+    assertThat(homePage.ui.productNames.first()).containsText(Pattern.compile("pliers", Pattern.CASE_INSENSITIVE));
   }
 }

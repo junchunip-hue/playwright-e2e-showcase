@@ -24,11 +24,11 @@ test.describe('Resilience', () => {
       await route.fulfill(answer);
     });
 
-    await homePage.goto();
+    await homePage.open();
 
     // Web-first assertions wait for the late response; no fixed sleep in the test itself.
-    await expect(homePage.productNames.first()).toBeVisible({ timeout: 10_000 });
-    await expect(homePage.noResults).toBeHidden();
+    await expect(homePage.ui.productNames.first()).toBeVisible({ timeout: 10_000 });
+    await expect(homePage.ui.noResults).toBeHidden();
     expect(delayed, 'the catalogue request went through the delay').toBeGreaterThan(0);
   });
 
@@ -36,31 +36,31 @@ test.describe('Resilience', () => {
     await page.route(catalogue, (route) => route.fulfill(serverError));
     const failed = page.waitForResponse((res) => catalogue(new URL(res.url())));
 
-    await homePage.goto();
+    await homePage.open();
     expect((await failed).status()).toBe(500);
 
     // Finding: no error message, no "no results" either: the list is simply empty.
-    await expect(homePage.productNames).toHaveCount(0);
-    await expect(homePage.noResults).toBeHidden();
+    await expect(homePage.ui.productNames).toHaveCount(0);
+    await expect(homePage.ui.noResults).toBeHidden();
 
     await page.unroute(catalogue);
     await page.reload();
-    await expect(homePage.productNames.first()).toBeVisible();
+    await expect(homePage.ui.productNames.first()).toBeVisible();
   });
 
   test('S6: a failed search is shown as "no results"; the next search works', { tag: [Tag.regression, Tag.negative] }, async ({ page, homePage }) => {
-    await homePage.goto();
-    await expect(homePage.productNames.first()).toBeVisible();
+    await homePage.open();
+    await expect(homePage.ui.productNames.first()).toBeVisible();
 
     await page.route(search, (route) => route.fulfill(serverError));
     await homePage.submitSearch('pliers');
 
     // Finding: the server error reaches the customer as "There are no products found".
-    await expect(homePage.noResults).toBeVisible();
-    await expect(homePage.productNames).toHaveCount(0);
+    await expect(homePage.ui.noResults).toBeVisible();
+    await expect(homePage.ui.productNames).toHaveCount(0);
 
     await page.unroute(search);
     await homePage.search('pliers');
-    await expect(homePage.productNames.first()).toContainText(/pliers/i);
+    await expect(homePage.ui.productNames.first()).toContainText(/pliers/i);
   });
 });
