@@ -30,6 +30,30 @@ function recordDefect(id, lang, line) {
   defects.set(key, d);
 }
 
+/**
+ * Flaky = failed at least once, then passed on a retry. The run still passes, but each case is listed by name with
+ * its attempts and first error, so it is fixed rather than retried forever.
+ * Entries: { id, title, project, where, attempts: ['failed', 'passed', …], error }
+ */
+const flakyCases = [];
+const firstLine = (s) =>
+  (s ?? '')
+    .replace(/\u001b\[[0-9;]*m/g, '') // ANSI colours from Playwright's error output
+    .split('\n')
+    .map((l) => l.trim())
+    .find(Boolean) ?? '';
+function recordFlaky(id, spec, t) {
+  const failure = t.results.find((r) => r.status !== 'passed');
+  flakyCases.push({
+    id,
+    title: spec.title,
+    project: t.projectName,
+    where: `tests/${spec.file}:${spec.line}`,
+    attempts: t.results.map((r) => r.status),
+    error: firstLine(failure?.error?.message ?? failure?.errors?.[0]?.message),
+  });
+}
+
 function typescriptResults(file) {
   const byId = new Map();
   if (!file || !existsSync(file)) return byId;
@@ -41,7 +65,10 @@ function typescriptResults(file) {
         for (const a of t.annotations ?? []) if (a.type === 'known defect') recordDefect(id, 'ts', a.description ?? '');
         const r = byId.get(id) ?? tally();
         if (t.status === 'expected') r.passed++;
-        else if (t.status === 'flaky') r.flaky++;
+        else if (t.status === 'flaky') {
+          r.flaky++;
+          recordFlaky(id, spec, t);
+        }
         else if (t.status === 'skipped') r.skipped++;
         else r.failed++;
         byId.set(id, r);
@@ -95,7 +122,13 @@ const tsJob = process.env.TS_JOB ?? 'unknown';
 const javaJob = process.env.JAVA_JOB ?? 'unknown';
 const tsSum = sum(ts);
 const javaSum = sum(java);
-const state = (job) => (job === 'success' ? 'ok' : job === 'skipped' || job === 'cancelled' ? 'skip' : 'bad');
+const jobState = (job) => (job === 'success' ? 'ok' : job === 'skipped' || job === 'cancelled' ? 'skip' : 'bad');
+/** A failed test is a failure whatever the job says; a flaky one turns a green lane gold ("passed with flaky"). */
+const state = (job, s) => (s.failed || jobState(job) === 'bad' ? 'bad' : s.flaky && jobState(job) === 'ok' ? 'flaky' : jobState(job));
+const tsState = state(tsJob, tsSum);
+const javaState = state(javaJob, javaSum);
+const counts = (s) =>
+  [`${s.passed} passed`, s.failed ? `❌ ${s.failed} failed` : '0 failed', s.flaky ? `⚠️ ${s.flaky} flaky` : '0 flaky'].join(' · ');
 
 const nightly = process.env.PIPELINE === 'nightly';
 const flow = nightly
@@ -103,7 +136,7 @@ const flow = nightly
       'flowchart LR',
       '  PR([Nightly 02:00 UTC]) --> TS1[3 shards × Chromium,<br/>Firefox, WebKit]',
       '  TS1 --> TS2[Toolshop per shard]',
-      `  TS2 --> TS3["Merged TypeScript report<br/>${tsSum.passed} passed · ${tsSum.failed} failed · ${tsSum.flaky} flaky"]`,
+      `  TS2 --> TS3["Merged TypeScript report<br/>${counts(tsSum)}"]`,
       '  PR --> J1[Compile + Chromium]',
       '  J1 --> J2[Toolshop in Docker]',
       `  J2 --> J3["Java full suite<br/>${javaSum.passed} passed · ${javaSum.failed} failed"]`,
@@ -112,7 +145,7 @@ const flow = nightly
       'flowchart LR',
       '  PR([Pull request]) --> TS1[Static checks<br/>lint · types · tags · architecture]',
       '  TS1 --> TS2[Toolshop in Docker]',
-      `  TS2 --> TS3["TypeScript suite pr<br/>${tsSum.passed} passed · ${tsSum.failed} failed · ${tsSum.flaky} flaky"]`,
+      `  TS2 --> TS3["TypeScript suite pr<br/>${counts(tsSum)}"]`,
       '  PR --> J1[Compile + Chromium]',
       '  J1 --> J2[Toolshop in Docker]',
       `  J2 --> J3["Java JUnit smoke<br/>${javaSum.passed} passed · ${javaSum.failed} failed"]`,
@@ -145,22 +178,73 @@ const defectSection = defectRows.length
   : [];
 const knownIds = new Set(defectRows.map((d) => d.id));
 
+// One verdict for the whole run: failed beats flaky, flaky beats passed. GitHub renders the alert boxes in colour
+// (red / gold / green).
+const failedTotal = tsSum.failed + javaSum.failed;
+const flakyTotal = flakyCases.length;
+const verdict =
+  tsState === 'bad' || javaState === 'bad'
+    ? [
+        '> [!CAUTION]',
+        failedTotal
+          ? `> **Failed:** ${failedTotal} test${failedTotal === 1 ? '' : 's'} failed (TypeScript ${tsSum.failed}, Java ${javaSum.failed}).`
+          : `> **Failed:** a job ended red without a failed test (TypeScript job ${tsJob}, Java job ${javaJob}).`,
+      ]
+    : flakyTotal
+      ? [
+          '> [!WARNING]',
+          `> **Passed with ${flakyTotal} flaky test${flakyTotal === 1 ? '' : 's'}:** every test passed in the end, but`,
+          `> ${flakyTotal === 1 ? 'this one' : 'these'} failed first and passed only on a retry. See [Flaky tests](#flaky-tests) below.`,
+        ]
+      : tsState === 'ok' || javaState === 'ok'
+        ? ['> [!TIP]', '> **Passed:** no failed and no flaky tests.']
+        : ['> [!NOTE]', `> **No result:** TypeScript job ${tsJob}, Java job ${javaJob}.`];
+
+const cellText = (s) => s.replaceAll('|', '\\|').replaceAll('`', "'");
+const ATTEMPT = { passed: '✅', failed: '❌', timedOut: '⏱️', interrupted: '⏹️', skipped: '⏭️' };
+const flakySection = flakyTotal
+  ? [
+      `## Flaky tests`,
+      '',
+      `${flakyTotal} test${flakyTotal === 1 ? '' : 's'} passed only on a retry. The run counts as passed, but a flaky test hides`,
+      'a race in the test or the product: fix the cause (roadmap §6, "Keep it green"), do not raise the retries.',
+      '',
+      '| ID | Browser | Test | Attempts | First failure |',
+      '|---|---|---|---|---|',
+      ...flakyCases.map(
+        (f) =>
+          `| ⚠️ ${f.id} | ${f.project} | ${cellText(f.title)}<br/>\`${f.where}\` | ${f.attempts.map((a) => ATTEMPT[a] ?? a).join(' → ')} | ${f.error ? `\`${cellText(f.error.slice(0, 160))}\`` : '–'} |`,
+      ),
+      '',
+      'Attempts: ✅ passed · ❌ failed · ⏱️ timed out. Traces of the failed attempts are in the HTML report (Flaky tab).',
+      '',
+    ]
+  : [];
+
 const md = [
   nightly ? '## Nightly regression' : '## PR pipeline',
+  '',
+  ...verdict,
   '',
   '```mermaid',
   ...flow,
   '  TS3 --> S([Summary])',
   '  J3 --> S',
   '  classDef ok fill:#EAF3DE,stroke:#3B6D11,color:#27500A',
+  // Passed with flaky: gold fill inside a green border.
+  '  classDef flaky fill:#FAEEDA,stroke:#3B6D11,stroke-width:3px,color:#633806',
   '  classDef bad fill:#FCEBEB,stroke:#A32D2D,color:#791F1F',
   '  classDef skip fill:#F1EFE8,stroke:#5F5E5A,color:#444441',
-  `  class TS1,TS2,TS3 ${state(tsJob)}`,
-  `  class J1,J2,J3 ${state(javaJob)}`,
+  // Setup nodes follow the job; the result node carries the test verdict (passed / flaky / failed).
+  `  class TS1,TS2 ${jobState(tsJob)}`,
+  `  class TS3 ${tsState}`,
+  `  class J1,J2 ${jobState(javaJob)}`,
+  `  class J3 ${javaState}`,
   '```',
   '',
   `TypeScript job: **${tsJob}** · Java job: **${javaJob}**`,
   '',
+  ...flakySection,
   '## TypeScript vs Java by test ID',
   '',
   '| ID | TypeScript | Java | Coverage |',
@@ -175,3 +259,33 @@ const md = [
 
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
 else process.stdout.write(md);
+
+// The verdict as a commit status (posted by the workflow): a green check for Passed and for Passed with flaky, whose
+// description names the flaky tests; a red cross for Failed. GitHub shows it next to the commit and in the PR checks.
+if (process.env.GITHUB_OUTPUT) {
+  const failed = tsState === 'bad' || javaState === 'bad';
+  const flakyNames = flakyCases.map((f) => `${f.id} ${f.project}`).join(', ');
+  const description = failed
+    ? `❌ Failed: ${failedTotal} test${failedTotal === 1 ? '' : 's'} (TS ${tsSum.failed}, Java ${javaSum.failed})`
+    : flakyTotal
+      ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}`
+      : '✅ Passed: no failed and no flaky tests';
+  const ran = [tsState, javaState].some((s) => s === 'ok' || s === 'flaky');
+  // GitHub cuts status descriptions at 140 characters. No state (both lanes skipped or cancelled) = no status.
+  const short = description.length > 140 ? `${description.slice(0, 139)}…` : description;
+  if (failed || ran) appendFileSync(process.env.GITHUB_OUTPUT, `state=${failed ? 'failure' : 'success'}\ndescription=${short}\n`);
+}
+
+// A warning annotation per flaky test: it shows on the run page and in the PR's checks without opening the summary.
+if (process.env.GITHUB_ACTIONS) {
+  const esc = (s) => s.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
+  for (const f of flakyCases) {
+    const failedTries = f.attempts.length - 1;
+    console.log(
+      `::warning title=${esc(`Flaky: ${f.id} (${f.project})`).replaceAll(',', '%2C').replaceAll(':', '%3A')}::` +
+        esc(
+          `${f.title} failed ${failedTries}× and passed on attempt ${failedTries + 1} (${f.where}). First failure: ${f.error || 'no message'}`,
+        ),
+    );
+  }
+}
