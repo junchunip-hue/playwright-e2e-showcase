@@ -45,8 +45,11 @@ test run red or stall it:
   instead of one. [`scripts/install-browsers.sh`](../scripts/install-browsers.sh) gives each attempt 8 minutes and
   tries 3 times, each retry on another Ubuntu mirror (retrying the same slow mirror only crawled on). Between attempts
   it stops the leftover `apt-get` (it outlives the timeout and holds the dpkg lock); apt's download cache means a retry
-  fetches only what is still missing. Every workflow installs browsers through it (an architecture test enforces
-  that).
+  fetches only what is still missing. The packages themselves (140 MB of .deb files for three browsers, 22 MB for
+  Chromium) are kept in the Actions cache by [`install-browsers`](../.github/actions/install-browsers/action.yml), keyed
+  by Ubuntu release, browsers and Playwright version, so a normal run fetches nothing from the mirror and only the
+  package index (4 MB, seconds) still comes from it. Every job, the Java lane included, installs browsers through that
+  action (an architecture test enforces that).
 - **Report merge:** artifact storage once failed one blob download even after the action's own retries, although the
   blob downloaded fine minutes later. `merge-reports` tries once more after a minute.
 
@@ -108,7 +111,8 @@ afterwards to re-run the PR gate. The PNG diff in the PR is the review step
 - `workflow_run` triggers form a cycle, or a step starts or re-runs a workflow
 - composite actions, npm scripts, Playwright project dependencies or TypeScript imports form a cycle
 - a job has no `timeout-minutes` ≤ 60, or a shell step uses `while`/`until` instead of a bounded `for … in $(seq …)`
-- a step installs browsers with `playwright install` directly instead of the bounded `scripts/install-browsers.sh`
+- a step installs browsers with `playwright install` (npx or the Java CLI) instead of the bounded, cached
+  `install-browsers` action
 - an A/U/S ID exists in only one language, or the test plan's "Java" column disagrees with `java/` (parity)
 
 See [ADR 0008](decisions/0008-architecture-tests.md) for what they found on their first run.

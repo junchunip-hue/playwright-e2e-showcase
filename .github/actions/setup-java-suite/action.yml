@@ -16,7 +16,9 @@ runs:
       working-directory: java
       run: ./mvnw -B -q test-compile
 
+    # Same bounded, cached install as the TypeScript suite, through the Java CLI (its own Playwright version).
     - name: Install Chromium
-      shell: bash
-      working-directory: java
-      run: ./mvnw -B -q exec:java -Dexec.args="install --with-deps chromium"
+      uses: ./.github/actions/install-browsers
+      with:
+        browsers: chromium
+        java-dir: java
