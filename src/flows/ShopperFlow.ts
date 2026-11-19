@@ -9,7 +9,7 @@ import type { LoginPage } from '../pages/LoginPage';
 import type { ProductPage } from '../pages/ProductPage';
 
 /** How long the invoice PDF may take: a background job writes it, and the page polls its status every 20 s. */
-const PDF_READY_TIMEOUT = 150_000;
+const PDF_READY_TIMEOUT = 180_000;
 
 /**
  * What a signed-in customer does outside checkout (S5), as business steps:

@@ -77,7 +77,9 @@ public class CheckoutFlow {
   /** For a customer who signed in before shopping (S5): step 2 only confirms who is signed in. */
   public void continueSignedIn() {
     assertThat(checkoutPage.proceedFromSignIn).isEnabled();
-    checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
+    // Opening the address step fills in the saved address and looks it up at once; wait for that lookup here, so
+    // confirmSavedAddress finds a settled form (typing the same values again would trigger no new lookup).
+    checkoutPage.whilePostcodeLookup(() -> checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country));
   }
 
   /** Checks out without an account (TS: continueAsGuest): guest tab, email and name, then on to the address. */
@@ -94,6 +96,15 @@ public class CheckoutFlow {
   /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
   public void confirmAddress(Map<String, String> address) {
     checkoutPage.enterAddressForLookup(address);
+    checkAddressAndProceed(address);
+  }
+
+  /** After continueSignedIn: the saved address is already filled in and looked up; check it and move on. */
+  public void confirmSavedAddress(Map<String, String> address) {
+    checkAddressAndProceed(address);
+  }
+
+  private void checkAddressAndProceed(Map<String, String> address) {
     // The country is checked too: the order is rejected (422) when it does not match the postcode.
     assertThat(checkoutPage.country).hasValue(address.get("country"));
     assertThat(checkoutPage.street).hasValue(address.get("street"));

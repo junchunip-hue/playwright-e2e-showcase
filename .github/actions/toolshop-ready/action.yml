@@ -28,7 +28,9 @@ runs:
 
     # In production Toolshop's scheduler writes invoice PDFs and works off queued jobs (stock updates, emails) every
     # minute. Nothing runs them in a plain `docker compose up`, so a PDF would never be ready (S5 downloads one).
-    # This runs the same two commands every 10 seconds for at most an hour (the job ends long before).
+    # Each round queues a PDF for every invoice that has none, then three workers empty the queue together: the 200
+    # seeded invoices come first, and one worker took 4-5 minutes for them (nightly 2026-11-19). The next round
+    # starts only when the queue is empty, so no invoice is queued twice. At most 360 rounds; the job ends first.
     # `order:update` is left out on purpose: it moves order statuses by itself and would race S3 and A11.
     - name: Run background jobs (invoice PDFs, queue)
       shell: bash
@@ -36,7 +38,7 @@ runs:
       run: >-
         docker compose exec -d -T laravel-api sh -c
         'for i in $(seq 1 360); do php artisan invoice:generate > /dev/null 2>&1;
-        php artisan queue:work --stop-when-empty > /dev/null 2>&1; sleep 10; done'
+        for w in 1 2 3; do php artisan queue:work --stop-when-empty > /dev/null 2>&1 & done; wait; sleep 5; done'
 
     # Probe a data endpoint, not just /status: /status was green while /products returned 500.
     - name: Wait for API and UI

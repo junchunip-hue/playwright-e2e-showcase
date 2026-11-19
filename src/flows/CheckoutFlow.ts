@@ -59,7 +59,12 @@ export class CheckoutFlow {
   async continueSignedIn(): Promise<void> {
     await test.step('continue as the signed-in customer', async () => {
       await expect(this.checkoutPage.proceedFromSignIn).toBeEnabled();
+      // Opening the address step fills in the saved address and looks it up at once. Waiting for that lookup here
+      // (it starts before the click) leaves a settled form for confirmSavedAddress; typing the same values again
+      // would trigger no new lookup to wait for (nightly 2026-11-19, Java).
+      const lookup = this.checkoutPage.postcodeLookup();
       await this.checkoutPage.proceed(this.checkoutPage.proceedFromSignIn, this.checkoutPage.country);
+      await lookup;
     });
   }
 
@@ -80,14 +85,25 @@ export class CheckoutFlow {
   async confirmAddress(address: Address): Promise<void> {
     await test.step('billing address via postcode lookup', async () => {
       await this.checkoutPage.enterAddressForLookup(address);
-      // The country is checked too: the order is rejected (422) when it does not match the postcode.
-      await expect(this.checkoutPage.country).toHaveValue(address.country);
-      await expect(this.checkoutPage.street).toHaveValue(address.street);
-      await expect(this.checkoutPage.city).toHaveValue(address.city);
-      await expect(this.checkoutPage.state).toHaveValue(address.state);
-      await expect(this.checkoutPage.proceedFromAddress).toBeEnabled();
-      await this.checkoutPage.proceed(this.checkoutPage.proceedFromAddress, this.checkoutPage.paymentMethod);
+      await this.checkAddressAndProceed(address);
     });
+  }
+
+  /** After continueSignedIn: the saved address is already filled in and looked up; check it and move on. */
+  async confirmSavedAddress(address: Address): Promise<void> {
+    await test.step('saved billing address', async () => {
+      await this.checkAddressAndProceed(address);
+    });
+  }
+
+  private async checkAddressAndProceed(address: Address): Promise<void> {
+    // The country is checked too: the order is rejected (422) when it does not match the postcode.
+    await expect(this.checkoutPage.country).toHaveValue(address.country);
+    await expect(this.checkoutPage.street).toHaveValue(address.street);
+    await expect(this.checkoutPage.city).toHaveValue(address.city);
+    await expect(this.checkoutPage.state).toHaveValue(address.state);
+    await expect(this.checkoutPage.proceedFromAddress).toBeEnabled();
+    await this.checkoutPage.proceed(this.checkoutPage.proceedFromAddress, this.checkoutPage.paymentMethod);
   }
 
   /** Selects the payment method and fills its details, without submitting. */

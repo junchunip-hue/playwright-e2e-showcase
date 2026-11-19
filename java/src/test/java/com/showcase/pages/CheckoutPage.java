@@ -115,13 +115,16 @@ public class CheckoutPage {
    * would pass before the lookup ran, and its late result would rewrite the form while "proceed" is clicked.
    */
   public void enterAddressForLookup(Map<String, String> address) {
-    Response response = page.waitForResponse(
-        res -> URI.create(res.url()).getPath().endsWith("/postcode-lookup"),
-        () -> {
-          country.selectOption(address.get("country"));
-          postalCode.fill(address.get("postal_code"));
-          houseNumber.fill(address.get("house_number"));
-        });
+    whilePostcodeLookup(() -> {
+      country.selectOption(address.get("country"));
+      postalCode.fill(address.get("postal_code"));
+      houseNumber.fill(address.get("house_number"));
+    });
+  }
+
+  /** Runs the action and waits for the postcode lookup it triggers (TS: postcodeLookup); fails if the lookup fails. */
+  public void whilePostcodeLookup(Runnable action) {
+    Response response = page.waitForResponse(res -> URI.create(res.url()).getPath().endsWith("/postcode-lookup"), action);
     if (!response.ok()) {
       throw new IllegalStateException("GET /postcode-lookup failed: " + response.status() + ": " + response.text());
     }

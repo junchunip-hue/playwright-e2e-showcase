@@ -104,11 +104,19 @@ export class CheckoutPage {
    * would pass before the lookup ran, and its late result would rewrite the form while "proceed" is clicked.
    */
   async enterAddressForLookup(address: Address): Promise<void> {
-    const lookup = this.page.waitForResponse((res) => new URL(res.url()).pathname.endsWith('/postcode-lookup'));
+    const lookup = this.postcodeLookup();
     await this.country.selectOption(address.country);
     await this.postalCode.fill(address.postal_code);
     await this.houseNumber.fill(address.house_number);
-    const response = await lookup;
+    await lookup;
+  }
+
+  /**
+   * Resolves when the app's next postcode lookup has answered (and fails if it failed). Start it before the action
+   * that triggers the lookup, then await it.
+   */
+  async postcodeLookup(): Promise<void> {
+    const response = await this.page.waitForResponse((res) => new URL(res.url()).pathname.endsWith('/postcode-lookup'));
     if (!response.ok()) throw new Error(`GET /postcode-lookup failed: ${response.status()}: ${await response.text()}`);
     await expect(this.postcodeLookupError).toBeHidden();
   }

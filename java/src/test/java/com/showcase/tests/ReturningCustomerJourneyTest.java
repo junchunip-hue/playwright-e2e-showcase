@@ -60,7 +60,7 @@ class ReturningCustomerJourneyTest {
       checkout.addToCart(cheaper);
       double cartTotal = checkout.reviewCart(List.of(cheaper));
       checkout.continueSignedIn();
-      checkout.confirmAddress(customer.address());
+      checkout.confirmSavedAddress(customer.address());
       String invoiceNumber = checkout.pay(Payments.cashOnDelivery());
 
       // The invoice as a file: named after the order, and a real PDF.

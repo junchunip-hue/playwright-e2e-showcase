@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  */
 public class ShopperFlow {
   /** How long the invoice PDF may take: a background job writes it, and the page polls its status every 20 s. */
-  private static final double PDF_READY_TIMEOUT = 150_000;
+  private static final double PDF_READY_TIMEOUT = 180_000;
 
   /** A downloaded file and the name the browser was given for it. */
   public record PdfFile(String fileName, byte[] body) {}

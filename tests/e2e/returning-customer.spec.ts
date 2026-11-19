@@ -14,7 +14,7 @@ test.describe('Returning customer', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('S5: a returning customer saves a favourite, compares two products, buys the cheaper one and downloads the invoice', { tag: [Tag.regression, Tag.e2e] }, async ({ api, shopper, checkout }) => {
-    test.setTimeout(240_000); // includes waiting for the background PDF job
+    test.setTimeout(300_000); // includes waiting for the background PDF job
 
     // Arrange (API): a registered customer and two different products that can be bought.
     const customer = await createCustomer(api);
@@ -33,7 +33,7 @@ test.describe('Returning customer', () => {
     await checkout.addToCart(cheaper);
     const cartTotal = await checkout.reviewCart([cheaper]);
     await checkout.continueSignedIn();
-    await checkout.confirmAddress(customer.address);
+    await checkout.confirmSavedAddress(customer.address);
     const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
 
     // The invoice as a file: named after the order, and a real PDF.
