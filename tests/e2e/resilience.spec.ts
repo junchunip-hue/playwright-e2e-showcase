@@ -14,10 +14,14 @@ test.describe('Resilience', () => {
   test('S6: a slow catalogue response still shows the products once it arrives', { tag: [Tag.regression] }, async ({ page, homePage }) => {
     let delayed = 0;
     await page.route(catalogue, async (route) => {
-      const response = await route.fetch(); // the real answer from Toolshop...
+      // The real answer from Toolshop, copied into memory before the delay: the fetched response object can be
+      // disposed while we wait (Firefox, nightly 2026-11-19: "Fetch response has been disposed"), which left the
+      // request unanswered and the test hanging until its timeout.
+      const response = await route.fetch();
+      const answer = { status: response.status(), headers: response.headers(), body: await response.body() };
       await new Promise((resolve) => setTimeout(resolve, 3_000)); // ...delivered 3 s late
       delayed++;
-      await route.fulfill({ response });
+      await route.fulfill(answer);
     });
 
     await homePage.goto();
