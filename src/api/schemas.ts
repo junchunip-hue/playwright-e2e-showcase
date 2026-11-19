@@ -127,10 +127,29 @@ export const CategoryListSchema = z
   .min(1);
 export const ImageListSchema = z.array(ProductSchema.shape.product_image).min(1);
 
+/** GET /favorites: the signed-in customer's favourites, each with its product. POST answers without `product`. */
+export const FavoriteSchema = z.object({
+  id: ulid,
+  user_id: ulid,
+  product_id: ulid,
+  product: z.object({ id: ulid, name: z.string().min(1), price: z.number() }),
+});
+export const FavoriteListSchema = z.array(FavoriteSchema);
+export const FavoriteCreatedSchema = FavoriteSchema.omit({ product: true });
+
+/**
+ * GET /invoices/{number}/download-pdf-status. A background job writes the PDF after the order: INITIATED →
+ * IN_PROGRESS → COMPLETED. Before the job has seen the invoice the API answers 400 with NOT_INITIATED.
+ */
+export const PDF_STATUSES = ['NOT_INITIATED', 'INITIATED', 'IN_PROGRESS', 'COMPLETED'] as const;
+export const PdfStatusSchema = z.object({ status: z.enum(PDF_STATUSES) });
+
 /** POST /products answers with the stored product (relations are not loaded yet). */
 export const CreatedProductSchema = z.object({ id: ulid, name: z.string().min(1), price: z.number() });
 
 export type InvoiceDetail = z.infer<typeof InvoiceDetailSchema>;
+export type Favorite = z.infer<typeof FavoriteSchema>;
+export type PdfStatus = (typeof PDF_STATUSES)[number];
 export type Product = z.infer<typeof ProductSchema>;
 export type ProductPage = z.infer<typeof ProductPageSchema>;
 export type ProductSearchPage = z.infer<typeof ProductSearchPageSchema>;

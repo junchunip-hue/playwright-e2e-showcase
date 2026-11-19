@@ -28,7 +28,54 @@ public final class ApiClient implements AutoCloseable {
       String name,
       double price,
       @SerializedName("in_stock") boolean inStock,
-      @SerializedName("is_rental") boolean isRental) {}
+      @SerializedName("is_rental") boolean isRental,
+      Ref brand,
+      Ref category) {}
+
+  /**
+   * Query of GET /products (TS: ProductFilter). Build it step by step:
+   * {@code ProductFilter.page(1).byBrand(id).price(10, 20).sort("price", "asc")}.
+   */
+  public record ProductFilter(int page, String byCategory, String byBrand, Double min, Double max, String sortBy, String order) {
+    public static ProductFilter page(int page) {
+      return new ProductFilter(page, null, null, null, null, null, null);
+    }
+
+    public ProductFilter byCategory(String id) {
+      return new ProductFilter(page, id, byBrand, min, max, sortBy, order);
+    }
+
+    public ProductFilter byBrand(String id) {
+      return new ProductFilter(page, byCategory, id, min, max, sortBy, order);
+    }
+
+    /** Inclusive price range. */
+    public ProductFilter price(double from, double to) {
+      return new ProductFilter(page, byCategory, byBrand, from, to, sortBy, order);
+    }
+
+    /** {@code by} is "name" or "price", {@code direction} "asc" or "desc". */
+    public ProductFilter sort(String by, String direction) {
+      return new ProductFilter(page, byCategory, byBrand, min, max, by, direction);
+    }
+
+    RequestOptions query() {
+      RequestOptions options = RequestOptions.create().setQueryParam("page", page);
+      if (byCategory != null) options.setQueryParam("by_category", byCategory);
+      if (byBrand != null) options.setQueryParam("by_brand", byBrand);
+      if (min != null) options.setQueryParam("between", "price," + plain(min) + "," + plain(max));
+      if (sortBy != null) options.setQueryParam("sort", sortBy + "," + order);
+      return options;
+    }
+
+    private static String plain(double value) {
+      return java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+    }
+  }
+
+  /** A favourite with its product (TS: Favorite). */
+  public record Favorite(String id, @SerializedName("product_id") String productId, Ref product) {}
+
 
   public record Paginated<T>(
       @SerializedName("current_page") int currentPage,
@@ -138,15 +185,36 @@ public final class ApiClient implements AutoCloseable {
     return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
   }
 
+  /** GET /products with filters and sorting (TS: api.products.filter). */
+  public Paginated<Product> filterProducts(ProductFilter filter) {
+    JsonObject body = parse(request.get("/products", filter.query()), "GET /products (filtered)",
+        b -> Contracts.paginator(b, Contracts.productItem(true)));
+    return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
+  }
+
   /**
    * Returns a purchasable product. Stock changes over time, so UI tests ask the API
    * for an in-stock item instead of hard-coding a product name.
    */
   public Product findInStockProduct() {
-    return getProducts(1).data().stream()
-        .filter(p -> p.inStock() && !p.isRental())
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("No in-stock product found on page 1 of /products"));
+    return findInStockProducts(1).get(0);
+  }
+
+  /** {@code count} different purchasable products from page 1 (TS: findInStockProducts). */
+  public List<Product> findInStockProducts(int count) {
+    List<Product> products = getProducts(1).data().stream().filter(p -> p.inStock() && !p.isRental()).limit(count).toList();
+    if (products.size() < count) throw new IllegalStateException("Fewer than " + count + " in-stock products on page 1 of /products");
+    return products;
+  }
+
+  // --- favourites (TS: api.favorites) ---
+
+  public List<Favorite> favorites(String token) {
+    APIResponse res = request.get("/favorites", auth(token));
+    ensureOk(res, "GET /favorites");
+    JsonArray items = GSON.fromJson(res.text(), JsonArray.class);
+    Contracts.require("GET /favorites", Contracts.favorites(items));
+    return GSON.fromJson(items, new TypeToken<List<Favorite>>() {}.getType());
   }
 
   // --- invoices and payments (TS: api.invoices, api.payments) ---
@@ -177,6 +245,37 @@ public final class ApiClient implements AutoCloseable {
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("invoice " + invoiceNumber + " not found"));
     return invoice(token, match.id());
+  }
+
+  /**
+   * GET /invoices/{number}/download-pdf-status (TS: pdfStatus). 400 with NOT_INITIATED is an answer, not an error:
+   * the background job has not picked the invoice up yet.
+   */
+  public String pdfStatus(String token, String invoiceNumber) {
+    String label = "GET /invoices/" + invoiceNumber + "/download-pdf-status";
+    APIResponse res = invoicePdfStatusRequest(invoiceNumber, token);
+    if (res.status() != 400) ensureOk(res, label);
+    JsonObject body = GSON.fromJson(res.text(), JsonObject.class);
+    Contracts.require(label, Contracts.pdfStatus(body));
+    return body.get("status").getAsString();
+  }
+
+  // Raw responses (any status), for A6: who may read invoices. A null token sends the request anonymously.
+
+  public APIResponse invoicesRequest(String token) {
+    return request.get("/invoices", optionalAuth(token));
+  }
+
+  public APIResponse invoiceRequest(String id, String token) {
+    return request.get("/invoices/" + id, optionalAuth(token));
+  }
+
+  public APIResponse invoicePdfRequest(String invoiceNumber, String token) {
+    return request.get("/invoices/" + invoiceNumber + "/download-pdf", optionalAuth(token));
+  }
+
+  public APIResponse invoicePdfStatusRequest(String invoiceNumber, String token) {
+    return request.get("/invoices/" + invoiceNumber + "/download-pdf-status", optionalAuth(token));
   }
 
   /** Order statuses an admin can set (TS: INVOICE_STATUSES; pinned InvoiceController::updateStatus). */
@@ -229,6 +328,11 @@ public final class ApiClient implements AutoCloseable {
 
   private static RequestOptions auth(String token) {
     return RequestOptions.create().setHeader("Authorization", "Bearer " + token);
+  }
+
+  private static RequestOptions optionalAuth(String token) {
+    RequestOptions options = RequestOptions.create().setHeader("Accept", "application/json");
+    return token == null ? options : options.setHeader("Authorization", "Bearer " + token);
   }
 
   /** POST /payment/check, raw response. No login needed. */

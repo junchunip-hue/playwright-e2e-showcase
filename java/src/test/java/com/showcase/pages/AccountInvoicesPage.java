@@ -20,4 +20,9 @@ public class AccountInvoicesPage {
   public Locator row(String invoiceNumber) {
     return rows.filter(new Locator.FilterOptions().setHasText(invoiceNumber));
   }
+
+  /** The row's "Details" link (a router link without data-test). */
+  public Locator details(String invoiceNumber) {
+    return row(invoiceNumber).getByRole(com.microsoft.playwright.options.AriaRole.LINK);
+  }
 }

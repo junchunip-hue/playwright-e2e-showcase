@@ -61,7 +61,8 @@ public class CheckoutFlow {
     checkoutPage.navigate();
     assertThat(checkoutPage.productTitles).hasText(products.stream().map(Product::name).toArray(String[]::new));
     double total = Double.parseDouble(checkoutPage.cartTotal.textContent().replaceAll("[^0-9.]", ""));
-    checkoutPage.proceed(checkoutPage.proceedFromCart, checkoutPage.email);
+    // Step 2 shows the sign-in form, or only "proceed" for a customer who is already signed in (S5).
+    checkoutPage.proceed(checkoutPage.proceedFromCart, checkoutPage.email.or(checkoutPage.proceedFromSignIn));
     return total;
   }
 
@@ -69,6 +70,12 @@ public class CheckoutFlow {
     checkoutPage.email.fill(customer.email());
     checkoutPage.password.fill(customer.password());
     checkoutPage.loginSubmit.click();
+    assertThat(checkoutPage.proceedFromSignIn).isEnabled();
+    checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
+  }
+
+  /** For a customer who signed in before shopping (S5): step 2 only confirms who is signed in. */
+  public void continueSignedIn() {
     assertThat(checkoutPage.proceedFromSignIn).isEnabled();
     checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
   }
@@ -87,6 +94,19 @@ public class CheckoutFlow {
   /** Enters country, postcode and house number; the app's postcode lookup must fill in the rest (waited for). */
   public void confirmAddress(Map<String, String> address) {
     checkoutPage.enterAddressForLookup(address);
+    checkAddressAndProceed(address);
+  }
+
+  /**
+   * After continueSignedIn (TS: confirmSavedAddress): the app fills in and looks up the saved address by itself, at a
+   * moment that differs per browser, and typing the same values triggers no new lookup. The saved address is the
+   * looked-up one, so checking the fields (auto-waiting) is enough; proceed repeats the click if the form changes.
+   */
+  public void confirmSavedAddress(Map<String, String> address) {
+    checkAddressAndProceed(address);
+  }
+
+  private void checkAddressAndProceed(Map<String, String> address) {
     // The country is checked too: the order is rejected (422) when it does not match the postcode.
     assertThat(checkoutPage.country).hasValue(address.get("country"));
     assertThat(checkoutPage.street).hasValue(address.get("street"));

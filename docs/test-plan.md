@@ -52,8 +52,13 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | **S** | Story: a journey across pages, roles or layers | `tests/e2e` |
 | **N** | Non-functional: visual, accessibility, architecture | `tests/quality`, `tests/architecture` |
 
-- **IDs are stable:** never renumbered or reused, so links, reports and commit messages keep pointing at the same test.
-  That is why there are gaps: a gap is a backlog or optional item, listed below with its status.
+- **A number is given when an item enters this plan**, as the next free number of its prefix, whether or not it
+  is built yet. So the order of the numbers is the order things were planned, not the order they were built
+  (S6 was built before S4) or their priority.
+- **IDs are stable:** never renumbered, reused or filled in, so links, reports and commit messages keep pointing at
+  the same test. A number without a test is an item that was planned but not built: backlog (U9–U11) or optional
+  (S7), each with its row and status below. A6, A7 and S5 were such items until 2026-11-19.
+- **The next new item** gets the next number after the highest one: A12, U12, S8, N4.
 - **A0** is the contract guard that applies to every API response, so it comes before the numbered API checks.
 - **Aliases:** U6 is also S1 (the first journey). U7 and U8 were planned as UI tests and became journeys S2 and S4;
   they keep their row so old references still resolve.
@@ -65,9 +70,9 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 
 | Layer | Done | Optional | Backlog |
 |---|---|---|---|
-| API | A0–A5, A8–A11 | – | A6, A7 |
+| API | A0–A11 | – | – |
 | UI | U1–U6 (U7 ↪ S2, U8 ↪ S4) | – | U9–U11 |
-| Journeys | S1 (= U6), S2, S3, S4, S6 | S5, S7 | – |
+| Journeys | S1 (= U6), S2–S6 | S7 | – |
 | Non-functional | N1–N3 | – | – |
 
 ### API (`tests/api`, project `api`, no browser)
@@ -80,8 +85,8 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | A4 | Register: weak password → 422 listing every unmet rule | `@smoke @negative` | ✅ | ✅ |
 | A4 | Register: password from a data leak → 422 (external HIBP check, so nightly) | `@regression @negative` | ✅ | ✅ |
 | A5 | Register: duplicate email → **409** Conflict (not 422 as first assumed) | `@smoke @negative` | ✅ | ✅ |
-| A6 | Invoice requires auth (no token → 401) | `@negative` | | ➖ |
-| A7 | Product filters: category, brand, price range, sort | `@regression` | | ➖ |
+| A6 | Invoices need a signed-in user: list, detail, PDF and PDF status answer 401 without a token (and 200/404/400 with one, so the 401 is about the token, not the id); a malformed token is refused the same way | `@smoke @negative` (malformed: `@regression`) | ✅ | ✅ |
+| A7 | Product filters: category, brand, inclusive price range, sort by price or name across pages, and all combined; every product in the result matches | `@regression` | ✅ | ✅ |
 | A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
 | A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
 | A10 | A customer cannot publish a product: intended 403, **known defect** today 201 ([ADR 0010](decisions/0010-known-defects-as-tests.md); own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
@@ -109,7 +114,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | S2 | Payment matrix: bank transfer, credit card, buy now pay later, gift card each end in an invoice at the cart total; a malformed or expired card is flagged in the form, cannot be submitted, is rejected by the API too, and creates no invoice | `@regression @e2e` | ✅ | ✅ |
 | S3 | Admin publishes a product (API), customer finds and buys it (UI), admin ships it (API), customer sees it listed and SHIPPED (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
 | S4 | Guest checkout: a never-registered guest buys through the guest tab (email and name), the postcode lookup fills the address, the order goes to `POST /invoices/guest`; the admin finds it at the cart total with the guest's billing address (own Toolshop only) | `@regression @e2e @admin` | ✅ | ✅ |
-| S5 | Returning customer: favourites, compare, invoice PDF ([roadmap §2](roadmap.md#2-showcase-scenarios-longer-journeys)) | – | | ⬜ |
+| S5 | Returning customer: signs in first, saves a favourite, compares two products (prices as in the catalogue), buys the cheaper one while signed in, downloads the invoice PDF once the background job has written it (`<number>.pdf`, a real PDF); the API has the favourite, the order and PDF status COMPLETED (own Toolshop only) | `@regression @e2e` | ✅ | ✅ |
 | S6 | Resilience with network mocking (`page.route`): a 3 s slower catalogue still shows its products; a failed catalogue (500) shows no products, and a reload recovers; a failed search (500) is shown as "no results", and the next search works | `@regression` (+ `@negative`) | ✅ | ✅ |
 | S7 | Languages: key pages translated, a11y and visual still pass ([roadmap §2](roadmap.md#2-showcase-scenarios-longer-journeys)) | – | | ⬜ |
 
@@ -127,6 +132,15 @@ today, and fail once it is fixed, so the marker is then replaced by a plain asse
 order. `POST /invoices/guest` validates them, but `Invoice::$fillable` has no guest fields, so they only reach the
 confirmation-email job. The saved invoice has `user_id: null` and a billing address, and nothing to contact the
 customer with. S4 checks what is stored (total, billing address).
+
+**Finding while building S5 (environment):** Toolshop writes invoice PDFs from its scheduler
+(`invoice:generate`, then a queue worker), which a plain `docker compose up` does not run, so the download button
+stays disabled for ever. CI now runs both commands in the background (`toolshop-ready`), with three workers: the
+first round renders the 200 seeded invoices before any new order, which delayed S5 by 4-5 minutes with one worker.
+The public demo starts the job but did not finish a PDF within 4 minutes (measured 2026-11-19), so S5 runs against
+our own Toolshop only. A customer who signs in before checkout gets the saved address filled in and looked up as soon
+as the address step opens, at a moment that differs per browser; typing the same values again triggers no new
+lookup. S5 therefore checks the saved address instead of waiting for a lookup request.
 
 **Findings while building S6 (pinned UI source, UX, pinned by S6):** the catalogue page has no error state.
 `OverviewComponent.getProducts()` subscribes without an error handler, so a failed `GET /products` leaves the page
@@ -149,6 +163,8 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | A3 | 1 | regression | – | ✅ | API | `ApiTest` |
 | A4 | 2 | smoke (weak) + regression (leaked) | weak only | ✅ | API | `RegistrationApiTest` |
 | A5 | 1 | smoke | ✅ | ✅ | API | `RegistrationApiTest` |
+| A6 | 2 | smoke (no token) + regression (malformed) | no token | ✅ | API | `InvoicesApiTest` |
+| A7 | 7 | regression | – | ✅ | API | `ProductFiltersApiTest` |
 | A8 | 1 | smoke, admin | ✅ | ✅ | API | `AdminApiTest` |
 | A9 | 2 | smoke | ✅ | ✅ | API | `PaymentApiTest` |
 | A10, A11 | 1 + 1 | smoke, admin (known defects) | ✅ | ✅ | API | `PermissionsApiTest` |
@@ -158,12 +174,13 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | S2 | 6 | regression, e2e | – | ✅ | Chromium, Firefox, WebKit | `PaymentJourneyTest` |
 | S3 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `AdminToCustomerJourneyTest` |
 | S4 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `GuestCheckoutJourneyTest` |
+| S5 | 1 | regression, e2e (own Toolshop only) | – | ✅ | Chromium, Firefox, WebKit | `ReturningCustomerJourneyTest` |
 | S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `ResilienceTest` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 14 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (58 in total; data-driven cases count once each). The Java class
+"Tests" counts TypeScript test cases per ID (68 in total; data-driven cases count once each). The Java class
 covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
@@ -207,4 +224,5 @@ Every test has exactly one tier tag, enforced by `npm run check:tags` and the Ja
 | ✅ | A10/A11 permission negatives as tracked known defects | Security findings turned into tests |
 | ✅ | S6 resilience with network mocking: slow and failing catalogue, failing search, recovery | Network mocking, failure UX |
 | ✅ | S4 guest checkout: second entry into checkout, guest invoice checked as admin | Every demo technique shown once |
-| ✅ | Seven clean nightlies in a row; CI hardened (bounded browser install, report-merge retry); README tour checked | Showcase done ([roadmap §5](roadmap.md#5-definition-of-done)); S5, S7 optional |
+| ✅ | Seven clean nightlies in a row; CI hardened (bounded browser install, report-merge retry); README tour checked | Showcase done ([roadmap §5](roadmap.md#5-definition-of-done)) |
+| ✅ | Numbering gaps filled: A6 invoice authentication, A7 product filters, S5 returning customer with PDF download; CI runs Toolshop's background jobs | Every planned A and S item built; downloads and waiting on background work |

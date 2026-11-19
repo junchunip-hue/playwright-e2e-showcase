@@ -16,7 +16,7 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 ## Same layers, side by side
 | Layer | TypeScript | Java |
 |---|---|---|
-| Journey steps | `src/flows/CheckoutFlow.ts` | `flows/CheckoutFlow.java` |
+| Journey steps | `src/flows/CheckoutFlow.ts`, `ShopperFlow.ts` | `flows/CheckoutFlow.java`, `ShopperFlow.java` |
 | Page objects | `src/pages/*.ts` | `pages/*.java` |
 | Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
 | API client | `src/api/` (per resource) | `api/ApiClient.java` |
@@ -33,6 +33,8 @@ In test-plan order (A, then U, then S):
 | A0 | Response contracts (5 checks incl. the guard itself) | `tests/api/contracts.api.spec.ts` | `ContractsApiTest` |
 | A1–A3 | Products and auth API | `tests/api/products.api.spec.ts` | `ApiTest` |
 | A4, A5 | Registration rules (weak / leaked password, duplicate email) | `tests/api/registration.api.spec.ts` | `RegistrationApiTest` |
+| A6 | Invoices need a signed-in user (no token, malformed token) | `tests/api/invoices.api.spec.ts` | `InvoicesApiTest` |
+| A7 | Product filters: category, brand, price range, sort, combined | `tests/api/product-filters.api.spec.ts` | `ProductFiltersApiTest` |
 | A8 | Admin publishes a product (own Toolshop only) | `tests/api/admin.api.spec.ts` | `AdminApiTest` |
 | A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
 | A10, A11 | A customer cannot publish a product or change an order: known defects (own Toolshop only) | `tests/api/permissions.api.spec.ts` | `PermissionsApiTest` |
@@ -43,6 +45,7 @@ In test-plan order (A, then U, then S):
 | S2 | Payment matrix journey (4 methods + 2 invalid cards) | `tests/e2e/payments.spec.ts` | `PaymentJourneyTest` |
 | S3 | Admin publishes, customer buys, admin ships (own Toolshop only) | `tests/e2e/admin-to-customer.spec.ts` | `AdminToCustomerJourneyTest` |
 | S4 | Guest checkout, order checked as admin (own Toolshop only) | `tests/e2e/guest-checkout.spec.ts` | `GuestCheckoutJourneyTest` |
+| S5 | Returning customer: favourite, comparison, invoice PDF download (own Toolshop only) | `tests/e2e/returning-customer.spec.ts` | `ReturningCustomerJourneyTest` |
 | S6 | Resilience: slow or failing catalogue and search, then recovery (`page.route`) | `tests/e2e/resilience.spec.ts` | `ResilienceTest` |
 
 TypeScript only, by design: accessibility (N2), visual (N1) and architecture (N3). They check rendering or the

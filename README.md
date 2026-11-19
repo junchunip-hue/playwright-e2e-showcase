@@ -9,8 +9,9 @@ and the same scenarios in **Java + JUnit 5**. It targets the open-source [Toolsh
 demo shop.
 
 **Status:** done by its own [definition](docs/roadmap.md#5-definition-of-done): every P1/P2 risk covered, every demo
-technique shown, seven clean nightlies in a row in both languages. Test IDs (A = API, U = UI, S = journey,
-N = non-functional) are explained in the [test plan](docs/test-plan.md#how-ids-work).
+technique shown, seven clean nightlies in a row in both languages. Next steps are in the
+[roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
+some numbers are missing are explained in the [test plan](docs/test-plan.md#how-ids-work).
 
 ## The 3-minute tour
 
@@ -63,9 +64,9 @@ flowchart LR
 
 | Layer | IDs | What it proves | Languages |
 |---|---|---|---|
-| API | A0–A5, A8–A11 | Contracts, auth, registration rules, payment check, admin publishing; customer-vs-admin permissions as tracked known defects | TS + Java |
+| API | A0–A11 | Contracts, auth, registration rules, invoice access, catalogue filters, payment check, admin publishing; customer-vs-admin permissions as tracked known defects | TS + Java |
 | UI | U1–U5 | Login, search (incl. UI = API), cart | TS + Java |
-| Journeys | U6/S1, S2, S3, S4, S6 | First purchase, every payment method, admin → customer → admin, guest checkout, slow or failing backend (network mocking) | TS + Java |
+| Journeys | U6/S1, S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | TS |
 | Architecture | N3 | Pipeline cannot loop, TS/Java parity | TS |
 
@@ -87,9 +88,9 @@ src/
   known-defects.ts  tracked product defects (ADR 0010)
   a11y/ visual/ reporters/ config/
 tests/
-  api/          contracts, auth, registration, payments, admin and permissions
+  api/          contracts, auth, registration, invoices, filters, payments, admin and permissions
   ui/           single-page behaviour (login, search, cart)
-  e2e/          journeys across pages, API and UI (checkout, payments, admin, guest, resilience)
+  e2e/          journeys across pages, API and UI (checkout, payments, admin, guest, returning customer, resilience)
   quality/      accessibility and visual regression
   architecture/ rules about the pipeline and the code itself
 java/           Playwright for Java + JUnit 5: every A/U/S scenario, same IDs and tiers
@@ -126,5 +127,5 @@ and each CI run ends with a summary that draws the run and compares TypeScript a
 | How does the pipeline work and protect itself? | [docs/ci.md](docs/ci.md) |
 | Which decisions were made, and why? | [docs/decisions/](docs/decisions/) |
 | Where do I see the latest results? | [Nightly report](https://junchunip-hue.github.io/playwright-e2e-showcase/) (3 browsers) · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram + TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
-| What comes next? | [docs/roadmap.md](docs/roadmap.md) |
+| What comes next? | [docs/roadmap.md §6](docs/roadmap.md#6-what-comes-next): keep it green, optional S7, ranked candidates, backlog |
 | How do the TypeScript and Java lanes stay in sync? | [docs/java.md](docs/java.md) |

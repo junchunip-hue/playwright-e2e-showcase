@@ -14,6 +14,11 @@ export class Http {
     return this.parse(await this.request.get(path, { headers }), `GET ${path}`, schema);
   }
 
+  /** Raw GET (any status), for tests that assert on a rejected request. Without a token it is anonymous. */
+  getRaw(path: string, token?: string): Promise<APIResponse> {
+    return this.request.get(path, { headers: headers(token) });
+  }
+
   /** Raw POST, for tests that assert on the status of a rejected request. */
   post(path: string, data: unknown, token?: string): Promise<APIResponse> {
     return this.request.post(path, { data, headers: headers(token) });

@@ -13,9 +13,9 @@
 | Journey | Business impact | Change frequency | Priority | Layer | Covered by |
 |---|---|---|---|---|---|
 | Login / session | High (blocks everything) | Low | P1 | UI smoke + API | U1, U2, A2, A3 |
-| Product search & filter | High (revenue entry point) | Medium | P1 | UI + API consistency | U3, U4, A1 |
-| Add to cart → checkout | Critical (revenue) | Medium | P1 | E2E journey | U5, U6/S1, S2, S4, S6, A9 |
-| Who may change products and orders | High (integrity) | Low | P1 | API negatives | A10, A11 (known defects) |
+| Product search & filter | High (revenue entry point) | Medium | P1 | UI + API consistency | U3, U4, A1, A7 |
+| Add to cart → checkout | Critical (revenue) | Medium | P1 | E2E journey | U5, U6/S1, S2, S4, S5, S6, A9 |
+| Who may read or change orders and products | High (privacy, integrity) | Low | P1 | API negatives | A6, A10, A11 (known defects) |
 | Registration | Medium | Low | P2 | API rules, data setup | A4, A5 |
 | Admin product management → customer purchase | Medium | Low | P2 | API + journey (own Toolshop only) | A8, S3 |
 | Contact form, i18n | Low | Low | Later | – | S7 (optional) |
