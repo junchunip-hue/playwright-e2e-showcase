@@ -1,0 +1,7 @@
+[
+  { "run": 38, "id": 44511396786, "sha": "71a20a1", "date": "2026-11-19", "verdict": "flaky", "note": "S2 credit-card on Firefox, a test race (fixed in #27): resets the streak" },
+  { "run": 40, "id": 44517384572, "sha": "a1d29f3", "date": "2026-11-19", "verdict": "passed" },
+  { "run": 44, "id": 44526643813, "sha": "0b77bfd", "date": "2026-11-19", "verdict": "passed" },
+  { "run": 47, "id": 44569006275, "sha": "f683106", "date": "2026-11-19", "verdict": "passed" },
+  { "run": 50, "id": 44587890571, "sha": "bcc3226", "date": "2026-11-19", "verdict": "passed" }
+]

@@ -54,6 +54,9 @@ Every API response is also contract-checked (A0); rendering and accessibility ar
 - **Flaky is visible, never silent.** A test that failed and then passed on a retry is *flaky*: the run passes, but
   its verdict turns ⚠️ (gold), the test is listed by ID, browser and file with its attempts and first error, and the
   commit status names it. A test that fails every attempt fails the run.
+- **A test that did not run is not a pass.** Tests planned for a run but without a result (their job failed first),
+  and tests skipped in CI, are reported as not run and turn the run red; without the planned list the verdict is
+  "unverified", never "passed".
 - **A flaky test is a bug** in the test or the product until shown otherwise. The fix is the cause (a race, shared
   data, a missing wait), never more retries; an architecture test keeps the retry count equal in both languages.
 - Flakes found so far were all test races with the app's own async work (postcode lookup, saved-address fill-in):

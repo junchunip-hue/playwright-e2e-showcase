@@ -2,6 +2,7 @@
 
 [![PR Smoke Tests](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml)
 [![Nightly tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fbadge.json&label=nightly%20tests&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/)
+[![Clean nightlies](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fstreak.json&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/history.json)
 
 A test automation framework built the way I would set it up in a real team, with **Playwright + TypeScript**
 and the same scenarios in **Java + JUnit 5**. It targets the open-source [Toolshop](https://practicesoftwaretesting.com)
@@ -18,8 +19,9 @@ The "nightly tests" badge above is the latest nightly's count, coloured like its
 </p>
 
 **Status:** every P1/P2 risk covered and every demo technique shown ([definition of done](docs/roadmap.md#5-definition-of-done)).
-Stability is being re-earned: a flaky S2 on 2026-11-19 (a test race, fixed in [#27](https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27)) reopened the "five clean nightlies
-in a row" criterion, 2 of 5 so far. Next steps are in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
+Stability is re-earned run by run: a flaky S2 on 2026-11-19 (a test race, fixed in [#27](https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27)) reset the "five clean nightlies
+in a row" criterion, and the "clean nightlies" badge above counts it after every nightly (the runs are in its
+`history.json`). Next steps are in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
 some numbers are missing are explained in the [test plan](docs/test-plan.md#how-ids-work).
 
 ## The 3-minute tour

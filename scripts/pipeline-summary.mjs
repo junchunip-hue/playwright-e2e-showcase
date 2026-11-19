@@ -64,8 +64,8 @@ const xmlText = (s) =>
 /** All test runs per language, with an ID or not (e.g. the login setup); the per-ID tables count only tests with an ID. */
 const totals = { ts: null, java: null };
 const countRun = (lang, outcome) => {
-  totals[lang] ??= { passed: 0, flaky: 0, failed: 0, notRun: 0 };
-  if (outcome !== 'skipped') totals[lang][outcome]++;
+  totals[lang] ??= { passed: 0, flaky: 0, failed: 0, notRun: 0, skipped: 0 };
+  totals[lang][outcome]++;
 };
 
 /** One key per test in a project, the same in the planned list and in the results (a shard repeats the setup). */
@@ -154,7 +154,10 @@ const java = javaResults(javaDir);
  * ADR 0009), so those IDs are not run there, count unknown.
  */
 const plannedIds = new Set();
+/** The planned list was asked for but is missing: tests that never ran cannot be detected, so no plain "Passed". */
+let planUnavailable = Boolean(plannedFile);
 if (plannedFile && existsSync(plannedFile)) {
+  planUnavailable = false;
   const walk = (suite) => {
     for (const spec of suite.specs ?? []) {
       const id = ID.exec(spec.title)?.[1];
@@ -191,14 +194,20 @@ const cell = (r) => {
   if (r.notRun) parts.push(r.notRunCountUnknown ? '⛔ not run' : `${r.notRun} ⛔ not run`);
   if (r.flaky) parts.push(`${r.flaky} ⚠️ flaky`);
   if (r.failed) parts.push(`${r.failed} ❌`);
-  if (r.skipped) parts.push(`${r.skipped} skipped`);
+  if (r.skipped) parts.push(`${r.skipped} ⏭️ skipped`);
   return parts.join(' · ');
 };
 const coverage = (id) => (ts.has(id) && java.has(id) ? 'both' : ts.has(id) ? 'TypeScript' : 'Java');
 const sum = (m) =>
   [...m.values()].reduce(
-    (a, r) => ({ passed: a.passed + r.passed, failed: a.failed + r.failed, flaky: a.flaky + r.flaky, notRun: a.notRun + r.notRun }),
-    { passed: 0, failed: 0, flaky: 0, notRun: 0 },
+    (a, r) => ({
+      passed: a.passed + r.passed,
+      failed: a.failed + r.failed,
+      flaky: a.flaky + r.flaky,
+      notRun: a.notRun + r.notRun,
+      skipped: a.skipped + r.skipped,
+    }),
+    { passed: 0, failed: 0, flaky: 0, notRun: 0, skipped: 0 },
   );
 
 const tsJob = process.env.TS_JOB ?? 'unknown';
@@ -207,7 +216,12 @@ const tsSum = sum(ts);
 const javaSum = sum(java);
 const jobState = (job) => (job === 'success' ? 'ok' : job === 'skipped' || job === 'cancelled' ? 'skip' : 'bad');
 /** A failed test is a failure whatever the job says; a flaky one turns a green lane gold ("passed with flaky"). */
-const state = (job, s) => (s.failed || s.notRun || jobState(job) === 'bad' ? 'bad' : s.flaky && jobState(job) === 'ok' ? 'flaky' : jobState(job));
+/**
+ * In CI nothing should skip: the only skips are for the public demo (@admin, S5), which CI never uses. A skip there
+ * means a test silently did not run (e.g. a wrong BASE_URL made isPublicDemo true), so it counts like "not run".
+ */
+const inCi = Boolean(process.env.CI);
+const state = (job, s) => (s.failed || s.notRun || (inCi && s.skipped) || jobState(job) === 'bad' ? 'bad' : s.flaky && jobState(job) === 'ok' ? 'flaky' : jobState(job));
 const tsState = state(tsJob, tsSum);
 const javaState = state(javaJob, javaSum);
 const counts = (s) =>
@@ -216,6 +230,7 @@ const counts = (s) =>
     s.failed ? `❌ ${s.failed} failed` : '0 failed',
     s.flaky ? `⚠️ ${s.flaky} flaky` : '0 flaky',
     ...(s.notRun ? [s === javaSum && [...java.values()].some((r) => r.notRunCountUnknown) ? '⛔ not run' : `⛔ ${s.notRun} not run`] : []),
+    ...(s.skipped ? [`⏭️ ${s.skipped} skipped`] : []),
   ].join(' · ');
 
 const nightly = process.env.PIPELINE === 'nightly';
@@ -276,7 +291,8 @@ function failedJobs(dir) {
   if (!file || !existsSync(file)) return [];
   const GENERIC = /^Process completed with exit code \d+\.?$/;
   return (JSON.parse(readFileSync(file, 'utf8')).jobs ?? [])
-    .filter((j) => j.conclusion === 'failure' || j.conclusion === 'timed_out')
+    // A job past its timeout-minutes can report "cancelled"; a cancelled run never gets here (summary: !cancelled()).
+    .filter((j) => ['failure', 'timed_out', 'cancelled'].includes(j.conclusion))
     .map((j) => {
       const annotationsFile = join(dir, `annotations-${j.id}.json`);
       const annotations = existsSync(annotationsFile) ? JSON.parse(readFileSync(annotationsFile, 'utf8')) : [];
@@ -286,7 +302,7 @@ function failedJobs(dir) {
       return {
         name: j.name,
         url: j.html_url,
-        timedOut: j.conclusion === 'timed_out',
+        timedOut: j.conclusion !== 'failure',
         steps: (j.steps ?? []).filter((s) => s.conclusion === 'failure' || s.conclusion === 'timed_out').map((s) => s.name),
         // Errors first; without one, the job's warnings usually say what went wrong (e.g. each install attempt).
         why: errors.length ? errors : messages('warning').slice(0, 3),
@@ -303,11 +319,16 @@ const failedTotal = tsSum.failed + javaSum.failed;
 const flakyTotal = flakyCases.length;
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** What made the run red, in order of what a reader needs first: failed tests, tests that never ran, a red job. */
+const skippedTotal = tsSum.skipped + javaSum.skipped;
 const problems = [
   ...(failedTotal ? [`${plural(failedTotal, 'test')} failed (TypeScript ${tsSum.failed}, Java ${javaSum.failed})`] : []),
   ...(tsSum.notRun ? [`${plural(tsSum.notRun, 'TypeScript test')} did not run`] : []),
   ...(javaSum.notRun ? [[...java.values()].some((r) => r.notRunCountUnknown) ? 'the Java suite did not run' : `${plural(javaSum.notRun, 'Java test')} did not run`] : []),
+  ...(inCi && skippedTotal
+    ? [`${plural(skippedTotal, 'test')} skipped in CI, where nothing should skip (TypeScript ${tsSum.skipped}, Java ${javaSum.skipped})`]
+    : []),
 ];
+const UNVERIFIED = 'the list of planned tests is missing, so tests that did not run cannot be detected';
 const cause = firstFailure ? `${firstFailure.name}${firstFailure.why[0] ? `: ${firstFailure.why[0]}` : firstFailure.steps[0] ? ` failed at ${firstFailure.steps[0]}` : ' failed'}` : '';
 const verdict =
   tsState === 'bad' || javaState === 'bad'
@@ -324,7 +345,10 @@ const verdict =
           '> [!WARNING]',
           `> **Passed with ${flakyTotal} flaky test${flakyTotal === 1 ? '' : 's'}:** every test passed in the end, but`,
           `> ${flakyTotal === 1 ? 'this one' : 'these'} failed first and passed only on a retry. See [Flaky tests](#flaky-tests) below.`,
+          ...(planUnavailable ? [`> Also unverified: ${UNVERIFIED}.`] : []),
         ]
+      : planUnavailable && (tsState === 'ok' || javaState === 'ok')
+        ? ['> [!WARNING]', `> **Unverified:** every test that reported passed, but ${UNVERIFIED} (see the "List the planned TypeScript tests" step).`]
       : tsState === 'ok' || javaState === 'ok'
         ? ['> [!TIP]', '> **Passed:** no failed and no flaky tests.']
         : ['> [!NOTE]', `> **No result:** TypeScript job ${tsJob}, Java job ${javaJob}.`];
@@ -418,36 +442,47 @@ if (process.env.GITHUB_OUTPUT) {
       ? `❌ Failed: ${[...problems, ...(cause ? [cause] : [])].join(' · ')}`
       : `❌ Failed: a job ended red without a failed test (TypeScript ${tsJob}, Java ${javaJob})`
     : flakyTotal
-      ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}`
-      : '✅ Passed: no failed and no flaky tests';
+      ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}${planUnavailable ? ' · unverified (no planned list)' : ''}`
+      : planUnavailable
+        ? '⚠️ Unverified: passed what ran, but the planned test list is missing'
+        : '✅ Passed: no failed and no flaky tests';
   const ran = [tsState, javaState].some((s) => s === 'ok' || s === 'flaky');
   // GitHub cuts status descriptions at 140 characters. No state (both lanes skipped or cancelled) = no status.
   const short = description.length > 140 ? `${description.slice(0, 139)}…` : description;
   if (failed || ran) appendFileSync(process.env.GITHUB_OUTPUT, `state=${failed ? 'failure' : 'success'}\ndescription=${short}\n`);
+  // For the nightly history (clean streak): one word per run.
+  const word = failed ? 'failed' : flakyTotal ? 'flaky' : planUnavailable ? 'unverified' : ran ? 'passed' : 'none';
+  appendFileSync(process.env.GITHUB_OUTPUT, `verdict=${word}\n`);
 }
 
 // The nightly's README badge (shields.io endpoint format), published next to the report on GitHub Pages: test runs
 // in both languages, and the same verdict colour as above (green passed, yellow passed with flaky, red failed).
 if (process.env.BADGE_FILE) {
-  const all = ['passed', 'flaky', 'failed', 'notRun'].map((k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0));
-  const [passed, flaky, failedRuns, notRunRuns] = all;
+  const total = (k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0);
+  const [passed, flaky, failedRuns, notRunRuns, skippedRuns] = ['passed', 'flaky', 'failed', 'notRun', 'skipped'].map(total);
   const failed = tsState === 'bad' || javaState === 'bad';
   const javaNotRun = [...java.values()].some((r) => r.notRunCountUnknown);
+  // The run's date, so a badge that stopped updating does not pass for today's result.
+  const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  const parts = failed
+    ? [
+        ...(failedRuns ? [`${failedRuns} failed`] : []),
+        ...(notRunRuns ? [`${notRunRuns} not run`] : []),
+        ...(javaNotRun ? ['Java not run'] : []),
+        ...(skippedRuns ? [`${skippedRuns} skipped`] : []),
+        ...(failedRuns || notRunRuns || javaNotRun || skippedRuns ? [`${passed + flaky} passed`] : ['failed (a job ended red)']),
+      ]
+    : [`${passed + flaky} passed`, `${flaky} flaky`, ...(planUnavailable ? ['unverified'] : [])];
   const badge = {
     schemaVersion: 1,
     label: 'nightly',
-    message: failed
-      ? [
-          ...(failedRuns ? [`${failedRuns} failed`] : []),
-          ...(notRunRuns ? [`${notRunRuns} not run`] : []),
-          ...(javaNotRun ? ['Java not run'] : []),
-          ...(failedRuns || notRunRuns || javaNotRun ? [`${passed + flaky} passed`] : ['failed (a job ended red)']),
-        ].join(' · ')
-      : `${passed + flaky} passed · ${flaky} flaky`,
-    color: failed ? 'red' : flaky ? 'yellow' : 'brightgreen',
+    message: [...parts, date].join(' · '),
+    color: failed ? 'red' : flaky || planUnavailable ? 'yellow' : 'brightgreen',
   };
-  writeFileSync(process.env.BADGE_FILE, `${JSON.stringify(badge)}\n`);
+  writeFileSync(process.env.BADGE_FILE, `${JSON.stringify(badge)}
+`);
 }
+
 
 // A warning annotation per flaky test: it shows on the run page and in the PR's checks without opening the summary.
 if (process.env.GITHUB_ACTIONS) {

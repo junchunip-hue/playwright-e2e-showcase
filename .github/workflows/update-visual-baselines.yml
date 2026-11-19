@@ -46,6 +46,7 @@ jobs:
         run: npm run test:visual
 
       - name: Commit baselines to the PR branch
+        id: commit
         run: |
           git add 'tests/**/*-linux.png'
           if git diff --cached --quiet; then
@@ -56,6 +57,21 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Update visual baselines (Linux, Chromium)"
           git push
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      # GitHub starts no workflow for a push made with GITHUB_TOKEN, so the commit above gets no PR checks. The main
+      # ruleset requires them, so the PR cannot merge until they run; say how to get them.
+      - name: Tell the PR how to get checks on the new commit
+        if: ${{ steps.commit.outputs.sha != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: >-
+          gh pr comment ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
+          --body "Visual baselines committed as $SHA. GitHub runs no workflow on a commit pushed by Actions, so
+          this commit has no PR checks yet, and the required checks block the merge without them. Review the PNGs,
+          then push any commit to the branch (for example \`git commit --allow-empty -m 'Run PR checks' && git push\`)
+          to run them."
 
       - name: Remove the label
         if: ${{ always() }}
