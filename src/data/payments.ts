@@ -1,7 +1,7 @@
 /**
  * Payment test data in the API's own shape (POST /payment/check): `method` + `details`.
  * The checkout form uses the same names as data-test ids (e.g. `credit_card_number`), so one object drives
- * both the UI (CheckoutFlow) and the API (api.payments.check).
+ * both the UI (pages/checkout.page.ts) and the API (api.payments.check).
  * Formats follow the pinned Toolshop rules (PaymentController::check and the payment form's validators).
  */
 export type PaymentMethod = 'bank-transfer' | 'cash-on-delivery' | 'credit-card' | 'buy-now-pay-later' | 'gift-card';
@@ -43,3 +43,26 @@ export const invalidCards = [
   { name: 'malformed card number', payment: payments.creditCard({ credit_card_number: '1234' }), field: 'credit_card_number' },
   { name: 'expired card', payment: payments.creditCard({ expiration_date: '01/2020' }), field: 'expiration_date' },
 ] as const;
+
+export type InvalidCard = (typeof invalidCards)[number];
+
+/** The payment for a method name as the features write it ("credit-card"), with valid details. */
+export function paymentFor(method: string): Payment {
+  const all: Payment[] = [
+    payments.cashOnDelivery(),
+    payments.bankTransfer(),
+    payments.creditCard(),
+    payments.buyNowPayLater(),
+    payments.giftCard(),
+  ];
+  const found = all.find((p) => p.method === method);
+  if (!found) throw new Error(`Unknown payment method "${method}". Known: ${all.map((p) => p.method).join(', ')}`);
+  return found;
+}
+
+/** An invalid card by its name as the features write it ("expired card"). */
+export function invalidCardNamed(name: string): InvalidCard {
+  const found = invalidCards.find((c) => c.name === name);
+  if (!found) throw new Error(`Unknown invalid card "${name}". Known: ${invalidCards.map((c) => c.name).join(', ')}`);
+  return found;
+}

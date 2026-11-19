@@ -41,8 +41,8 @@ test.describe('Accessibility (logged-in customer)', { tag: [Tag.a11y, Tag.regres
     await productPage.addToCart();
     await expect(header.cartQuantity).toHaveText('1');
 
-    await checkoutPage.goto();
-    await expect(checkoutPage.productTitles).toHaveText([product.name]);
+    await checkoutPage.open();
+    await expect(checkoutPage.ui.productTitles).toHaveText([product.name]);
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'cart');
   });
 

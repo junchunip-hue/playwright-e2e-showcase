@@ -27,18 +27,22 @@ some numbers are missing are explained in the [test plan](docs/test-plan.md#how-
 
 ## The 3-minute tour
 
-**1. A journey that reads like the story it tests:** [`tests/e2e/checkout.spec.ts`](tests/e2e/checkout.spec.ts)
-```ts
-const customer = await createCustomer(api);              // arrange via API: fresh data, no shared state
-const product = await api.products.findInStock();
-
-await checkout.addToCart(product);                       // act via UI: business steps from src/flows
-const cartTotal = await checkout.reviewCart([product]);
-await checkout.signIn(customer);
-await checkout.confirmSavedAddress(customer.address);    // the app fills in and looks up the saved address
-const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
-// assert via API: the invoice exists, for this customer, at the cart total
+**1. A journey that reads like the story it tests:** [`features/journeys/checkout.feature`](features/journeys/checkout.feature),
+one file that both the TypeScript and the Java suite run
+```gherkin
+Scenario: U6: new customer buys an in-stock product with cash on delivery
+  Given a newly registered customer                  # arrange via API: fresh data, no shared state
+  And a product that is in stock
+  When I add that product to the cart                # act via UI
+  And I review the cart
+  And I sign in as that customer during checkout
+  And I confirm my saved billing address             # the app fills in and looks up the saved address
+  And I pay with "cash-on-delivery"
+  Then that customer's invoice exists at the cart total   # assert via API
 ```
+Each sentence is one step (`src/steps/checkout.steps.ts`) that calls one page method (`src/pages/checkout.page.ts`:
+the waits and retries), which uses the page's locators (`src/modules/checkout.module.ts`); Java mirrors each file
+([ADR 0012](docs/decisions/0012-gherkin-features-with-layered-steps.md)).
 
 **2. Quality beyond "it works"**
 - Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts)).
@@ -116,13 +120,13 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ (U1–U5); journeys and API follow
+features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ (U1–U5), journeys/ (U6, S2–S4); S5, S6 and API follow
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd)
   pages/        what a user does on a page (*.page.ts), built on its module; older page objects until migrated
   modules/      locators only (*.module.ts)
   api/          API client per resource + zod schemas (types derived from them)
-  flows/        business steps for journeys not yet migrated (checkout, ...)
+  flows/        business steps for S5 (shopper), until it moves to Gherkin
   data/         test data builders (fresh customers per test)
   fixtures/     everything above, injected into tests
   tags.ts       tag and suite registry
@@ -131,7 +135,7 @@ src/
 tests/
   api/          contracts, auth, registration, invoices, filters, payments, admin and permissions
   ui/           the Playwright Test Agents' seed (UI scenarios are in features/ui)
-  e2e/          journeys across pages, API and UI (checkout, payments, admin, guest, returning customer, resilience)
+  e2e/          journeys not yet in Gherkin: S5 returning customer, S6 resilience (the rest is in features/journeys)
   quality/      accessibility and visual regression
   architecture/ rules about the pipeline and the code itself
 java/           Playwright for Java + JUnit 5: every A/U/S scenario, same IDs and tiers

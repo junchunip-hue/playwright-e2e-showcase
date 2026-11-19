@@ -13,7 +13,7 @@ test.describe('Returning customer', () => {
   // Starts logged out: the customer signs in on the login page, not in checkout.
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('S5: a returning customer saves a favourite, compares two products, buys the cheaper one and downloads the invoice', { tag: [Tag.regression, Tag.e2e] }, async ({ api, shopper, checkout }) => {
+  test('S5: a returning customer saves a favourite, compares two products, buys the cheaper one and downloads the invoice', { tag: [Tag.regression, Tag.e2e] }, async ({ api, shopper, productPage, header, checkoutPage }) => {
     test.setTimeout(300_000); // includes waiting for the background PDF job
 
     // Arrange (API): a registered customer and two different products that can be bought.
@@ -30,11 +30,13 @@ test.describe('Returning customer', () => {
 
     // Buy the cheaper of the two, already signed in.
     const [cheaper] = [first, second].sort((a, b) => a.price - b.price);
-    await checkout.addToCart(cheaper);
-    const cartTotal = await checkout.reviewCart([cheaper]);
-    await checkout.continueSignedIn();
-    await checkout.confirmSavedAddress(customer.address);
-    const invoiceNumber = await checkout.pay(payments.cashOnDelivery());
+    await productPage.open(cheaper.id);
+    await productPage.addToCart();
+    await expect(header.cartQuantity).toHaveText('1');
+    const cartTotal = await checkoutPage.reviewCart([cheaper.name]);
+    await checkoutPage.continueSignedIn();
+    await checkoutPage.confirmAddress(customer.address);
+    const invoiceNumber = await checkoutPage.pay(payments.cashOnDelivery());
 
     // The invoice as a file: named after the order, and a real PDF.
     const pdf = await shopper.downloadInvoice(invoiceNumber);

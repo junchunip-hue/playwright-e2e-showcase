@@ -2,14 +2,14 @@ import AxeBuilder from '@axe-core/playwright';
 import { test as base } from 'playwright-bdd';
 import { WCAG_TAGS } from '../a11y/accessibility';
 import { ApiClient, type NewCustomer, type Product } from '../api/ApiClient';
-import { CheckoutFlow } from '../flows/CheckoutFlow';
 import { ShopperFlow } from '../flows/ShopperFlow';
 import { createBdd } from 'playwright-bdd';
+import type { InvalidCard } from '../data/payments';
 import { env, isPublicDemo } from '../config/env';
 import { Tag } from '../tags';
 import { AccountInvoicesPage } from '../pages/AccountInvoicesPage';
 import { AccountPage } from '../pages/AccountPage';
-import { CheckoutPage } from '../pages/CheckoutPage';
+import { CheckoutPage } from '../pages/checkout.page';
 import { ComparisonPage } from '../pages/ComparisonPage';
 import { FavoritesPage } from '../pages/FavoritesPage';
 import { Footer } from '../pages/components/Footer';
@@ -30,6 +30,18 @@ export interface ScenarioContext {
   product?: Product;
   /** Product names the search API returned, to compare with what the UI shows. */
   searchApiNames?: string[];
+  /** Details of a guest who checks out without registering (S4). */
+  guest?: NewCustomer;
+  /** The cart total shown in step 1 of checkout: the amount the invoice must have. */
+  cartTotal?: number;
+  /** The invoice number shown after the order was placed. */
+  invoiceNumber?: string;
+  /** An invalid card entered in step 4 (S2 negative cases). */
+  invalidCard?: InvalidCard;
+  /** The id of the order's invoice, as the admin found it (S3). */
+  invoiceId?: string;
+  /** The status message the admin set when shipping (S3). */
+  shippedMessage?: string;
 }
 
 type Fixtures = {
@@ -48,8 +60,6 @@ type Fixtures = {
   header: HeaderModule;
   footer: Footer;
   api: ApiClient;
-  /** Business steps of the checkout journey (src/flows), built on the page objects above. */
-  checkout: CheckoutFlow;
   /** What a signed-in customer does outside checkout: favourites, comparison, invoice download (src/flows). */
   shopper: ShopperFlow;
   /**
@@ -82,7 +92,6 @@ export const test = base.extend<Fixtures>({
   favoritesPage: async ({ page }, use) => use(new FavoritesPage(page)),
   header: async ({ page }, use) => use(new HeaderModule(page)),
   footer: async ({ page }, use) => use(new Footer(page)),
-  checkout: async ({ productPage, header, checkoutPage }, use) => use(new CheckoutFlow(productPage, header, checkoutPage)),
   shopper: async ({ page, loginPage, productPage, comparisonPage, favoritesPage, accountInvoicesPage, invoiceDetailsPage }, use) =>
     use(
       new ShopperFlow(page, {

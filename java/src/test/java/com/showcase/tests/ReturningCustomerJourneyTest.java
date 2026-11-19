@@ -1,5 +1,6 @@
 package com.showcase.tests;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.microsoft.playwright.Page;
@@ -13,7 +14,9 @@ import com.showcase.api.ApiClient.Product;
 import com.showcase.data.Customers;
 import com.showcase.data.Customers.Customer;
 import com.showcase.data.Payments;
-import com.showcase.flows.CheckoutFlow;
+import com.showcase.modules.HeaderModule;
+import com.showcase.pages.CheckoutPage;
+import com.showcase.pages.ProductPage;
 import com.showcase.flows.ShopperFlow;
 import com.showcase.flows.ShopperFlow.PdfFile;
 import java.nio.charset.StandardCharsets;
@@ -56,11 +59,14 @@ class ReturningCustomerJourneyTest {
 
       // Buy the cheaper of the two, already signed in.
       Product cheaper = products.stream().min(Comparator.comparingDouble(Product::price)).orElseThrow();
-      CheckoutFlow checkout = new CheckoutFlow(page);
-      checkout.addToCart(cheaper);
-      double cartTotal = checkout.reviewCart(List.of(cheaper));
+      ProductPage productPage = new ProductPage(page);
+      productPage.open(cheaper.id());
+      productPage.addToCart();
+      assertThat(new HeaderModule(page).cartQuantity).hasText("1");
+      CheckoutPage checkout = new CheckoutPage(page);
+      double cartTotal = checkout.reviewCart(List.of(cheaper.name()));
       checkout.continueSignedIn();
-      checkout.confirmSavedAddress(customer.address());
+      checkout.confirmAddress(customer.address());
       String invoiceNumber = checkout.pay(Payments.cashOnDelivery());
 
       // The invoice as a file: named after the order, and a real PDF.

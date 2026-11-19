@@ -20,7 +20,7 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 | Steps (Gherkin bindings) | `src/steps/*.steps.ts` | `steps/*Steps.java` (+ `PlaywrightContext`, `ScenarioContext`, `Hooks`) |
 | Pages (what a user does) | `src/pages/*.page.ts` (migrated) | `pages/*Page.java` |
 | Modules (locators only) | `src/modules/*.module.ts` | `modules/*Module.java` |
-| Journey steps (until migrated) | `src/flows/CheckoutFlow.ts`, `ShopperFlow.ts` | `flows/CheckoutFlow.java`, `ShopperFlow.java` |
+| Journey steps for S5 (until migrated) | `src/flows/ShopperFlow.ts` | `flows/ShopperFlow.java` |
 | Page objects | `src/pages/*.ts` | `pages/*.java` |
 | Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
 | API client | `src/api/` (per resource) | `api/ApiClient.java` |
@@ -45,10 +45,10 @@ In test-plan order (A, then U, then S):
 | U1, U2 | Login (valid / wrong password) | `features/ui/login.feature` (shared) | `RunCucumberTest` + `steps/LoginSteps` |
 | U3, U4 | Search results match the term; UI agrees with the search API | `features/ui/search.feature` (shared) | `RunCucumberTest` + `steps/SearchSteps` |
 | U5 | Add to cart updates the badge | `features/ui/cart.feature` (shared) | `RunCucumberTest` + `steps/CartSteps` |
-| U6 (S1) | First purchase journey | `tests/e2e/checkout.spec.ts` | `CheckoutJourneyTest` |
-| S2 | Payment matrix journey (4 methods + 2 invalid cards) | `tests/e2e/payments.spec.ts` | `PaymentJourneyTest` |
-| S3 | Admin publishes, customer buys, admin ships (own Toolshop only) | `tests/e2e/admin-to-customer.spec.ts` | `AdminToCustomerJourneyTest` |
-| S4 | Guest checkout, order checked as admin (own Toolshop only) | `tests/e2e/guest-checkout.spec.ts` | `GuestCheckoutJourneyTest` |
+| U6 (S1) | First purchase journey | `features/journeys/checkout.feature` (shared) | `RunCucumberTest` + `steps/CheckoutSteps` |
+| S2 | Payment matrix journey (4 methods + 2 invalid cards, Scenario Outlines) | `features/journeys/checkout.feature` (shared) | `RunCucumberTest` + `steps/CheckoutSteps` |
+| S3 | Admin publishes, customer buys, admin ships (own Toolshop only) | `features/journeys/admin-to-customer.feature` (shared) | `RunCucumberTest` + `steps/AdminSteps` |
+| S4 | Guest checkout, order checked as admin (own Toolshop only) | `features/journeys/guest-checkout.feature` (shared) | `RunCucumberTest` + `steps/CheckoutSteps`, `AdminSteps` |
 | S5 | Returning customer: favourite, comparison, invoice PDF download (own Toolshop only) | `tests/e2e/returning-customer.spec.ts` | `ReturningCustomerJourneyTest` |
 | S6 | Resilience: slow or failing catalogue and search, then recovery (`page.route`) | `tests/e2e/resilience.spec.ts` | `ResilienceTest` |
 

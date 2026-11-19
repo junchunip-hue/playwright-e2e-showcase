@@ -1,8 +1,10 @@
 package com.showcase.steps;
 
+import com.showcase.config.Env;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
+import org.junit.jupiter.api.Assumptions;
 
 /** Opens a fresh browser context before each scenario and closes it after (trace kept on failure). */
 public class Hooks {
@@ -12,7 +14,17 @@ public class Hooks {
     this.playwright = playwright;
   }
 
-  @Before
+  /**
+   * @admin scenarios change catalogue or orders (or need the admin to look them up): our own Toolshop only, never the
+   * shared public demo. Same rule as the @Admin JUnit annotation and the TS adminToken fixture. Runs before the browser
+   * opens, so a skipped scenario costs nothing.
+   */
+  @Before(value = "@admin", order = 0)
+  public void ownToolshopOnly() {
+    Assumptions.assumeFalse(Env.isPublicDemo(), "changes catalogue and orders: our own Toolshop only");
+  }
+
+  @Before(order = 1)
   public void openBrowser() {
     playwright.open();
   }

@@ -19,7 +19,7 @@ const PDF_READY_TIMEOUT = 180_000;
  *   const prices = await shopper.compare([a, b]);
  *   const pdf = await shopper.downloadInvoice(invoiceNumber);
  *
- * Same rules as CheckoutFlow: page objects hold the locators, the flow holds the order and the waits, the test
+ * Same rules as the checkout page: page objects hold the locators, the flow holds the order and the waits, the test
  * holds the business assertions. Each step is a test.step.
  */
 export class ShopperFlow {

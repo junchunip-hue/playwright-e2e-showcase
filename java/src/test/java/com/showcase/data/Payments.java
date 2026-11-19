@@ -62,6 +62,22 @@ public final class Payments {
     return List.of(cashOnDelivery(), bankTransfer(), creditCard(), buyNowPayLater(), giftCard());
   }
 
+  /** The payment for a method name as the features write it ("credit-card"), with valid details. */
+  public static Payment forMethod(String method) {
+    return allMethods().stream()
+        .filter(p -> p.method().equals(method))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Unknown payment method \"" + method + "\""));
+  }
+
+  /** An invalid card by its name as the features write it ("expired card"). */
+  public static InvalidCard invalidCardNamed(String name) {
+    return invalidCards().stream()
+        .filter(c -> c.name().equals(name))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Unknown invalid card \"" + name + "\""));
+  }
+
   public static List<InvalidCard> invalidCards() {
     return List.of(
         new InvalidCard("malformed card number", creditCard(Map.of("credit_card_number", "1234")), "credit_card_number"),
