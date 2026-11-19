@@ -40,7 +40,9 @@ export class CheckoutFlow {
       await this.checkoutPage.goto();
       await expect(this.checkoutPage.productTitles).toHaveText(products.map((p) => p.name));
       const total = Number((await this.checkoutPage.cartTotal.textContent())?.replace(/[^0-9.]/g, ''));
-      await this.checkoutPage.proceed(this.checkoutPage.proceedFromCart, this.checkoutPage.signInForm.email);
+      // Step 2 shows the sign-in form, or only "proceed" for a customer who is already signed in (S5).
+      const stepTwo = this.checkoutPage.signInForm.email.or(this.checkoutPage.proceedFromSignIn);
+      await this.checkoutPage.proceed(this.checkoutPage.proceedFromCart, stepTwo);
       return total;
     });
   }
@@ -48,6 +50,14 @@ export class CheckoutFlow {
   async signIn(customer: Pick<NewCustomer, 'email' | 'password'>): Promise<void> {
     await test.step('sign in', async () => {
       await this.checkoutPage.signIn(customer.email, customer.password);
+      await expect(this.checkoutPage.proceedFromSignIn).toBeEnabled();
+      await this.checkoutPage.proceed(this.checkoutPage.proceedFromSignIn, this.checkoutPage.country);
+    });
+  }
+
+  /** For a customer who signed in before shopping (S5): step 2 only confirms who is signed in. */
+  async continueSignedIn(): Promise<void> {
+    await test.step('continue as the signed-in customer', async () => {
       await expect(this.checkoutPage.proceedFromSignIn).toBeEnabled();
       await this.checkoutPage.proceed(this.checkoutPage.proceedFromSignIn, this.checkoutPage.country);
     });

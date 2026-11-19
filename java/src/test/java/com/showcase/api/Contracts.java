@@ -17,6 +17,7 @@ public final class Contracts {
   // ULIDs are case-insensitive: seeded rows use upper case, rows Laravel creates at runtime (invoices) lower case.
   private static final Pattern ULID = Pattern.compile("(?i)^[0-9A-HJKMNP-TV-Z]{26}$");
   private static final Pattern INVOICE_NUMBER = Pattern.compile("^INV-\\d+$");
+  private static final List<String> PDF_STATUSES = List.of("NOT_INITIATED", "INITIATED", "IN_PROGRESS", "COMPLETED");
 
   private Contracts() {}
 
@@ -152,6 +153,37 @@ public final class Contracts {
       c.string(o, "file_name", 1);
       for (String f : List.of("title", "by_name", "by_url", "source_name", "source_url")) c.string(o, f, 0);
     };
+  }
+
+  /** GET /favorites (TS: FavoriteListSchema): every favourite with its product. May be empty. */
+  public static List<String> favorites(JsonArray items) {
+    Check c = new Check();
+    for (int i = 0; i < items.size(); i++) {
+      JsonElement e = items.get(i);
+      if (!e.isJsonObject()) {
+        c.problem("[" + i + "]", "expected an object", e);
+        continue;
+      }
+      Check at = c.at("[" + i + "].");
+      JsonObject f = e.getAsJsonObject();
+      at.matches(f, "id", ULID, "expected a ULID");
+      at.matches(f, "user_id", ULID, "expected a ULID");
+      at.matches(f, "product_id", ULID, "expected a ULID");
+      at.object(f, "product", (pc, p) -> {
+        pc.matches(p, "id", ULID, "expected a ULID");
+        pc.string(p, "name", 1);
+        pc.number(p, "price", false);
+      });
+    }
+    return c.problems;
+  }
+
+  /** GET /invoices/{number}/download-pdf-status (TS: PdfStatusSchema). */
+  public static List<String> pdfStatus(JsonObject b) {
+    Check c = new Check();
+    JsonElement v = b.get("status");
+    if (v == null || !v.isJsonPrimitive() || !PDF_STATUSES.contains(v.getAsString())) c.problem("status", "expected one of " + PDF_STATUSES, v);
+    return c.problems;
   }
 
   /** Rejected request body: field → non-empty list of non-empty messages (TS: ValidationErrorsSchema). */

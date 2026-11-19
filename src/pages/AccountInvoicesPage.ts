@@ -17,4 +17,9 @@ export class AccountInvoicesPage {
   row(invoiceNumber: string): Locator {
     return this.rows.filter({ hasText: invoiceNumber });
   }
+
+  /** The row's "Details" link (a router link without data-test). */
+  details(invoiceNumber: string): Locator {
+    return this.row(invoiceNumber).getByRole('link');
+  }
 }

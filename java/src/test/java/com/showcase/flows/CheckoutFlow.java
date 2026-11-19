@@ -61,7 +61,8 @@ public class CheckoutFlow {
     checkoutPage.navigate();
     assertThat(checkoutPage.productTitles).hasText(products.stream().map(Product::name).toArray(String[]::new));
     double total = Double.parseDouble(checkoutPage.cartTotal.textContent().replaceAll("[^0-9.]", ""));
-    checkoutPage.proceed(checkoutPage.proceedFromCart, checkoutPage.email);
+    // Step 2 shows the sign-in form, or only "proceed" for a customer who is already signed in (S5).
+    checkoutPage.proceed(checkoutPage.proceedFromCart, checkoutPage.email.or(checkoutPage.proceedFromSignIn));
     return total;
   }
 
@@ -69,6 +70,12 @@ public class CheckoutFlow {
     checkoutPage.email.fill(customer.email());
     checkoutPage.password.fill(customer.password());
     checkoutPage.loginSubmit.click();
+    assertThat(checkoutPage.proceedFromSignIn).isEnabled();
+    checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
+  }
+
+  /** For a customer who signed in before shopping (S5): step 2 only confirms who is signed in. */
+  public void continueSignedIn() {
     assertThat(checkoutPage.proceedFromSignIn).isEnabled();
     checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
   }

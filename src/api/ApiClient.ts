@@ -4,6 +4,7 @@ import { AddressesApi } from './resources/addresses';
 import { AuthApi } from './resources/auth';
 import { CatalogApi } from './resources/catalog';
 import { CustomersApi } from './resources/customers';
+import { FavoritesApi } from './resources/favorites';
 import { InvoicesApi } from './resources/invoices';
 import { PaymentsApi } from './resources/payments';
 import { ProductsApi } from './resources/products';
@@ -11,7 +12,7 @@ import type { ValidationErrors } from './schemas';
 
 export type { Address } from './resources/addresses';
 export type { NewCustomer } from './resources/customers';
-export type { NewProduct } from './resources/products';
+export type { NewProduct, ProductFilter } from './resources/products';
 export type { Invoice, InvoicePage, Product, ProductPage, ProductSearchPage } from './schemas';
 
 /**
@@ -28,6 +29,7 @@ export class ApiClient {
   readonly invoices: InvoicesApi;
   readonly payments: PaymentsApi;
   readonly catalog: CatalogApi;
+  readonly favorites: FavoritesApi;
   private readonly http: Http;
 
   constructor(request: APIRequestContext) {
@@ -39,6 +41,7 @@ export class ApiClient {
     this.invoices = new InvoicesApi(this.http);
     this.payments = new PaymentsApi(this.http);
     this.catalog = new CatalogApi(this.http);
+    this.favorites = new FavoritesApi(this.http);
   }
 
   /** Field errors of a rejected request (422 validation, 409 conflict), validated against their schema. */

@@ -3,10 +3,12 @@ import type { Http } from '../http';
 import {
   InvoiceDetailSchema,
   InvoicePageSchema,
+  PdfStatusSchema,
   StatusUpdatedSchema,
   type InvoiceDetail,
   type InvoicePage,
   type InvoiceStatus,
+  type PdfStatus,
 } from '../schemas';
 
 /** /invoices: a customer sees their own invoices, an admin sees all of them. */
@@ -31,6 +33,34 @@ export class InvoicesApi {
     const match = (await this.search(token, invoiceNumber)).data.find((i) => i.invoice_number === invoiceNumber);
     if (!match) throw new Error(`invoice ${invoiceNumber} not found`);
     return this.get(token, match.id);
+  }
+
+  /**
+   * GET /invoices/{number}/download-pdf-status. 400 with NOT_INITIATED is an answer, not an error: the background
+   * job has not picked the invoice up yet.
+   */
+  async pdfStatus(token: string, invoiceNumber: string): Promise<PdfStatus> {
+    const label = `GET /invoices/${invoiceNumber}/download-pdf-status`;
+    const res = await this.pdfStatusRequest(invoiceNumber, token);
+    if (res.status() !== 400) await this.http.ensureOk(res, label);
+    return (await this.http.body(res, label, PdfStatusSchema)).status;
+  }
+
+  // Raw responses (any status), for A6: who may read invoices. Without a token the request is anonymous.
+  listRequest(token?: string): Promise<APIResponse> {
+    return this.http.getRaw('/invoices', token);
+  }
+
+  getRequest(id: string, token?: string): Promise<APIResponse> {
+    return this.http.getRaw(`/invoices/${encodeURIComponent(id)}`, token);
+  }
+
+  pdfRequest(invoiceNumber: string, token?: string): Promise<APIResponse> {
+    return this.http.getRaw(`/invoices/${encodeURIComponent(invoiceNumber)}/download-pdf`, token);
+  }
+
+  pdfStatusRequest(invoiceNumber: string, token?: string): Promise<APIResponse> {
+    return this.http.getRaw(`/invoices/${encodeURIComponent(invoiceNumber)}/download-pdf-status`, token);
   }
 
   /** PUT /invoices/{id}/status (5-50 character message). */

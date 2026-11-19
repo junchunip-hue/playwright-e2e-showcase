@@ -23,12 +23,34 @@ export interface NewProduct {
   stock: number;
 }
 
+/** Query of GET /products (pinned Product::scopeWithFilters and its `between`/`sort` filters). */
+export interface ProductFilter {
+  /** Category ids (sub-categories match only themselves). */
+  byCategory?: string[];
+  byBrand?: string[];
+  /** Inclusive price range. */
+  price?: { min: number; max: number };
+  sort?: { by: 'name' | 'price'; order: 'asc' | 'desc' };
+  page?: number;
+}
+
 /** GET /products, /products/{id}, /products/search; POST /products */
 export class ProductsApi {
   constructor(private readonly http: Http) {}
 
   list(page = 1): Promise<ProductPage> {
     return this.http.get(`/products?page=${page}`, ProductPageSchema);
+  }
+
+  /** GET /products with filters and sorting, e.g. `{ byBrand: [id], sort: { by: 'price', order: 'asc' } }`. */
+  filter(filter: ProductFilter): Promise<ProductPage> {
+    const query = new URLSearchParams();
+    if (filter.byCategory) query.set('by_category', filter.byCategory.join(','));
+    if (filter.byBrand) query.set('by_brand', filter.byBrand.join(','));
+    if (filter.price) query.set('between', `price,${filter.price.min},${filter.price.max}`);
+    if (filter.sort) query.set('sort', `${filter.sort.by},${filter.sort.order}`);
+    query.set('page', String(filter.page ?? 1));
+    return this.http.get(`/products?${query}`, ProductPageSchema);
   }
 
   get(id: string): Promise<Product> {
@@ -54,8 +76,13 @@ export class ProductsApi {
    * for an in-stock item instead of hard-coding a product name.
    */
   async findInStock(): Promise<Product> {
-    const product = (await this.list()).data.find((p) => p.in_stock && !p.is_rental);
-    if (!product) throw new Error('No in-stock product found on page 1 of /products');
-    return product;
+    return (await this.findInStockProducts(1))[0];
+  }
+
+  /** `count` different purchasable products from page 1 (for journeys that compare or buy several). */
+  async findInStockProducts(count: number): Promise<Product[]> {
+    const products = (await this.list()).data.filter((p) => p.in_stock && !p.is_rental).slice(0, count);
+    if (products.length < count) throw new Error(`Fewer than ${count} in-stock products on page 1 of /products`);
+    return products;
   }
 }

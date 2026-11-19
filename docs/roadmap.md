@@ -1,12 +1,11 @@
 # Roadmap – showcase scenarios and structure
 
 > Companion to [`test-strategy.md`](test-strategy.md) (why) and [`test-plan.md`](test-plan.md) (what runs today).
-> This file is the plan for growing the suite into a demo: longer, story-like scenarios, and a layout that stays
-> readable while it grows.
+> This file is how the suite grew into a demo (§1–§4), when it counts as done (§5), and what comes next (§6).
 
 **Status (2026-11-18): done by its own definition.** All four showcase criteria in [§5](#5-definition-of-done) are
-met (risks, techniques, stability, demo). What is left is a choice, not a gap: S5 and S7 are optional, and the
-backlog items add coverage without a new technique.
+met (risks, techniques, stability, demo). Nothing is in progress. What comes next is keeping it green and, only if
+wanted, the optional or backlog items: see [§6](#6-what-comes-next).
 
 ## 1. What a demo should show in 3 minutes
 
@@ -25,18 +24,19 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 
 | ID | Scenario | Steps (abridged) | Builds on | Shows |
 |---|---|---|---|---|
-| **S1** | First purchase (exists as U6) | API-registered customer → cart → sign in → postcode lookup → pay → invoice verified via API | ✅ | Hybrid API/UI, isolated data |
+| **S1** ✅ | First purchase (exists as U6) | API-registered customer → cart → sign in → postcode lookup → pay → invoice verified via API | – | Hybrid API/UI, isolated data |
 | **S2** ✅ | Payment matrix (U7) | Same journey, data-driven over every payment method; invalid card is flagged, cannot be submitted, is rejected by the API (A9) and creates no invoice | S1 | Data-driven tests, negative path, one data model for UI and API |
 | **S3** ✅ | Admin publishes, customer buys | Admin creates a product via API (A8) → customer finds it by search → buys it → admin ships the order via API → customer sees it listed and SHIPPED | A8, S1 | Cross-role E2E, two sessions in one test |
 | **S4** ✅ | Guest checkout (U8) | Anonymous cart → guest tab (email, name) → postcode lookup → pay → `POST /invoices/guest`; the admin finds the order (guest invoices belong to no user) | S1 | Second entry path into the same flow |
-| **S5** (optional) | Returning customer | Login → favourites → compare two products → buy one → download the invoice PDF and check its status endpoint | S1 | Downloads, multi-tab/compare UI |
+| **S5** ✅ | Returning customer | Sign in → favourite → compare two products → buy the cheaper one, already signed in → download the invoice PDF once the background job has written it; API: favourite, order, PDF status | S1 | File downloads, waiting on background work, comparison UI |
 | **S6** ✅ | Resilience | `page.route` delays `/products` (products still appear), makes it fail (blank page, no error: finding) and makes search fail (shown as "no results": finding); each recovers on reload / next search | – | Network mocking, failure UX |
 | **S7** (optional) | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
-**Order:** S2 ✅ → S3 ✅ → A10/A11 ✅ → S6 ✅ → S4 ✅, then optionally S5 and S7 (see [§5](#5-definition-of-done)).
-A10/A11 turned the two permission findings from S3 into tracked known defects, S6 added network mocking, and S4
-is the second entry path into checkout (P1). **Every journey ships in TypeScript and Java**
-([ADR 0009](decisions/0009-every-journey-in-both-languages.md)): S1–S4 and S6 do.
+**Build order (done):** S2 → S3 → A10/A11 → S6 → S4, then A6, A7 and S5 (2026-11-19). A10/A11 turned the two
+permission findings from S3 into tracked known defects, S6 added network mocking, S4 is the second entry path into
+checkout (P1), and S5 added file downloads and a wait on Toolshop's background jobs. S7 is optional
+([§6](#6-what-comes-next)). **Every journey ships in TypeScript and Java**
+([ADR 0009](decisions/0009-every-journey-in-both-languages.md)): S1–S6 do.
 
 Every scenario follows the same contract: **arrange via API, act via UI, assert via UI and API**. Each one gets
 its own throwaway data and is tagged `@regression @e2e` (nightly), except the one PR-gate representative per area.
@@ -99,7 +99,7 @@ race with the postcode lookup, fixed in #17).
 
 ### The showcase is done when
 - **Risks:** every P1/P2 risk in [test-strategy.md](test-strategy.md#2-risk-based-prioritisation) is checked at the
-  right layer (met today).
+  right layer (met; the risk table names the IDs per risk).
 - **Techniques:** each technique the demo should show is used at least once (met 2026-11-18, last three were:)
   - ✅ A10/A11: role-based authorization, and known product defects tracked as tests
     ([ADR 0010](decisions/0010-known-defects-as-tests.md))
@@ -113,17 +113,58 @@ race with the postcode lookup, fixed in #17).
 - **Demo:** the README's 3-minute tour can be followed start to finish without other docs (met 2026-11-18: links,
   commands and snippets checked; local-run notes added for `@admin` skips and per-OS visual baselines).
 
-Everything beyond that is optional (S5, S7) or backlog.
+Everything beyond that is optional (S7), backlog or a new candidate: see [§6](#6-what-comes-next).
 
 ### Backlog (not planned)
 These would add coverage but no new technique, so they are not part of "done". They stay in the test plan,
 marked ➖, and move back only with a reason (a new risk, a defect found nearby). U7 and U8 are not here: they were
-built as S2 and S4.
+built as S2 and S4. A6 and A7 were here until they were built on 2026-11-19.
 
 | ID | Item | Why not now |
 |---|---|---|
-| A6 | Invoice requires auth (no token → 401) | Same technique as A3 and A10/A11 |
-| A7 | Product filters: category, brand, price range, sort | API variant of U3/U4 |
 | U9 | Cart: change quantity / remove item | Same layer and pattern as U5 |
 | U10 | Registration form validation (UI) | Rules already checked at API level (A4, A5) |
 | U11 | Category filter + sort | Same pattern as U3/U4 |
+
+## 6. What comes next
+
+Nothing is in progress. Four kinds of work remain, in this order.
+
+### Keep it green (when something happens)
+| When | Then | Where |
+|---|---|---|
+| A scheduled nightly has a flaky or failed test | Fix the cause (test or product), not with a retry; the stability criterion is open again until five clean nightlies follow | nightly summary, [ci.md](ci.md#pipeline-summary) |
+| A10 or A11 shows 🟥 "known defect fixed" | Replace `expectKnownDefect` / `KnownDefect` with a plain assertion of the intended status in both languages; move the finding to "fixed" in the test plan | [ADR 0010](decisions/0010-known-defects-as-tests.md) |
+| S6 fails because the catalogue or search now shows an error message | Assert the message instead of the blank page / "no results" (the finding is fixed) | [test plan, S6 findings](test-plan.md#3-test-inventory) |
+| Toolshop is moved to a newer upstream commit | Change the pin in `.github/actions/toolshop-start`, refresh visual baselines with the `update-snapshots` label, run a manual nightly | [ci.md](ci.md#system-under-test) |
+| `@playwright/test` gets a new minor version | Move `playwright.version` in `java/pom.xml` to the same minor | [java.md](java.md#how-the-two-stay-in-sync) |
+
+### Optional scenario (planned, not built)
+| ID | Adds | Worth it when |
+|---|---|---|
+| S7 | i18n combined with accessibility and visual checks (7 languages in the pinned UI) | the demo should show non-English UI or the shop's language switch matters |
+
+### Candidates (not in the plan yet)
+Features of the pinned Toolshop that no test touches, and the technique each would add to the demo. None has an ID
+yet: one gets the next free ID (A12, S8, N4, …) when it is chosen ([numbering](test-plan.md#how-ids-work)).
+Ranked by what they add to a 3-minute demo against what they cost.
+
+| Rank | Candidate | Technique it adds | Layer | Cost, risk |
+|---|---|---|---|---|
+| 1 | **Admin and customer side by side:** the admin changes an order in the back-office UI while the customer's page shows it | Two browser contexts in one test (two users at once, both in the UI) | S | Medium: admin UI page objects; own Toolshop only |
+| 2 | **Two-factor sign-in:** enable TOTP for a fresh customer via API, sign in with a code generated in the test, a wrong or reused code is refused | Time-based secrets in tests (TOTP generator in TS and Java) | A + S | Medium: a TOTP library per language; clock skew handled by the code window |
+| 3 | **Keyboard-only checkout:** U6 with Tab, Enter and arrow keys only | Accessibility beyond axe: focus order and operability | N or S | Low to build; may find real defects (a finding is a result, see ADR 0010) |
+| 4 | **Live sales feed:** the `/sales-stream` server-sent events and the live activity widget | Asserting a server push (SSE) in API and UI | A + U | Medium: stream parsing in both languages |
+| 5 | **Phone-sized checkout:** U6 on a mobile viewport with touch (menu, cart) | Device emulation, responsive layout | S | Low: a Playwright project with a device profile; Java via context options |
+| 6 | **Contact form with an attachment:** upload a file, a wrong type or size is refused | File upload (S5 covers download) | A + U | Low |
+| 7 | **Account security:** change the password, the old one and old token stop working; repeated failed logins lock the account (423, met by accident on the public demo) | Session invalidation, lock-out rules | A | Low; lock-out only on throwaway accounts (ADR 0007) |
+
+Not candidates: load or performance tests against shared infrastructure, e-mail content (no mail server in the
+pinned setup), and more browsers for accessibility or visual checks ([strategy §8](test-strategy.md#8-out-of-scope-deliberately)).
+
+Every new item follows the scenario definition of done ([§5](#5-definition-of-done)): both languages, then three
+clean nightlies.
+
+### Backlog
+U9–U11 ([§5 backlog](#backlog-not-planned)) add coverage without a new technique. One comes back only with a reason:
+a new risk or a defect found nearby.

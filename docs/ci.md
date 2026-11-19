@@ -9,7 +9,10 @@ migrated and seeded on every run, so results depend only on the code under test
 ([ADR 0001](decisions/0001-ci-runs-its-own-toolshop.md)).
 
 `toolshop-ready` installs API dependencies, seeds the database and waits until a data endpoint (`/products`) and the
-UI both return 200. A plain health endpoint was green while data endpoints still failed.
+UI both return 200. A plain health endpoint was green while data endpoints still failed. It also starts Toolshop's
+background jobs, which production runs from its scheduler: every 10 seconds `invoice:generate` (writes invoice PDFs,
+needed by S5) and a queue worker (stock updates; e-mails fail quietly, there is no mail server). `order:update` is left out: it changes order statuses by
+itself and would race S3 and A11.
 
 ## Workflows
 | Workflow | Trigger | What runs | Browsers |

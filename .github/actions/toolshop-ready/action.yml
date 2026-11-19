@@ -26,6 +26,18 @@ runs:
       working-directory: toolshop
       run: docker compose exec -T laravel-api php artisan migrate:refresh --seed
 
+    # In production Toolshop's scheduler writes invoice PDFs and works off queued jobs (stock updates, emails) every
+    # minute. Nothing runs them in a plain `docker compose up`, so a PDF would never be ready (S5 downloads one).
+    # This runs the same two commands every 10 seconds for at most an hour (the job ends long before).
+    # `order:update` is left out on purpose: it moves order statuses by itself and would race S3 and A11.
+    - name: Run background jobs (invoice PDFs, queue)
+      shell: bash
+      working-directory: toolshop
+      run: >-
+        docker compose exec -d -T laravel-api sh -c
+        'for i in $(seq 1 360); do php artisan invoice:generate > /dev/null 2>&1;
+        php artisan queue:work --stop-when-empty > /dev/null 2>&1; sleep 10; done'
+
     # Probe a data endpoint, not just /status: /status was green while /products returned 500.
     - name: Wait for API and UI
       shell: bash
