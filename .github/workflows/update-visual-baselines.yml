@@ -26,13 +26,16 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - uses: ./.github/actions/toolshop-start
+      - name: Start Toolshop
+        uses: ./.github/actions/toolshop-start
 
-      - uses: ./.github/actions/setup-node-suite
+      - name: Set up Node, dependencies and browsers
+        uses: ./.github/actions/setup-node-suite
         with:
           browsers: chromium
 
-      - uses: ./.github/actions/toolshop-ready
+      - name: Wait for Toolshop and start its background jobs
+        uses: ./.github/actions/toolshop-ready
 
       # Suite "visual" (src/tags.ts).
       - name: Regenerate baselines

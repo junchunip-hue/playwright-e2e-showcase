@@ -32,13 +32,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: ./.github/actions/toolshop-start
+      - name: Start Toolshop
+        uses: ./.github/actions/toolshop-start
 
-      - uses: ./.github/actions/setup-node-suite
+      - name: Set up Node, dependencies and browsers
+        uses: ./.github/actions/setup-node-suite
         with:
           browsers: chromium firefox webkit
 
-      - uses: ./.github/actions/toolshop-ready
+      - name: Wait for Toolshop and start its background jobs
+        uses: ./.github/actions/toolshop-ready
 
       # Suite "nightly" (src/tags.ts): everything except the Test Agents' seed.
       # blob output is merged into one HTML report by merge-reports.
@@ -69,7 +72,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: ./.github/actions/setup-node-suite
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/setup-node-suite
 
       # Artifact storage occasionally fails one download even after the action's own retries (the blob was fine
       # minutes later), which would turn a green run red. One more attempt after a pause rides that out.
@@ -141,11 +145,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: ./.github/actions/toolshop-start
+      - name: Start Toolshop
+        uses: ./.github/actions/toolshop-start
 
-      - uses: ./.github/actions/setup-java-suite
+      - name: Set up JDK, compiled tests and Chromium
+        uses: ./.github/actions/setup-java-suite
 
-      - uses: ./.github/actions/toolshop-ready
+      - name: Wait for Toolshop and start its background jobs
+        uses: ./.github/actions/toolshop-ready
 
       - name: Run all Java tests
         working-directory: java
@@ -180,11 +187,12 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [regression, merge-reports, regression-java]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10 # includes npm ci for the planned-test list
     permissions:
       contents: read
       actions: read
       statuses: write # the verdict as a commit status
+      checks: read # error annotations of failed jobs
     steps:
       - uses: actions/checkout@v7
 
@@ -202,6 +210,31 @@ jobs:
           name: junit-reports-nightly
           path: results/java
 
+      # The tests this run planned (same suite and projects as the test job, no browser needed), so a test that never
+      # ran shows as "not run" instead of disappearing from the counts.
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/setup-node-suite
+
+      - name: List the planned TypeScript tests
+        continue-on-error: true
+        env:
+          SUITE: nightly
+          BASE_URL: http://localhost:4200 # our own Toolshop, as in the test job (not the public demo)
+          PLAYWRIGHT_JSON_OUTPUT_FILE: results/ts-planned.json
+        run: npx playwright test --list --reporter=json
+
+      # Which job and step failed, and the error it reported, so the summary can name it before anything else.
+      - name: Collect failed jobs
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/jobs
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" > results/jobs/jobs.json
+          for id in $(jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .id' results/jobs/jobs.json); do
+            gh api "repos/$GITHUB_REPOSITORY/check-runs/$id/annotations" > "results/jobs/annotations-$id.json"
+          done
+
       - name: Write pipeline summary
         id: summary
         env:
@@ -211,7 +244,7 @@ jobs:
           # shard's tests are simply absent from the merged report (nightly 2026-11-19, apt mirrors unreachable).
           TS_JOB: ${{ needs.regression.result != 'success' && needs.regression.result || needs.merge-reports.result }}
           JAVA_JOB: ${{ needs.regression-java.result }}
-        run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java
+        run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java results/jobs results/ts-planned.json
 
       # Green check for Passed and for Passed with flaky (the description names the flaky tests), red cross for Failed.
       # Shown next to the commit and in the PR checks: the Actions run list itself only has the run's own icon.

@@ -1,16 +1,18 @@
 // Writes the PR pipeline summary (GitHub job summary): a diagram of the run, a TypeScript-vs-Java table per test
 // ID, and the known product defects (ADR 0010). Inputs: Playwright JSON results, Surefire XML reports and the job
 // results from `needs`.
-// Usage: node scripts/pipeline-summary.mjs <ts-results.json> <surefire-dir>   (env: TS_JOB, JAVA_JOB)
+// Usage: node scripts/pipeline-summary.mjs <ts-results.json> <surefire-dir> [<failed-jobs-dir> [<ts-planned.json>]]
+//   (env: TS_JOB, JAVA_JOB). ts-planned.json is `playwright test --list --reporter=json` for the same suite: every
+//   planned test without a result is shown as not run.
 import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const [tsFile, javaDir] = process.argv.slice(2);
+const [tsFile, javaDir, jobsDir, plannedFile] = process.argv.slice(2);
 const ID = /\b([ASUN]\d+):/;
 const ORDER = 'SUAN';
 
 /** id → { passed, failed, flaky, skipped } */
-const tally = () => ({ passed: 0, failed: 0, flaky: 0, skipped: 0 });
+const tally = () => ({ passed: 0, failed: 0, flaky: 0, skipped: 0, notRun: 0 });
 
 /**
  * Known defects (src/known-defects.ts, com.showcase.api.KnownDefect) report one line per check:
@@ -62,9 +64,13 @@ const xmlText = (s) =>
 /** All test runs per language, with an ID or not (e.g. the login setup); the per-ID tables count only tests with an ID. */
 const totals = { ts: null, java: null };
 const countRun = (lang, outcome) => {
-  totals[lang] ??= { passed: 0, flaky: 0, failed: 0 };
+  totals[lang] ??= { passed: 0, flaky: 0, failed: 0, notRun: 0 };
   if (outcome !== 'skipped') totals[lang][outcome]++;
 };
+
+/** One key per test in a project, the same in the planned list and in the results (a shard repeats the setup). */
+const testKey = (spec, t) => `${t.projectName}|${spec.file}|${spec.title}`;
+const reportedTs = new Set();
 
 function typescriptResults(file) {
   const byId = new Map();
@@ -72,7 +78,10 @@ function typescriptResults(file) {
   const OUTCOME = { expected: 'passed', flaky: 'flaky', skipped: 'skipped' };
   const walk = (suite) => {
     for (const spec of suite.specs ?? []) {
-      for (const t of spec.tests ?? []) countRun('ts', OUTCOME[t.status] ?? 'failed');
+      for (const t of spec.tests ?? []) {
+        countRun('ts', OUTCOME[t.status] ?? 'failed');
+        reportedTs.add(testKey(spec, t));
+      }
       const id = ID.exec(spec.title)?.[1];
       if (!id) continue;
       for (const t of spec.tests ?? []) {
@@ -137,20 +146,60 @@ function javaResults(dir) {
 
 const ts = typescriptResults(tsFile);
 const java = javaResults(javaDir);
+
+/**
+ * Tests that were planned but never ran (their job failed before or while running them). They are shown as
+ * "⛔ not run", never as passed: a green row must mean the tests ran. TypeScript compares the planned list with the
+ * results. Java writes no results when its job dies early; it runs the same A/U/S IDs as TypeScript (same tiers,
+ * ADR 0009), so those IDs are not run there, count unknown.
+ */
+const plannedIds = new Set();
+if (plannedFile && existsSync(plannedFile)) {
+  const walk = (suite) => {
+    for (const spec of suite.specs ?? []) {
+      const id = ID.exec(spec.title)?.[1];
+      if (id) plannedIds.add(id);
+      for (const t of spec.tests ?? []) {
+        if (reportedTs.has(testKey(spec, t))) continue;
+        countRun('ts', 'notRun');
+        if (!id) continue;
+        const r = ts.get(id) ?? tally();
+        r.notRun++;
+        ts.set(id, r);
+      }
+    }
+    (suite.suites ?? []).forEach(walk);
+  };
+  JSON.parse(readFileSync(plannedFile, 'utf8')).suites.forEach(walk);
+}
+const javaJobOk = (process.env.JAVA_JOB ?? 'unknown') === 'success';
+if (!javaJobOk && !['skipped', 'cancelled'].includes(process.env.JAVA_JOB)) {
+  for (const id of plannedIds) {
+    if (!/^[ASU]/.test(id) || java.has(id)) continue;
+    java.set(id, { ...tally(), notRun: 1, notRunCountUnknown: true });
+  }
+}
 const ids = [...new Set([...ts.keys(), ...java.keys()])].sort(
   (a, b) => ORDER.indexOf(a[0]) - ORDER.indexOf(b[0]) || Number(a.slice(1)) - Number(b.slice(1)),
 );
 
 const cell = (r) => {
   if (!r) return '–';
-  const parts = [`${r.passed} ✅`];
+  const parts = [];
+  // "0 ✅" only when nothing else is there to say (e.g. all skipped is said below).
+  if (r.passed || !(r.flaky || r.failed || r.skipped || r.notRun)) parts.push(`${r.passed} ✅`);
+  if (r.notRun) parts.push(r.notRunCountUnknown ? '⛔ not run' : `${r.notRun} ⛔ not run`);
   if (r.flaky) parts.push(`${r.flaky} ⚠️ flaky`);
   if (r.failed) parts.push(`${r.failed} ❌`);
   if (r.skipped) parts.push(`${r.skipped} skipped`);
   return parts.join(' · ');
 };
 const coverage = (id) => (ts.has(id) && java.has(id) ? 'both' : ts.has(id) ? 'TypeScript' : 'Java');
-const sum = (m) => [...m.values()].reduce((a, r) => ({ passed: a.passed + r.passed, failed: a.failed + r.failed, flaky: a.flaky + r.flaky }), { passed: 0, failed: 0, flaky: 0 });
+const sum = (m) =>
+  [...m.values()].reduce(
+    (a, r) => ({ passed: a.passed + r.passed, failed: a.failed + r.failed, flaky: a.flaky + r.flaky, notRun: a.notRun + r.notRun }),
+    { passed: 0, failed: 0, flaky: 0, notRun: 0 },
+  );
 
 const tsJob = process.env.TS_JOB ?? 'unknown';
 const javaJob = process.env.JAVA_JOB ?? 'unknown';
@@ -158,11 +207,16 @@ const tsSum = sum(ts);
 const javaSum = sum(java);
 const jobState = (job) => (job === 'success' ? 'ok' : job === 'skipped' || job === 'cancelled' ? 'skip' : 'bad');
 /** A failed test is a failure whatever the job says; a flaky one turns a green lane gold ("passed with flaky"). */
-const state = (job, s) => (s.failed || jobState(job) === 'bad' ? 'bad' : s.flaky && jobState(job) === 'ok' ? 'flaky' : jobState(job));
+const state = (job, s) => (s.failed || s.notRun || jobState(job) === 'bad' ? 'bad' : s.flaky && jobState(job) === 'ok' ? 'flaky' : jobState(job));
 const tsState = state(tsJob, tsSum);
 const javaState = state(javaJob, javaSum);
 const counts = (s) =>
-  [`${s.passed} passed`, s.failed ? `❌ ${s.failed} failed` : '0 failed', s.flaky ? `⚠️ ${s.flaky} flaky` : '0 flaky'].join(' · ');
+  [
+    `${s.passed} passed`,
+    s.failed ? `❌ ${s.failed} failed` : '0 failed',
+    s.flaky ? `⚠️ ${s.flaky} flaky` : '0 flaky',
+    ...(s.notRun ? [s === javaSum && [...java.values()].some((r) => r.notRunCountUnknown) ? '⛔ not run' : `⛔ ${s.notRun} not run`] : []),
+  ].join(' · ');
 
 const nightly = process.env.PIPELINE === 'nightly';
 const flow = nightly
@@ -212,17 +266,58 @@ const defectSection = defectRows.length
   : [];
 const knownIds = new Set(defectRows.map((d) => d.id));
 
+/**
+ * Failed jobs of this run (written by the workflow's "Collect failed jobs" step): name, link, failed steps and the
+ * errors the job reported. A job can fail before any test runs (e.g. a browser install), and then the test tables
+ * below are all green for what did run: this is what explains the red.
+ */
+function failedJobs(dir) {
+  const file = dir && join(dir, 'jobs.json');
+  if (!file || !existsSync(file)) return [];
+  const GENERIC = /^Process completed with exit code \d+\.?$/;
+  return (JSON.parse(readFileSync(file, 'utf8')).jobs ?? [])
+    .filter((j) => j.conclusion === 'failure' || j.conclusion === 'timed_out')
+    .map((j) => {
+      const annotationsFile = join(dir, `annotations-${j.id}.json`);
+      const annotations = existsSync(annotationsFile) ? JSON.parse(readFileSync(annotationsFile, 'utf8')) : [];
+      const messages = (level) =>
+        annotations.filter((a) => a.annotation_level === level && !GENERIC.test(a.message.trim())).map((a) => firstLine(a.message));
+      const errors = messages('failure');
+      return {
+        name: j.name,
+        url: j.html_url,
+        timedOut: j.conclusion === 'timed_out',
+        steps: (j.steps ?? []).filter((s) => s.conclusion === 'failure' || s.conclusion === 'timed_out').map((s) => s.name),
+        // Errors first; without one, the job's warnings usually say what went wrong (e.g. each install attempt).
+        why: errors.length ? errors : messages('warning').slice(0, 3),
+      };
+    });
+}
+const failed = failedJobs(jobsDir);
+const firstFailure = failed[0];
+const whereFailed = (j) => `**${j.name}**${j.steps.length ? ` at "${j.steps[0]}"` : j.timedOut ? ' (timed out)' : ''}`;
+
 // One verdict for the whole run: failed beats flaky, flaky beats passed. GitHub renders the alert boxes in colour
 // (red / gold / green).
 const failedTotal = tsSum.failed + javaSum.failed;
 const flakyTotal = flakyCases.length;
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/** What made the run red, in order of what a reader needs first: failed tests, tests that never ran, a red job. */
+const problems = [
+  ...(failedTotal ? [`${plural(failedTotal, 'test')} failed (TypeScript ${tsSum.failed}, Java ${javaSum.failed})`] : []),
+  ...(tsSum.notRun ? [`${plural(tsSum.notRun, 'TypeScript test')} did not run`] : []),
+  ...(javaSum.notRun ? [[...java.values()].some((r) => r.notRunCountUnknown) ? 'the Java suite did not run' : `${plural(javaSum.notRun, 'Java test')} did not run`] : []),
+];
+const cause = firstFailure ? `${firstFailure.name}${firstFailure.why[0] ? `: ${firstFailure.why[0]}` : firstFailure.steps[0] ? ` failed at ${firstFailure.steps[0]}` : ' failed'}` : '';
 const verdict =
   tsState === 'bad' || javaState === 'bad'
     ? [
         '> [!CAUTION]',
-        failedTotal
-          ? `> **Failed:** ${failedTotal} test${failedTotal === 1 ? '' : 's'} failed (TypeScript ${tsSum.failed}, Java ${javaSum.failed}).`
-          : `> **Failed:** a job ended red without a failed test (TypeScript job ${tsJob}, Java job ${javaJob}).`,
+        problems.length
+          ? `> **Failed:** ${problems.join('; ')}.${firstFailure ? ` Cause: ${whereFailed(firstFailure)}${firstFailure.why[0] ? `: ${firstFailure.why[0]}` : ''}. See [What failed](#what-failed).` : ''}`
+          : firstFailure
+            ? `> **Failed:** ${whereFailed(firstFailure)}${firstFailure.why[0] ? `: ${firstFailure.why[0]}` : ''}. See [What failed](#what-failed).`
+            : `> **Failed:** a job ended red without a failed test (TypeScript job ${tsJob}, Java job ${javaJob}).`,
       ]
     : flakyTotal
       ? [
@@ -256,11 +351,26 @@ const flakySection = flakyTotal
     ]
   : [];
 
+const whatFailed = failed.length
+  ? [
+      '## What failed',
+      '',
+      '| Job | Failed step | What it reported |',
+      '|---|---|---|',
+      ...failed.map(
+        (j) =>
+          `| ❌ [${cellText(j.name)}](${j.url}) | ${j.steps.length ? cellText(j.steps.join(', ')) : j.timedOut ? 'timed out' : '–'} | ${j.why.length ? j.why.map((w) => cellText(w)).join('<br/>') : 'see the job log'} |`,
+      ),
+      '',
+    ]
+  : [];
+
 const md = [
   nightly ? '## Nightly regression' : '## PR pipeline',
   '',
   ...verdict,
   '',
+  ...whatFailed,
   '```mermaid',
   ...flow,
   '  TS3 --> S([Summary])',
@@ -282,6 +392,9 @@ const md = [
   ...flakySection,
   '## TypeScript vs Java by test ID',
   '',
+  ...(tsSum.notRun || javaSum.notRun
+    ? ['⛔ not run = planned for this run but never started, because its job failed first (see What failed). ✅ counts only tests that ran.', '']
+    : []),
   '| ID | TypeScript | Java | Coverage |',
   '|---|---|---|---|',
   ...ids.map((id) => `| ${knownIds.has(id) ? `${id} 🟨` : id} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`),
@@ -301,8 +414,8 @@ if (process.env.GITHUB_OUTPUT) {
   const failed = tsState === 'bad' || javaState === 'bad';
   const flakyNames = flakyCases.map((f) => `${f.id} ${f.project}`).join(', ');
   const description = failed
-    ? failedTotal
-      ? `❌ Failed: ${failedTotal} test${failedTotal === 1 ? '' : 's'} (TS ${tsSum.failed}, Java ${javaSum.failed})`
+    ? problems.length || cause
+      ? `❌ Failed: ${[...problems, ...(cause ? [cause] : [])].join(' · ')}`
       : `❌ Failed: a job ended red without a failed test (TypeScript ${tsJob}, Java ${javaJob})`
     : flakyTotal
       ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}`
@@ -316,16 +429,20 @@ if (process.env.GITHUB_OUTPUT) {
 // The nightly's README badge (shields.io endpoint format), published next to the report on GitHub Pages: test runs
 // in both languages, and the same verdict colour as above (green passed, yellow passed with flaky, red failed).
 if (process.env.BADGE_FILE) {
-  const all = ['passed', 'flaky', 'failed'].map((k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0));
-  const [passed, flaky, failedRuns] = all;
+  const all = ['passed', 'flaky', 'failed', 'notRun'].map((k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0));
+  const [passed, flaky, failedRuns, notRunRuns] = all;
   const failed = tsState === 'bad' || javaState === 'bad';
+  const javaNotRun = [...java.values()].some((r) => r.notRunCountUnknown);
   const badge = {
     schemaVersion: 1,
     label: 'nightly',
     message: failed
-      ? failedRuns
-        ? `${failedRuns} failed · ${passed} passed`
-        : 'failed (a job ended red)'
+      ? [
+          ...(failedRuns ? [`${failedRuns} failed`] : []),
+          ...(notRunRuns ? [`${notRunRuns} not run`] : []),
+          ...(javaNotRun ? ['Java not run'] : []),
+          ...(failedRuns || notRunRuns || javaNotRun ? [`${passed + flaky} passed`] : ['failed (a job ended red)']),
+        ].join(' · ')
       : `${passed + flaky} passed · ${flaky} flaky`,
     color: failed ? 'red' : flaky ? 'yellow' : 'brightgreen',
   };

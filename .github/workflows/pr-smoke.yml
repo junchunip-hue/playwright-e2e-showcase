@@ -24,9 +24,11 @@ jobs:
 
       # Start the build early: images build and the Angular dev server compiles
       # in the background while we install our own dependencies.
-      - uses: ./.github/actions/toolshop-start
+      - name: Start Toolshop
+        uses: ./.github/actions/toolshop-start
 
-      - uses: ./.github/actions/setup-node-suite
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/setup-node-suite
 
       # check:tags fails on unknown tags or tests without a tier (smoke/regression/setup/seed).
       # test:architecture fails on pipeline loops: self-triggering workflows, cycles, unbounded waits.
@@ -42,7 +44,8 @@ jobs:
         with:
           browsers: chromium
 
-      - uses: ./.github/actions/toolshop-ready
+      - name: Wait for Toolshop and start its background jobs
+        uses: ./.github/actions/toolshop-ready
 
       # Suite "pr" (src/tags.ts): smoke + accessibility + visual on API and Chromium.
       - name: Run PR suite (API + Chromium)
@@ -76,11 +79,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: ./.github/actions/toolshop-start
+      - name: Start Toolshop
+        uses: ./.github/actions/toolshop-start
 
-      - uses: ./.github/actions/setup-java-suite
+      - name: Set up JDK, compiled tests and Chromium
+        uses: ./.github/actions/setup-java-suite
 
-      - uses: ./.github/actions/toolshop-ready
+      - name: Wait for Toolshop and start its background jobs
+        uses: ./.github/actions/toolshop-ready
 
       - name: Run smoke tests (JUnit 5)
         working-directory: java
@@ -115,11 +121,12 @@ jobs:
     if: ${{ !cancelled() }}
     needs: [smoke, smoke-java]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10 # includes npm ci for the planned-test list
     permissions:
       contents: read
       actions: read
       statuses: write # the verdict as a commit status
+      checks: read # error annotations of failed jobs
     steps:
       - uses: actions/checkout@v7
 
@@ -137,12 +144,36 @@ jobs:
           name: junit-reports
           path: results/java
 
+      # The tests this run planned (same suite and projects as the test job, no browser needed), so a test that never
+      # ran shows as "not run" instead of disappearing from the counts.
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/setup-node-suite
+
+      - name: List the planned TypeScript tests
+        continue-on-error: true
+        env:
+          BASE_URL: http://localhost:4200 # our own Toolshop, as in the test job (not the public demo)
+          PLAYWRIGHT_JSON_OUTPUT_FILE: results/ts-planned.json
+        run: node scripts/run-suite.mjs pr --project=api --project=chromium --list --reporter=json
+
+      # Which job and step failed, and the error it reported, so the summary can name it before anything else.
+      - name: Collect failed jobs
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p results/jobs
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs?per_page=100" > results/jobs/jobs.json
+          for id in $(jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out") | .id' results/jobs/jobs.json); do
+            gh api "repos/$GITHUB_REPOSITORY/check-runs/$id/annotations" > "results/jobs/annotations-$id.json"
+          done
+
       - name: Write pipeline summary
         id: summary
         env:
           TS_JOB: ${{ needs.smoke.result }}
           JAVA_JOB: ${{ needs.smoke-java.result }}
-        run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java
+        run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java results/jobs results/ts-planned.json
 
       # Green check for Passed and for Passed with flaky (the description names the flaky tests), red cross for Failed.
       # Shown next to the commit and in the PR checks: the Actions run list itself only has the run's own icon.
