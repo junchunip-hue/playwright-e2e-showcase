@@ -59,12 +59,7 @@ export class CheckoutFlow {
   async continueSignedIn(): Promise<void> {
     await test.step('continue as the signed-in customer', async () => {
       await expect(this.checkoutPage.proceedFromSignIn).toBeEnabled();
-      // Opening the address step fills in the saved address and looks it up at once. Waiting for that lookup here
-      // (it starts before the click) leaves a settled form for confirmSavedAddress; typing the same values again
-      // would trigger no new lookup to wait for (nightly 2026-11-19, Java).
-      const lookup = this.checkoutPage.postcodeLookup();
       await this.checkoutPage.proceed(this.checkoutPage.proceedFromSignIn, this.checkoutPage.country);
-      await lookup;
     });
   }
 
@@ -89,7 +84,13 @@ export class CheckoutFlow {
     });
   }
 
-  /** After continueSignedIn: the saved address is already filled in and looked up; check it and move on. */
+  /**
+   * After continueSignedIn: the app fills in the customer's saved address and looks it up by itself, at a moment
+   * that differs per browser (before or after the step opens; nightly 2026-11-19). Typing the same values again
+   * triggers no new lookup, so there is no request to wait for. The saved address is the looked-up one, so the
+   * form shows the same values before and after the lookup: checking them (auto-waiting) is enough, and `proceed`
+   * repeats the click if the lookup rewrites the form at that moment.
+   */
   async confirmSavedAddress(address: Address): Promise<void> {
     await test.step('saved billing address', async () => {
       await this.checkAddressAndProceed(address);

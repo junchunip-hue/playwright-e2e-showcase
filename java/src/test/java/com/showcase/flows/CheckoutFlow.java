@@ -77,9 +77,7 @@ public class CheckoutFlow {
   /** For a customer who signed in before shopping (S5): step 2 only confirms who is signed in. */
   public void continueSignedIn() {
     assertThat(checkoutPage.proceedFromSignIn).isEnabled();
-    // Opening the address step fills in the saved address and looks it up at once; wait for that lookup here, so
-    // confirmSavedAddress finds a settled form (typing the same values again would trigger no new lookup).
-    checkoutPage.whilePostcodeLookup(() -> checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country));
+    checkoutPage.proceed(checkoutPage.proceedFromSignIn, checkoutPage.country);
   }
 
   /** Checks out without an account (TS: continueAsGuest): guest tab, email and name, then on to the address. */
@@ -99,7 +97,11 @@ public class CheckoutFlow {
     checkAddressAndProceed(address);
   }
 
-  /** After continueSignedIn: the saved address is already filled in and looked up; check it and move on. */
+  /**
+   * After continueSignedIn (TS: confirmSavedAddress): the app fills in and looks up the saved address by itself, at a
+   * moment that differs per browser, and typing the same values triggers no new lookup. The saved address is the
+   * looked-up one, so checking the fields (auto-waiting) is enough; proceed repeats the click if the form changes.
+   */
   public void confirmSavedAddress(Map<String, String> address) {
     checkAddressAndProceed(address);
   }

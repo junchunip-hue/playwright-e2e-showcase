@@ -139,7 +139,8 @@ stays disabled for ever. CI now runs both commands in the background (`toolshop-
 first round renders the 200 seeded invoices before any new order, which delayed S5 by 4-5 minutes with one worker.
 The public demo starts the job but did not finish a PDF within 4 minutes (measured 2026-11-19), so S5 runs against
 our own Toolshop only. A customer who signs in before checkout gets the saved address filled in and looked up as soon
-as the address step opens; S5 waits for that lookup instead of typing the address again.
+as the address step opens, at a moment that differs per browser; typing the same values again triggers no new
+lookup. S5 therefore checks the saved address instead of waiting for a lookup request.
 
 **Findings while building S6 (pinned UI source, UX, pinned by S6):** the catalogue page has no error state.
 `OverviewComponent.getProducts()` subscribes without an error handler, so a failed `GET /products` leaves the page
