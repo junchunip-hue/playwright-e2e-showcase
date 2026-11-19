@@ -3,11 +3,11 @@
 > Companion to [`test-strategy.md`](test-strategy.md) (why) and [`test-plan.md`](test-plan.md) (what runs today).
 > This file is how the suite grew into a demo (§1–§4), when it counts as done (§5), and what comes next (§6).
 
-**Status (2026-11-19): three of four showcase criteria met; stability reopened.** Risks, techniques and demo are met
-([§5](#5-definition-of-done)). Stability was met on 2026-11-18 and reopened on 2026-11-19 by a flaky S2 (a test race,
-fixed in #27); the "clean nightlies" README badge counts the streak after every nightly (4 of 5 on 2026-11-19:
-#40, #44, #47, #50). Nothing else is in progress. What comes next is keeping
-it green and, only if wanted, the optional or backlog items: see [§6](#6-what-comes-next).
+**Status (2026-11-19): done by its own definition, all four criteria met.** Risks, techniques and demo are met
+([§5](#5-definition-of-done)). Stability was met on 2026-11-18, reopened the next day by a flaky S2 (a test race,
+fixed in #27), and met again the same day: nightlies #40, #44, #47, #50 and #53 on `main` were clean. The "clean
+nightlies" README badge keeps counting after every nightly. Nothing is in progress. What comes next is keeping it
+green and, only if wanted, the optional or backlog items: see [§6](#6-what-comes-next).
 
 ## 1. What a demo should show in 3 minutes
 
@@ -114,10 +114,10 @@ the new flaky list in the pipeline summary caught; before it, a retry would have
   95) on three browsers and all 34 Java tests green, no flaky, no retries). One of the seven ended red without a failed test: an
   artifact download in `merge-reports` failed, now retried ([ci.md](ci.md#workflows)). Scheduled nightlies keep watching
   this; a flaky or failed test reopens it.
-  **Reopened 2026-11-19:** a manual nightly on `main` passed with one flaky test, S2 credit-card on Firefox (run
-  44511396786; cause and fix in [test-plan findings](test-plan.md#3-test-inventory), #27). Clean nightlies on `main`
-  since the fix: counted by the nightly itself (`scripts/nightly-history.mjs`: `history.json` and the "clean
-  nightlies" badge on Pages; 4 of 5 on 2026-11-19). TypeScript and Java both retry twice in CI and report a test that
+  **Reopened and met again 2026-11-19:** nightly #38 on `main` passed with one flaky test, S2 credit-card on Firefox
+  (run 44511396786; cause and fix in [test-plan findings](test-plan.md#3-test-inventory), #27). After the fix, #40,
+  #44, #47, #50 and #53 were clean: five in a row, met again. Since #53 the nightly counts this itself
+  (`scripts/nightly-history.mjs`: `history.json` and the "clean nightlies" badge on Pages). TypeScript and Java both retry twice in CI and report a test that
   passed only on a retry as flaky, so "clean" means no failed, flaky, skipped or not-run test in either language, and
   a verified test list.
 - **Demo:** the README's 3-minute tour can be followed start to finish without other docs (met 2026-11-18: links,
