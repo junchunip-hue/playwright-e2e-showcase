@@ -10,15 +10,15 @@ test.describe('Visual regression', { tag: [Tag.visual, Tag.regression] }, () => 
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('N1: header navigation (anonymous)', async ({ loginPage, header }) => {
-    await loginPage.goto();
-    await expect(loginPage.form.email).toBeVisible();
+    await loginPage.open();
+    await expect(loginPage.ui.email).toBeVisible();
     await expect(header.root).toHaveScreenshot('header-anonymous.png');
   });
 
   test('N1: login form', async ({ loginPage }) => {
-    await loginPage.goto();
-    await expect(loginPage.form.email).toBeVisible();
-    await expect(loginPage.form.root).toHaveScreenshot('login-form.png');
+    await loginPage.open();
+    await expect(loginPage.ui.email).toBeVisible();
+    await expect(loginPage.ui.form).toHaveScreenshot('login-form.png');
   });
 
   test('N1: contact form', async ({ contactPage }) => {
@@ -36,8 +36,8 @@ test.describe('Visual regression', { tag: [Tag.visual, Tag.regression] }, () => 
   // Full-page example: anything that changes between runs is masked rather than compared.
   // The footer prints the Toolshop build date, and CI builds Toolshop on every run.
   test('N1: login page (full page)', async ({ loginPage, header, footer, page }) => {
-    await loginPage.goto();
-    await expect(loginPage.form.email).toBeVisible();
+    await loginPage.open();
+    await expect(loginPage.ui.email).toBeVisible();
     await expect(page).toHaveScreenshot('login-page.png', {
       fullPage: true,
       mask: [header.notificationBar, footer.buildInfo],

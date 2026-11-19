@@ -57,7 +57,7 @@ minute, and long scenarios read as business steps rather than clicks.
 | **R5** ✅ | README as a 3-minute tour | Tour, one Mermaid diagram, layout, how to run, "read more" by question |
 | **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (10 ADRs) |
 
-**Not planned:** a BDD/Gherkin layer (adds a translation step without a business author), more browsers for
+**Not planned:** more browsers for
 a11y/visual (no extra signal).
 
 **Conventions for what comes next:** a new journey gets an `S` ID in the test plan and is written twice, with the

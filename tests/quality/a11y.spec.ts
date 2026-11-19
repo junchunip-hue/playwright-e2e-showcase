@@ -22,8 +22,8 @@ test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regress
   });
 
   test('N2: login page', async ({ loginPage, makeAxeBuilder }, testInfo) => {
-    await loginPage.goto();
-    await expect(loginPage.form.email).toBeVisible();
+    await loginPage.open();
+    await expect(loginPage.ui.email).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'login');
   });
 

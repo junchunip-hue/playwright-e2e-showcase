@@ -70,6 +70,10 @@ Suites are selected by name (`SUITE=pr`), and a tag check keeps both honest
 ([ADR 0006](decisions/0006-tag-registry-and-test-ids.md), details in [ci.md](ci.md#tags-and-suites)).
 
 ## 7. Two languages
+Scenarios are written once as Gherkin features (`features/`) and run by both suites through the same layers:
+steps → pages → modules ([ADR 0012](decisions/0012-gherkin-features-with-layered-steps.md)); until a scenario's
+migration phase it is still a plain spec.
+
 TypeScript is the primary suite. Every scenario (A, U, S) also exists in Java + JUnit 5 with the same ID and tier, so
 each pipeline runs a TypeScript lane and a Java lane over the same scenarios; only the quality and architecture checks
 (N1–N3) are TypeScript-only ([ADR 0002](decisions/0002-typescript-primary-java-twin.md),
@@ -77,4 +81,4 @@ each pipeline runs a TypeScript lane and a Java lane over the same scenarios; on
 
 ## 8. Out of scope (deliberately)
 Performance/load testing against the public demo (shared infrastructure), payment provider internals, email delivery,
-a BDD/Gherkin layer (no business author to write it), and accessibility or visual checks on more than one browser.
+accessibility or visual checks on more than one browser.

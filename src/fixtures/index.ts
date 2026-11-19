@@ -1,10 +1,12 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test as base } from '@playwright/test';
+import { test as base } from 'playwright-bdd';
 import { WCAG_TAGS } from '../a11y/accessibility';
-import { ApiClient } from '../api/ApiClient';
+import { ApiClient, type NewCustomer } from '../api/ApiClient';
 import { CheckoutFlow } from '../flows/CheckoutFlow';
 import { ShopperFlow } from '../flows/ShopperFlow';
+import { createBdd } from 'playwright-bdd';
 import { env, isPublicDemo } from '../config/env';
+import { Tag } from '../tags';
 import { AccountInvoicesPage } from '../pages/AccountInvoicesPage';
 import { AccountPage } from '../pages/AccountPage';
 import { CheckoutPage } from '../pages/CheckoutPage';
@@ -15,10 +17,20 @@ import { Header } from '../pages/components/Header';
 import { ContactPage } from '../pages/ContactPage';
 import { HomePage } from '../pages/HomePage';
 import { InvoiceDetailsPage } from '../pages/InvoiceDetailsPage';
-import { LoginPage } from '../pages/LoginPage';
+import { LoginPage } from '../pages/login.page';
 import { ProductPage } from '../pages/ProductPage';
 
+/**
+ * What one scenario's steps hand to each other (e.g. the customer a Given step registered for a later When step).
+ * A fresh object per scenario, so scenarios never share state. Java twin: steps/ScenarioContext.java.
+ */
+export interface ScenarioContext {
+  customer?: NewCustomer;
+}
+
 type Fixtures = {
+  /** Values shared between the steps of one Gherkin scenario. */
+  ctx: ScenarioContext;
   loginPage: LoginPage;
   homePage: HomePage;
   productPage: ProductPage;
@@ -50,6 +62,10 @@ type Fixtures = {
  * so page objects and the API client are injected rather than constructed in every test.
  */
 export const test = base.extend<Fixtures>({
+  ctx: async ({}, use) => use({}),
+  // A feature or scenario tagged @logged-out starts without the signed-in session that the UI projects load.
+  storageState: async ({ storageState }, use, testInfo) =>
+    use(testInfo.tags.includes(Tag.loggedOut) ? { cookies: [], origins: [] } : storageState),
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
   homePage: async ({ page }, use) => use(new HomePage(page)),
   productPage: async ({ page }, use) => use(new ProductPage(page)),
@@ -93,3 +109,6 @@ export const test = base.extend<Fixtures>({
 
 export { expect } from '@playwright/test';
 export { Tag } from '../tags';
+
+/** Gherkin step functions bound to the fixtures above: steps get page objects injected, like tests do. */
+export const { Given, When, Then } = createBdd(test);

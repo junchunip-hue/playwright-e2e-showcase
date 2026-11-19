@@ -33,8 +33,8 @@ class CartTest {
     }
 
     LoginPage loginPage = new LoginPage(page);
-    loginPage.navigate();
-    loginPage.login(Env.CUSTOMER_EMAIL, Env.CUSTOMER_PASSWORD);
+    loginPage.open();
+    loginPage.signIn(Env.CUSTOMER_EMAIL, Env.CUSTOMER_PASSWORD);
     assertThat(page).hasURL(Pattern.compile("/account"));
 
     ProductPage productPage = new ProductPage(page);

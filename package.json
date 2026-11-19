@@ -5,19 +5,20 @@
   "private": true,
   "description": "Production-style Playwright E2E + API test framework with CI/CD, targeting the public Practice Software Testing (Toolshop) demo app.",
   "scripts": {
-    "test": "playwright test",
+    "test": "bddgen && playwright test",
     "test:pr": "node scripts/run-suite.mjs pr --project=api --project=chromium",
     "test:smoke": "node scripts/run-suite.mjs smoke",
-    "test:api": "playwright test --project=api",
-    "test:ui": "playwright test --project=chromium",
+    "test:api": "bddgen && playwright test --project=api",
+    "test:ui": "bddgen && playwright test --project=chromium",
     "test:a11y": "node scripts/run-suite.mjs a11y --project=chromium",
     "test:visual": "node scripts/run-suite.mjs visual --project=chromium",
     "test:architecture": "node scripts/run-suite.mjs architecture --project=architecture",
-    "check:tags": "playwright test --list --reporter=./src/reporters/tag-guard.ts",
+    "check:tags": "bddgen && playwright test --list --reporter=./src/reporters/tag-guard.ts",
     "report": "playwright show-report",
     "codegen": "playwright codegen https://practicesoftwaretesting.com",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "bddgen": "bddgen"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -26,6 +27,7 @@
     "dotenv": "^16.4.5",
     "eslint": "^9.0.0",
     "eslint-plugin-playwright": "^2.0.0",
+    "playwright-bdd": "^9.2.1",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.0.0",
     "yaml": "^2.9.1",

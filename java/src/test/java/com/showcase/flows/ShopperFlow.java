@@ -58,8 +58,8 @@ public class ShopperFlow {
   }
 
   public void signIn(Customer customer) {
-    loginPage.navigate();
-    loginPage.login(customer.email(), customer.password());
+    loginPage.open();
+    loginPage.signIn(customer.email(), customer.password());
     assertThat(page).hasURL(Pattern.compile("/account$"));
   }
 

@@ -73,6 +73,16 @@ test.describe('Pipeline architecture', { tag: [Tag.smoke, Tag.architecture] }, (
     expect(offenders, 'unbounded shell loops').toEqual([]);
   });
 
+  test('N3: every step that runs Playwright directly generates the Gherkin tests first', () => {
+    // Without `bddgen`, the features (features/*.feature) would silently not run: only the npm scripts and
+    // scripts/run-suite.mjs generate them on their own.
+    const offenders = allSteps()
+      .filter(({ step }) => /\bplaywright test\b/.test(step.run ?? '') && !/\bbddgen\b/.test(step.run ?? ''))
+      .map(({ where, step }) => `${where}: ${step.name ?? step.run?.split('\n')[0]}`);
+
+    expect(offenders, 'playwright test without bddgen').toEqual([]);
+  });
+
   test('N3: browsers are installed only through the bounded, cached install action', () => {
     // A raw `playwright install --with-deps` (npx or the Java CLI) waits on the Ubuntu mirror without limit (once
     // 29 minutes). The install-browsers action caches the OS packages; its script caps each attempt and retries.
