@@ -13,7 +13,7 @@ green and, only if wanted, the optional or backlog items: see [§6](#6-what-come
 
 | Minute | Show | Where it lives today |
 |---|---|---|
-| 1 | One business journey that reads like a story, API and UI working together | `tests/e2e/checkout.spec.ts` (U6) |
+| 1 | One business journey that reads like a story, API and UI working together | `features/journeys/checkout.feature` (U6, Gherkin) |
 | 2 | Quality beyond functional: contracts, accessibility, visual, cross-browser | `tests/api/contracts.api.spec.ts`, `tests/quality/a11y.spec.ts`, `tests/quality/visual.spec.ts`, nightly report |
 | 3 | A pipeline that guards itself: tag check, architecture tests, Auto-fix-able CI | `src/tags.ts`, `tests/architecture/`, `.github/` |
 

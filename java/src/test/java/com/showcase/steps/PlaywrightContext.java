@@ -27,6 +27,7 @@ public class PlaywrightContext {
   private BrowserContext context;
   private Page page;
   private ApiClient api;
+  private String adminToken;
 
   private static Playwright startPlaywright() {
     Playwright playwright = Playwright.create();
@@ -62,6 +63,12 @@ public class PlaywrightContext {
   public ApiClient api() {
     if (api == null) api = ApiClient.create(PLAYWRIGHT.get());
     return api;
+  }
+
+  /** The seeded admin's token (own Toolshop only: @admin scenarios are skipped on the public demo, see Hooks). */
+  public String adminToken() {
+    if (adminToken == null) adminToken = api().login(Env.ADMIN_EMAIL, Env.ADMIN_PASSWORD);
+    return adminToken;
   }
 
   private static String slug(String name) {

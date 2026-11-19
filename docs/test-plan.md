@@ -185,10 +185,10 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | U1, U2 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/login.feature` (Gherkin, both languages) |
 | U3, U5 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/search.feature`, `features/ui/cart.feature` (Gherkin, both languages) |
 | U4 | 1 | regression | – | ✅ | Chromium, Firefox, WebKit | `features/ui/search.feature` (Gherkin, both languages) |
-| U6 (S1) | 1 | smoke, e2e | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `CheckoutJourneyTest` |
-| S2 | 6 | regression, e2e | – | ✅ | Chromium, Firefox, WebKit | `PaymentJourneyTest` |
-| S3 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `AdminToCustomerJourneyTest` |
-| S4 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `GuestCheckoutJourneyTest` |
+| U6 (S1) | 1 | smoke, e2e | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/journeys/checkout.feature` (Gherkin, both languages) |
+| S2 | 6 | regression, e2e | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/checkout.feature` (Scenario Outlines) |
+| S3 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/admin-to-customer.feature` |
+| S4 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/guest-checkout.feature` |
 | S5 | 1 | regression, e2e (own Toolshop only) | – | ✅ | Chromium, Firefox, WebKit | `ReturningCustomerJourneyTest` |
 | S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `ResilienceTest` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
