@@ -71,7 +71,20 @@ failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-
 ## Pipeline summary
 Both workflows end with a `pipeline summary` job (`scripts/pipeline-summary.mjs`). It reads the Playwright JSON
 results and the Surefire XML reports and writes the run page's job summary:
-- a **Mermaid diagram of the run**: the TypeScript and Java lanes with their pass/fail counts, coloured by job result;
+- a **verdict** on top, one of three:
+
+  | Verdict | When | Shown as |
+  |---|---|---|
+  | ✅ Passed | no failed and no flaky test | green box |
+  | ⚠️ Passed with N flaky tests | every test passed, but some only on a retry (TS retries twice in CI; Java does not retry) | gold box, gold result node with a green border |
+  | ❌ Failed | any test failed, or a lane's job failed | red box |
+
+  A flaky test does not fail the run, but it is never silent: each one is listed under **Flaky tests** with its ID,
+  browser, file and line, its attempts (❌ → ✅, ⏱️ = timed out) and the first error, and it gets a warning annotation
+  on the run page and in the PR's checks. The HTML report's Flaky tab has the traces of the failed attempts.
+- a **Mermaid diagram of the run**: the TypeScript and Java lanes with their counts; the setup nodes follow the job
+  result, the result node the verdict above (so a nightly whose tests failed is red even though its report merge
+  succeeded);
 - a **table per test ID** with TypeScript and Java results side by side and whether the ID runs in both;
 - a **Known defects** table (when any test tracks one): per defect and language, 🟨 still present (the test passes
   because the API answers exactly as today), 🟥 fixed (the test fails on purpose: replace the marker with a plain
