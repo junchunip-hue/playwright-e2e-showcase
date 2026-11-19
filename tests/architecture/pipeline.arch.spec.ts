@@ -73,13 +73,15 @@ test.describe('Pipeline architecture', { tag: [Tag.smoke, Tag.architecture] }, (
     expect(offenders, 'unbounded shell loops').toEqual([]);
   });
 
-  test('N3: browsers are installed only through the bounded install script', () => {
-    // A raw `playwright install --with-deps` waits on the Ubuntu mirror without limit (once 29 minutes).
-    // scripts/install-browsers.sh caps each attempt and retries.
+  test('N3: browsers are installed only through the bounded, cached install action', () => {
+    // A raw `playwright install --with-deps` (npx or the Java CLI) waits on the Ubuntu mirror without limit (once
+    // 29 minutes). The install-browsers action caches the OS packages; its script caps each attempt and retries.
+    const INSTALL_ACTION = '.github/actions/install-browsers/action.yml';
     const offenders = allSteps()
-      .filter(({ step }) => /playwright\s+install/.test(step.run ?? ''))
+      .filter(({ where }) => where.replaceAll('\\', '/') !== INSTALL_ACTION)
+      .filter(({ step }) => /playwright\s+install|install\s+--with-deps|install-browsers\.sh/.test(step.run ?? ''))
       .map(({ where, step }) => `${where}: ${step.name ?? step.run?.split('\n')[0]}`);
 
-    expect(offenders, 'browser installs outside scripts/install-browsers.sh').toEqual([]);
+    expect(offenders, 'browser installs outside the install-browsers action').toEqual([]);
   });
 });

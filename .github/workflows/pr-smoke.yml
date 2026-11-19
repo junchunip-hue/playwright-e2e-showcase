@@ -38,7 +38,9 @@ jobs:
           npm run test:architecture
 
       - name: Install Chromium
-        run: bash scripts/install-browsers.sh chromium
+        uses: ./.github/actions/install-browsers
+        with:
+          browsers: chromium
 
       - uses: ./.github/actions/toolshop-ready
 

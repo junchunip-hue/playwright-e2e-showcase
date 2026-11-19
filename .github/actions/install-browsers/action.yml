@@ -1,0 +1,52 @@
+name: Install Playwright browsers
+description: >
+  Playwright browsers with their OS packages, through the bounded scripts/install-browsers.sh. The Ubuntu packages
+  (.deb files) are kept in the Actions cache, so a run downloads from the mirror only what changed since the last one.
+
+inputs:
+  browsers:
+    description: Space-separated Playwright browsers, e.g. "chromium firefox webkit"
+    required: true
+  java-dir:
+    description: Install with the Playwright for Java CLI in this Maven project instead of npx (empty = npx)
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    # The deb set depends on the Ubuntu release, the browsers and the Playwright version (lock file or pom).
+    - name: Key the apt package cache
+      id: apt
+      shell: bash
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+        PLAYWRIGHT_FILES_HASH: ${{ hashFiles(inputs.java-dir != '' && format('{0}/pom.xml', inputs.java-dir) || 'package-lock.json') }}
+      run: |
+        . /etc/os-release
+        prefix="apt-debs-$VERSION_CODENAME-${BROWSERS// /-}-"
+        echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+        echo "key=$prefix$PLAYWRIGHT_FILES_HASH" >> "$GITHUB_OUTPUT"
+
+    - name: Restore apt packages
+      id: restore
+      uses: actions/cache/restore@v6
+      with:
+        path: ~/.cache/apt-archives # the script's APT_ARCHIVES default
+        key: ${{ steps.apt.outputs.key }}
+        # A new Playwright version still needs most of the old packages: start from the latest entry.
+        restore-keys: ${{ steps.apt.outputs.prefix }}
+
+    - name: Install browsers
+      shell: bash
+      env:
+        PLAYWRIGHT_JAVA_DIR: ${{ inputs.java-dir }}
+      # Bounded and retried: a slow Ubuntu mirror must not stall the job (see the script).
+      run: bash scripts/install-browsers.sh ${{ inputs.browsers }}
+
+    # Saved right after the install, not at job end, so a failing test run still keeps the packages.
+    - name: Save apt packages
+      if: ${{ steps.restore.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v6
+      with:
+        path: ~/.cache/apt-archives
+        key: ${{ steps.apt.outputs.key }}

@@ -22,6 +22,6 @@ runs:
 
     - name: Install browsers
       if: ${{ inputs.browsers != '' }}
-      shell: bash
-      # Bounded and retried: a slow Ubuntu mirror must not stall the job (see the script).
-      run: bash scripts/install-browsers.sh ${{ inputs.browsers }}
+      uses: ./.github/actions/install-browsers
+      with:
+        browsers: ${{ inputs.browsers }}
