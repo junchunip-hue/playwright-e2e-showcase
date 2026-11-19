@@ -76,7 +76,7 @@ results and the Surefire XML reports and writes the run page's job summary:
   | Verdict | When | Shown as |
   |---|---|---|
   | ✅ Passed | no failed and no flaky test | green box |
-  | ⚠️ Passed with N flaky tests | every test passed, but some only on a retry (TS retries twice in CI; Java does not retry) | gold box, gold result node with a green border |
+  | ⚠️ Passed with N flaky tests | every test passed, but some only on a retry (both suites retry a failed test twice in CI and never locally: `retries` in `playwright.config.ts`, Surefire reruns in the `ci-retries` profile of `java/pom.xml`; an architecture test keeps the two equal) | gold box, gold result node with a green border |
   | ❌ Failed | any test failed, or a lane's job failed | red box |
 
   A flaky test does not fail the run, but it is never silent: each one is listed under **Flaky tests** with its ID,

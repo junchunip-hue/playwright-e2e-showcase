@@ -54,6 +54,11 @@ function recordFlaky(id, spec, t) {
   });
 }
 
+const xmlText = (s) =>
+  (s ?? '').replace(/&(lt|gt|quot|apos|amp|#(\d+));/g, (_, name, code) =>
+    code ? String.fromCharCode(Number(code)) : { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' }[name],
+  );
+
 function typescriptResults(file) {
   const byId = new Map();
   if (!file || !existsSync(file)) return byId;
@@ -92,8 +97,24 @@ function javaResults(dir) {
       const r = byId.get(id) ?? tally();
       const body = m[3] ?? '';
       for (const line of body.matchAll(/known defect: (.*)/g)) recordDefect(id, 'java', line[1]);
+      // CI reruns a failed test (pom.xml, profile ci-retries). Failed on every attempt: <failure>/<error> (plus
+      // <rerunFailure>s). Passed on a rerun: only <flakyFailure>/<flakyError>, one per failed attempt.
+      const flakes = [...body.matchAll(/<flaky(Failure|Error)\b([^>]*)>/g)];
       if (/<(failure|error)\b/.test(body)) r.failed++;
-      else if (/<skipped\b/.test(body)) r.skipped++;
+      else if (flakes.length) {
+        r.flaky++;
+        const className = /classname="([^"]*)"/.exec(m[1])?.[1] ?? '';
+        const message = /message="([^"]*)"/.exec(flakes[0][2])?.[1];
+        const type = /type="([^"]*)"/.exec(flakes[0][2])?.[1];
+        flakyCases.push({
+          id,
+          title: xmlText(name),
+          project: 'Java (chromium)',
+          where: `java/src/test/java/${className.replaceAll('.', '/')}.java`,
+          attempts: [...flakes.map(() => 'failed'), 'passed'],
+          error: firstLine(xmlText(message ?? type)),
+        });
+      } else if (/<skipped\b/.test(body)) r.skipped++;
       else r.passed++;
       byId.set(id, r);
     }
@@ -139,7 +160,7 @@ const flow = nightly
       `  TS2 --> TS3["Merged TypeScript report<br/>${counts(tsSum)}"]`,
       '  PR --> J1[Compile + Chromium]',
       '  J1 --> J2[Toolshop in Docker]',
-      `  J2 --> J3["Java full suite<br/>${javaSum.passed} passed · ${javaSum.failed} failed"]`,
+      `  J2 --> J3["Java full suite<br/>${counts(javaSum)}"]`,
     ]
   : [
       'flowchart LR',
@@ -148,7 +169,7 @@ const flow = nightly
       `  TS2 --> TS3["TypeScript suite pr<br/>${counts(tsSum)}"]`,
       '  PR --> J1[Compile + Chromium]',
       '  J1 --> J2[Toolshop in Docker]',
-      `  J2 --> J3["Java JUnit smoke<br/>${javaSum.passed} passed · ${javaSum.failed} failed"]`,
+      `  J2 --> J3["Java JUnit smoke<br/>${counts(javaSum)}"]`,
     ];
 
 /** State of one language's check: still present (green, tracked), fixed (red: replace the marker), or unexpected. */
@@ -216,7 +237,8 @@ const flakySection = flakyTotal
           `| ⚠️ ${f.id} | ${f.project} | ${cellText(f.title)}<br/>\`${f.where}\` | ${f.attempts.map((a) => ATTEMPT[a] ?? a).join(' → ')} | ${f.error ? `\`${cellText(f.error.slice(0, 160))}\`` : '–'} |`,
       ),
       '',
-      'Attempts: ✅ passed · ❌ failed · ⏱️ timed out. Traces of the failed attempts are in the HTML report (Flaky tab).',
+      'Attempts: ✅ passed · ❌ failed · ⏱️ timed out. Both suites retry a failed test twice in CI. Traces of failed',
+      'attempts: TypeScript in the HTML report (Flaky tab), Java in the `junit-reports-*-traces` artifact.',
       '',
     ]
   : [];

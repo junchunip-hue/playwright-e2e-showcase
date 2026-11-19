@@ -161,7 +161,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 |---|---|---|---|
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
-| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan | PR static stage | ✅ |
+| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan, equal CI retries | PR static stage | ✅ |
 
 ### Where each ID runs (today)
 | ID | Tests | Tier | PR gate | Nightly | Browsers | Java class |
@@ -186,7 +186,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `ResilienceTest` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
-| N3 | 14 | smoke, architecture | static stage | ✅ | none | TypeScript only |
+| N3 | 15 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
 "Tests" counts TypeScript test cases per ID (68 in total; data-driven cases count once each). The Java class
 covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.

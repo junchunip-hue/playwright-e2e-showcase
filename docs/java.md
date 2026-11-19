@@ -59,12 +59,17 @@ repository, not a scenario.
   results side by side (see [ci.md](ci.md#pipeline-summary)).
 - **Same contract, same names.** Same `data-test` locators, env variables, test data and IDs. A locator change is
   the same one-line edit in both.
+- **Same retries, same meaning of flaky.** CI reruns a failed test twice in both languages and never locally
+  (`retries: isCI ? 2 : 0` in `playwright.config.ts`; Surefire's `rerunFailingTestsCount` in the `ci-retries` profile
+  of `java/pom.xml`, switched on by the `CI` variable). A Java test that passes on a rerun is a flake: Surefire keeps
+  the failed attempts as `<flakyFailure>` in the XML, and the summary lists it under Flaky tests like a TypeScript
+  one. An architecture test keeps the two counts equal.
 - **Same Playwright release line.** `playwright.version` in `java/pom.xml` follows the minor version of
   `@playwright/test` (Java patch releases can lag behind Node).
 
 **Debugging a Java failure:** tests record a Playwright trace and keep it only on failure
 (`target/playwright/`); CI uploads it as `junit-reports-traces` (PR) or `junit-reports-nightly-traces`, next to the
-Surefire XML. Open it with `npx playwright show-trace <file>.zip`.
+Surefire XML, also when the test passed on a rerun (the trace is the failed attempt's). Open it with `npx playwright show-trace <file>.zip`.
 
 **Known difference:** TypeScript logs in once for single-page tests (`setup` project + `storageState`); Java signs in
 inside the test. Journeys use fresh customers in both.

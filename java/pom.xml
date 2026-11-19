@@ -81,4 +81,23 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <!--
+      In CI a failed test is rerun up to twice, like the TypeScript suite (playwright.config.ts: retries: isCI ? 2 : 0).
+      A test that passes on a rerun is a flake: Surefire keeps the failed attempts as <flakyFailure>/<flakyError> in
+      the XML, and the pipeline summary lists it as flaky. Locally a failure stays a failure.
+    -->
+    <profile>
+      <id>ci-retries</id>
+      <activation>
+        <property>
+          <name>env.CI</name>
+        </property>
+      </activation>
+      <properties>
+        <surefire.rerunFailingTestsCount>2</surefire.rerunFailingTestsCount>
+      </properties>
+    </profile>
+  </profiles>
 </project>

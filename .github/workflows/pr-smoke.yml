@@ -99,12 +99,14 @@ jobs:
           path: java/target/surefire-reports/
           retention-days: 14
 
-      - name: Upload Java traces of failed tests
-        if: ${{ failure() }}
+      # Traces exist only for failed attempts (RETAIN_ON_FAILURE), including those of a flaky test, whose job is green.
+      - name: Upload Java traces of failed attempts
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: junit-reports-traces
           path: java/target/playwright/
+          if-no-files-found: ignore
           retention-days: 14
 
   # Shows the run as a diagram and compares TypeScript and Java per test ID (job summary on the run page).
