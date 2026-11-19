@@ -91,6 +91,13 @@ results and the Surefire XML reports and writes the run page's job summary:
   api", or a red cross with "❌ Failed: …". It shows next to the commit (commit list, branch list) and in the PR's
   checks, linked to the run. The Actions run list itself cannot show it: there GitHub draws only the run's own
   result (passed or failed) and a title fixed when the run starts.
+- **What failed**, right under a red verdict: each failed job (linked), its failed step and the errors it reported
+  (read from the run's jobs and their annotations by the "Collect failed jobs" step).
+- **Not run is not passed.** The summary job lists the tests the run planned (`playwright test --list` for the same
+  suite and projects) and marks every planned test without a result as ⛔ not run, per ID, in the diagram, the
+  verdict, the commit status and the badge. A job that dies before its tests (e.g. a browser install) therefore turns
+  its IDs ⛔, not ✅, and the run red. Java writes no results when its job dies early; it runs the same A/U/S IDs as
+  TypeScript (ADR 0009), so those show ⛔ not run in the Java column.
 - a **Mermaid diagram of the run**: the TypeScript and Java lanes with their counts; the setup nodes follow the job
   result, the result node the verdict above (so a nightly whose tests failed is red even though its report merge
   succeeded);
