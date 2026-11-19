@@ -15,3 +15,4 @@ java/target/
 
 # CI result files for the pipeline summary
 reports/
+tests/features/

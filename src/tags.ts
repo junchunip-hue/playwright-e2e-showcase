@@ -20,6 +20,7 @@ export const Tag = {
   visual: '@visual',
   architecture: '@architecture', // static rules about the pipeline and code, no browser or Toolshop
   admin: '@admin', // signs in as admin or can change catalogue/orders: only against our own Toolshop
+  loggedOut: '@logged-out', // Gherkin: the scenario starts without the shared signed-in session
 } as const;
 
 export type TagValue = (typeof Tag)[keyof typeof Tag];

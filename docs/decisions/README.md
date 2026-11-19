@@ -16,3 +16,4 @@ New decisions get the next number; a reversed decision is marked "Superseded" an
 | [0009](0009-every-journey-in-both-languages.md) | Every scenario (A, U, S) ships in TypeScript and Java with the same tier; parity is checked |
 | [0010](0010-known-defects-as-tests.md) | Known product defects are tracked as tests that pin today's exact behaviour |
 | [0011](0011-retries-and-flaky-tests.md) | CI retries failed tests in both languages, and a test that passed only on a retry is reported as flaky, never hidden |
+| [0012](0012-gherkin-features-with-layered-steps.md) | Scenarios are shared Gherkin features, run in both languages through steps → pages → modules |

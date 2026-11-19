@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, Tag, test } from '../../src/fixtures';
 import { filesUnder, ROOT } from './repo';
@@ -6,18 +6,30 @@ import { filesUnder, ROOT } from './repo';
 // TypeScript/Java parity (ADR 0009): every journey ships in both languages, and the test plan's "Java" column
 // says exactly which IDs the Java suite covers. Reads source files only, so it runs in the static stage.
 
-/** Test IDs used in TypeScript test titles, e.g. test('S2: ...') or test(`S2: ... ${x}`). */
+/**
+ * Test IDs of the Gherkin scenarios in features/ ("Scenario: U1: ..."). Both suites run these same files
+ * (TypeScript: playwright-bdd; Java: com.showcase.RunCucumberTest), so their IDs count for both languages; a step
+ * without a definition fails the scenario in either language.
+ */
+function featureIds(): Set<string> {
+  const features = filesUnder(join(ROOT, 'features'), (n) => n.endsWith('.feature'));
+  const names = features.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/^\s*Scenario(?: Outline)?:\s*([ASUN]\d+):/gm)]);
+  return new Set(names.map((m) => m[1]));
+}
+
+/** Test IDs used in TypeScript test titles, e.g. test('S2: ...') or test(`S2: ... ${x}`), plus the features. */
 function typescriptIds(): Set<string> {
   const specs = filesUnder(join(ROOT, 'tests'), (n) => n.endsWith('.spec.ts'));
   const titles = specs.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/\btest\(\s*['`"]([ASUN]\d+):/g)]);
-  return new Set(titles.map((m) => m[1]));
+  return new Set([...titles.map((m) => m[1]), ...featureIds()]);
 }
 
-/** Test IDs used in Java display names, e.g. @DisplayName("S2: ..."). */
+/** Test IDs used in Java display names, e.g. @DisplayName("S2: ..."), plus the features the Cucumber suite runs. */
 function javaIds(): Set<string> {
   const sources = filesUnder(join(ROOT, 'java', 'src', 'test', 'java'), (n) => n.endsWith('.java'));
   const names = sources.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/@DisplayName\("([ASUN]\d+):/g)]);
-  return new Set(names.map((m) => m[1]));
+  const runsFeatures = existsSync(join(ROOT, 'java', 'src', 'test', 'java', 'com', 'showcase', 'RunCucumberTest.java'));
+  return new Set([...names.map((m) => m[1]), ...(runsFeatures ? featureIds() : [])]);
 }
 
 /** IDs whose row in docs/test-plan.md has ✅ in the "Java" column. */

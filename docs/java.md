@@ -16,7 +16,11 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 ## Same layers, side by side
 | Layer | TypeScript | Java |
 |---|---|---|
-| Journey steps | `src/flows/CheckoutFlow.ts`, `ShopperFlow.ts` | `flows/CheckoutFlow.java`, `ShopperFlow.java` |
+| Features (shared Gherkin, ADR 0012) | `features/**/*.feature`, run by playwright-bdd | the same files, run by `RunCucumberTest` (Cucumber-JVM) |
+| Steps (Gherkin bindings) | `src/steps/*.steps.ts` | `steps/*Steps.java` (+ `PlaywrightContext`, `ScenarioContext`, `Hooks`) |
+| Pages (what a user does) | `src/pages/*.page.ts` (migrated) | `pages/*Page.java` |
+| Modules (locators only) | `src/modules/*.module.ts` | `modules/*Module.java` |
+| Journey steps (until migrated) | `src/flows/CheckoutFlow.ts`, `ShopperFlow.ts` | `flows/CheckoutFlow.java`, `ShopperFlow.java` |
 | Page objects | `src/pages/*.ts` | `pages/*.java` |
 | Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
 | API client | `src/api/` (per resource) | `api/ApiClient.java` |
@@ -38,7 +42,7 @@ In test-plan order (A, then U, then S):
 | A8 | Admin publishes a product (own Toolshop only) | `tests/api/admin.api.spec.ts` | `AdminApiTest` |
 | A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
 | A10, A11 | A customer cannot publish a product or change an order: known defects (own Toolshop only) | `tests/api/permissions.api.spec.ts` | `PermissionsApiTest` |
-| U1, U2 | Login (valid / wrong password) | `tests/ui/login.spec.ts` | `LoginTest` |
+| U1, U2 | Login (valid / wrong password) | `features/ui/login.feature` (shared) | `RunCucumberTest` + `steps/LoginSteps` |
 | U3, U4 | Search results match the term; UI agrees with the search API | `tests/ui/search.spec.ts` | `SearchTest` |
 | U5 | Add to cart updates the badge | `tests/ui/cart.spec.ts` | `CartTest` |
 | U6 (S1) | First purchase journey | `tests/e2e/checkout.spec.ts` | `CheckoutJourneyTest` |

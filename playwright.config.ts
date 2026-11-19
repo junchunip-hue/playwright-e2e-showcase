@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { defineBddConfig } from 'playwright-bdd';
 import { env, isPublicDemo, STORAGE_STATE } from './src/config/env';
 import { CHROMIUM_ONLY, resolveSuite, suiteGrep, suiteGrepInvert } from './src/tags';
 
@@ -9,8 +10,20 @@ const isCI = !!process.env.CI;
 // The PR smoke job still picks only --project=chromium; the nightly run uses all of them.
 const runAllBrowsers = isCI || !!process.env.ALL_BROWSERS;
 
-// tests/ is split by intent: api/ and architecture/ need no browser; ui/, e2e/ and quality/ do.
-const BROWSER_TESTS = /[\\/]tests[\\/](ui|e2e|quality)[\\/].*\.spec\.ts$/;
+// Gherkin features (features/, shared with the Java suite) become Playwright tests: `npx bddgen` writes them to
+// tests/features/**/*.feature.spec.js (git-ignored) from the features and the steps in src/steps/.
+// playwright-bdd needs the projects' testDir to be its outputDir, hence `tests`. Before generating it deletes
+// only *.spec.js there; hand-written tests are *.spec.ts. Every npm test script and CI step runs bddgen first.
+defineBddConfig({
+  features: 'features/**/*.feature',
+  // Steps, plus the fixtures they get injected (page objects, API client, ctx), as the plain specs do.
+  steps: ['src/steps/**/*.ts', 'src/fixtures/index.ts'],
+  outputDir: 'tests',
+});
+
+// tests/ is split by intent: api/ and architecture/ need no browser; ui/, e2e/ and quality/ do, and so do the
+// generated UI and journey features.
+const BROWSER_TESTS = /[\\/]tests[\\/]((ui|e2e|quality)[\\/].*\.spec\.ts|features[\\/](ui|journeys)[\\/].*\.spec\.js)$/;
 
 // Which tests run is decided by name only (SUITE=pr, SUITE=nightly, ...); the tag lists live in src/tags.ts.
 const suite = resolveSuite(process.env.SUITE);

@@ -5,7 +5,7 @@ import type { AccountInvoicesPage } from '../pages/AccountInvoicesPage';
 import type { ComparisonPage } from '../pages/ComparisonPage';
 import type { FavoritesPage } from '../pages/FavoritesPage';
 import type { InvoiceDetailsPage } from '../pages/InvoiceDetailsPage';
-import type { LoginPage } from '../pages/LoginPage';
+import type { LoginPage } from '../pages/login.page';
 import type { ProductPage } from '../pages/ProductPage';
 
 /** How long the invoice PDF may take: a background job writes it, and the page polls its status every 20 s. */
@@ -37,8 +37,8 @@ export class ShopperFlow {
 
   async signIn(customer: Pick<NewCustomer, 'email' | 'password'>): Promise<void> {
     await test.step('sign in', async () => {
-      await this.pages.login.goto();
-      await this.pages.login.login(customer.email, customer.password);
+      await this.pages.login.open();
+      await this.pages.login.signIn(customer.email, customer.password);
       await expect(this.page).toHaveURL(/\/account$/);
     });
   }

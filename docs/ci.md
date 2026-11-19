@@ -125,6 +125,13 @@ matched by test ID. Every A, U and S ID must appear in both columns: the parity 
 tier check in `check:tags`) enforce that before any
 test runs ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)).
 
+## Gherkin features
+Scenarios moved to Gherkin (`features/`, [ADR 0012](decisions/0012-gherkin-features-with-layered-steps.md)) run in
+both lanes. TypeScript: `npx bddgen` generates them into `tests/features/` before Playwright runs; the npm scripts
+and `scripts/run-suite.mjs` do it themselves, and an architecture test makes every workflow step that calls
+`playwright test` directly run `bddgen` first. Java: `com.showcase.RunCucumberTest` runs the same files with
+Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-Dgroups=smoke` selects them).
+
 ## Tags and suites
 - `src/tags.ts` defines every tag and suite. Specs use `Tag.*` (a typo is a compile error). CI and npm scripts pass
   only a suite name (`SUITE=pr`), and `playwright.config.ts` turns it into `grep`/`grepInvert`, adding `@setup`

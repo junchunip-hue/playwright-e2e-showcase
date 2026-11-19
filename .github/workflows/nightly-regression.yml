@@ -48,7 +48,8 @@ jobs:
       - name: Run regression shard
         env:
           SUITE: nightly
-        run: npx playwright test --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }} --reporter=blob,github
+        # bddgen first: the Gherkin features become Playwright tests (playwright.config.ts).
+        run: npx bddgen && npx playwright test --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }} --reporter=blob,github
 
       - name: Dump Toolshop logs on failure
         if: ${{ failure() }}
@@ -223,7 +224,7 @@ jobs:
           SUITE: nightly
           BASE_URL: http://localhost:4200 # our own Toolshop, as in the test job (not the public demo)
           PLAYWRIGHT_JSON_OUTPUT_FILE: results/ts-planned.json
-        run: npx playwright test --list --reporter=json
+        run: npx bddgen && npx playwright test --list --reporter=json
 
       # Which job and step failed, and the error it reported, so the summary can name it before anything else.
       - name: Collect failed jobs

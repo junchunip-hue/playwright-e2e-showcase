@@ -116,10 +116,13 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
+features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ so far; journeys and API follow
 src/
+  steps/        Gherkin bindings: one sentence → one page method (playwright-bdd)
+  pages/        what a user does on a page (*.page.ts), built on its module; older page objects until migrated
+  modules/      locators only (*.module.ts)
   api/          API client per resource + zod schemas (types derived from them)
-  flows/        business steps for journeys (checkout, ...)
-  pages/        page & component objects (locators only)
+  flows/        business steps for journeys not yet migrated (checkout, ...)
   data/         test data builders (fresh customers per test)
   fixtures/     everything above, injected into tests
   tags.ts       tag and suite registry
