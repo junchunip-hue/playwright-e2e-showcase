@@ -8,7 +8,7 @@
 | Environment | Where | System under test | Browsers | Used for |
 |---|---|---|---|---|
 | **Local dev** | Developer machine (Windows 11) | Public demo `practicesoftwaretesting.com` (or local Docker via `.env`) | Chromium (Firefox/WebKit opt-in `ALL_BROWSERS=1`) | Writing and debugging tests |
-| **CI – PR / main** | GitHub Actions, `ubuntu-latest` | Toolshop in Docker, upstream commit pinned in `.github/actions/toolshop-start`, DB seeded per run (`localhost:4200` / `:8091`) | Chromium | Gate every PR and push: `@smoke`, `@a11y`, `@visual` (TS) + `smoke` (Java) |
+| **CI – PR / master** | GitHub Actions, `ubuntu-latest` | Toolshop in Docker, upstream commit pinned in `.github/actions/toolshop-start`, DB seeded per run (`localhost:4200` / `:8091`) | Chromium | Gate every PR and push: `@smoke`, `@a11y`, `@visual` (TS) + `smoke` (Java) |
 | **CI – Nightly** | GitHub Actions, 02:00 UTC + manual | Same Docker setup, one instance per shard | Chromium, Firefox, WebKit | Full suite (TS, 3 shards) + full Java suite; merged report on GitHub Pages |
 | **CI – Visual baselines** | GitHub Actions, PR label `update-snapshots` | Same Docker setup | Chromium | Regenerates Linux baselines and commits them to the PR |
 
@@ -206,7 +206,7 @@ Every test has exactly one tier tag, enforced by `npm run check:tags`.
 
 ## 4. Which platform checks what
 
-| Check | Local | CI PR/main | CI Nightly |
+| Check | Local | CI PR/master | CI Nightly |
 |---|---|---|---|
 | Lint + typecheck | ✅ (`npm run lint`, `npm run typecheck`) | ✅ | – |
 | API tests | ✅ | `@smoke` | all |
@@ -242,4 +242,4 @@ Every test has exactly one tier tag, enforced by `npm run check:tags`.
 | ✅ | Seven clean nightlies in a row; CI hardened (bounded browser install, report-merge retry); README tour checked | Showcase done ([roadmap §5](roadmap.md#5-definition-of-done)) |
 | ✅ | Numbering gaps filled: A6 invoice authentication, A7 product filters, S5 returning customer with PDF download; CI runs Toolshop's background jobs | Every planned A and S item built; downloads and waiting on background work |
 | ✅ | Browser OS packages cached (#25); one verdict per run, ✅ passed / ⚠️ passed with flaky / ❌ failed, with every flaky test listed and a commit status (#26); S2 race found by that list and fixed (#27); Java retries like TypeScript, and a failed shard fails the verdict (#28) | Flaky is visible, never silent; same meaning of "passed" in both languages |
-| ✅ | Tests that never ran or skipped in CI cannot pass, and a red run names what failed (#32, #33); `main` requires the PR checks; the nightly counts clean runs itself; stability met again (#40–#53) | Not run is not passed; the gate is enforced |
+| ✅ | Tests that never ran or skipped in CI cannot pass, and a red run names what failed (#32, #33); `master` requires the PR checks; the nightly counts clean runs itself; stability met again (#40–#53) | Not run is not passed; the gate is enforced |
