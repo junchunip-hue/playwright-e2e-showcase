@@ -21,9 +21,16 @@ export const Tag = {
   architecture: '@architecture', // static rules about the pipeline and code, no browser or Toolshop
   admin: '@admin', // signs in as admin or can change catalogue/orders: only against our own Toolshop
   loggedOut: '@logged-out', // Gherkin: the scenario starts without the shared signed-in session
+  ownToolshop: '@own-toolshop', // needs our own Toolshop (e.g. its background jobs): skipped on the public demo
 } as const;
 
 export type TagValue = (typeof Tag)[keyof typeof Tag];
+
+/**
+ * playwright-bdd's runner tags, which configure a scenario instead of classifying it (e.g. @timeout:300000 for a
+ * journey that waits on a background job). They become Playwright tags too, so the tag guard accepts them.
+ */
+export const RUNNER_TAG = /^@timeout:\d+$/;
 
 export const TIER_TAGS: readonly TagValue[] = [Tag.smoke, Tag.regression, Tag.setup, Tag.seed];
 

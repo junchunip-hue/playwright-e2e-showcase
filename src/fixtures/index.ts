@@ -2,21 +2,18 @@ import AxeBuilder from '@axe-core/playwright';
 import { test as base } from 'playwright-bdd';
 import { WCAG_TAGS } from '../a11y/accessibility';
 import { ApiClient, type NewCustomer, type Product } from '../api/ApiClient';
-import { ShopperFlow } from '../flows/ShopperFlow';
 import { createBdd } from 'playwright-bdd';
 import type { InvalidCard } from '../data/payments';
 import { env, isPublicDemo } from '../config/env';
 import { Tag } from '../tags';
-import { AccountInvoicesPage } from '../pages/AccountInvoicesPage';
+import { ComparisonPage, FavoritesPage, InvoiceDetailsPage, InvoicesPage } from '../pages/account.page';
 import { AccountPage } from '../pages/AccountPage';
 import { CheckoutPage } from '../pages/checkout.page';
-import { ComparisonPage } from '../pages/ComparisonPage';
-import { FavoritesPage } from '../pages/FavoritesPage';
 import { Footer } from '../pages/components/Footer';
 import { HeaderModule } from '../modules/header.module';
 import { ContactPage } from '../pages/ContactPage';
 import { HomePage } from '../pages/home.page';
-import { InvoiceDetailsPage } from '../pages/InvoiceDetailsPage';
+import { NetworkPage } from '../pages/network.page';
 import { LoginPage } from '../pages/login.page';
 import { ProductPage } from '../pages/product.page';
 
@@ -42,6 +39,12 @@ export interface ScenarioContext {
   invoiceId?: string;
   /** The status message the admin set when shipping (S3). */
   shippedMessage?: string;
+  /** Several products picked through the API (S5: two different ones in stock). */
+  products?: Product[];
+  /** The price the comparison page showed per product name (S5). */
+  comparison?: Map<string, number>;
+  /** The invoice PDF as downloaded (S5). */
+  pdf?: { fileName: string; body: Buffer };
 }
 
 type Fixtures = {
@@ -53,15 +56,17 @@ type Fixtures = {
   checkoutPage: CheckoutPage;
   contactPage: ContactPage;
   accountPage: AccountPage;
-  accountInvoicesPage: AccountInvoicesPage;
+  invoicesPage: InvoicesPage;
   invoiceDetailsPage: InvoiceDetailsPage;
   comparisonPage: ComparisonPage;
   favoritesPage: FavoritesPage;
   header: HeaderModule;
   footer: Footer;
   api: ApiClient;
-  /** What a signed-in customer does outside checkout: favourites, comparison, invoice download (src/flows). */
-  shopper: ShopperFlow;
+  /** The network as the browser sees it: delay or fail requests (S6, network mocking). */
+  network: NetworkPage;
+  /** Skips a test tagged @own-toolshop on the shared public demo (runs on our own Toolshop: CI, local Docker). */
+  ownToolshopOnly: void;
   /**
    * Access token of the seeded admin. Tests that use it change shared data (catalogue, orders), so they are
    * skipped against the public demo and run against our own Toolshop only (CI, local Docker).
@@ -86,23 +91,20 @@ export const test = base.extend<Fixtures>({
   checkoutPage: async ({ page }, use) => use(new CheckoutPage(page)),
   contactPage: async ({ page }, use) => use(new ContactPage(page)),
   accountPage: async ({ page }, use) => use(new AccountPage(page)),
-  accountInvoicesPage: async ({ page }, use) => use(new AccountInvoicesPage(page)),
+  invoicesPage: async ({ page }, use) => use(new InvoicesPage(page)),
   invoiceDetailsPage: async ({ page }, use) => use(new InvoiceDetailsPage(page)),
   comparisonPage: async ({ page }, use) => use(new ComparisonPage(page)),
   favoritesPage: async ({ page }, use) => use(new FavoritesPage(page)),
   header: async ({ page }, use) => use(new HeaderModule(page)),
   footer: async ({ page }, use) => use(new Footer(page)),
-  shopper: async ({ page, loginPage, productPage, comparisonPage, favoritesPage, accountInvoicesPage, invoiceDetailsPage }, use) =>
-    use(
-      new ShopperFlow(page, {
-        login: loginPage,
-        product: productPage,
-        comparison: comparisonPage,
-        favorites: favoritesPage,
-        invoices: accountInvoicesPage,
-        invoiceDetails: invoiceDetailsPage,
-      }),
-    ),
+  network: async ({ page }, use) => use(new NetworkPage(page)),
+  ownToolshopOnly: [
+    async ({}, use, testInfo) => {
+      testInfo.skip(isPublicDemo && testInfo.tags.includes(Tag.ownToolshop), 'needs our own Toolshop (CI, local Docker), not the public demo');
+      await use();
+    },
+    { auto: true },
+  ],
 
   api: async ({ playwright }, use) => {
     const context = await playwright.request.newContext({ baseURL: env.apiURL });

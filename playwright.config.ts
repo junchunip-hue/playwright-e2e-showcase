@@ -21,9 +21,9 @@ defineBddConfig({
   outputDir: 'tests',
 });
 
-// tests/ is split by intent: api/ and architecture/ need no browser; ui/, e2e/ and quality/ do, and so do the
-// generated UI and journey features.
-const BROWSER_TESTS = /[\\/]tests[\\/]((ui|e2e|quality)[\\/].*\.spec\.ts|features[\\/](ui|journeys)[\\/].*\.spec\.js)$/;
+// tests/ is split by intent: api/ and architecture/ need no browser; ui/ (the agents' seed) and quality/ do, and so
+// do the generated UI and journey features.
+const BROWSER_TESTS = /[\\/]tests[\\/]((ui|quality)[\\/].*\.spec\.ts|features[\\/](ui|journeys)[\\/].*\.spec\.js)$/;
 
 // Which tests run is decided by name only (SUITE=pr, SUITE=nightly, ...); the tag lists live in src/tags.ts.
 const suite = resolveSuite(process.env.SUITE);
@@ -70,7 +70,7 @@ export default defineConfig({
     // Static rules about the pipeline and code (cycles, self-triggering workflows): no browser, no Toolshop.
     { name: 'architecture', testDir: './tests/architecture' },
 
-    // Browser tests: tests/ui (single-page behaviour), tests/e2e (journeys), tests/quality (a11y, visual).
+    // Browser tests: the generated UI and journey features, tests/quality (a11y, visual) and the agents' seed (tests/ui).
     {
       name: 'chromium',
       testMatch: BROWSER_TESTS,

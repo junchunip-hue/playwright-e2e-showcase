@@ -47,7 +47,7 @@ the waits and retries), which uses the page's locators (`src/modules/checkout.mo
 **2. Quality beyond "it works"**
 - Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
-- Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.spec.ts`](tests/e2e/resilience.spec.ts)).
+- Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Defects the tests found are tracked as tests: green while the defect exists, red once it is fixed
   ([`permissions.api.spec.ts`](tests/api/permissions.api.spec.ts), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
@@ -120,13 +120,12 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ (U1–U5), journeys/ (U6, S2–S4); S5, S6 and API follow
+features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ (U1–U5), journeys/ (U6, S2–S6); API (A0–A11) follows
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd)
-  pages/        what a user does on a page (*.page.ts), built on its module; older page objects until migrated
+  pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
   modules/      locators only (*.module.ts)
   api/          API client per resource + zod schemas (types derived from them)
-  flows/        business steps for S5 (shopper), until it moves to Gherkin
   data/         test data builders (fresh customers per test)
   fixtures/     everything above, injected into tests
   tags.ts       tag and suite registry
@@ -135,7 +134,6 @@ src/
 tests/
   api/          contracts, auth, registration, invoices, filters, payments, admin and permissions
   ui/           the Playwright Test Agents' seed (UI scenarios are in features/ui)
-  e2e/          journeys not yet in Gherkin: S5 returning customer, S6 resilience (the rest is in features/journeys)
   quality/      accessibility and visual regression
   architecture/ rules about the pipeline and the code itself
 java/           Playwright for Java + JUnit 5: every A/U/S scenario, same IDs and tiers

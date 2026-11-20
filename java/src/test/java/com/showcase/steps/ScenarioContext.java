@@ -3,6 +3,7 @@ package com.showcase.steps;
 import com.showcase.api.ApiClient.Product;
 import com.showcase.data.Customers.Customer;
 import com.showcase.data.Payments.InvalidCard;
+import com.showcase.pages.InvoiceDetailsPage.PdfFile;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,12 @@ public class ScenarioContext {
   public String invoiceId;
   /** The status message the admin set when shipping (S3). */
   public String shippedMessage;
+  /** Several products picked through the API (S5: two different ones in stock). */
+  public List<Product> products;
+  /** The price the comparison page showed per product name (S5). */
+  public Map<String, Double> comparison;
+  /** The invoice PDF as downloaded (S5). */
+  public PdfFile pdf;
 
   public Customer customer() {
     if (customer == null) {

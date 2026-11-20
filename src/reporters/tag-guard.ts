@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { FullConfig, FullResult, Reporter, Suite, TestCase } from '@playwright/test/reporter';
-import { Tag, TIER_TAGS, type TagValue } from '../tags';
+import { RUNNER_TAG, Tag, TIER_TAGS, type TagValue } from '../tags';
 
 /** Test titles start with their test-plan ID: A = API, U = UI, S = story/journey, N = non-functional. */
 export const TEST_ID = /^([ASUN]\d+): /;
@@ -40,7 +40,7 @@ export default class TagGuard implements Reporter {
 
       for (const tag of test.tags) {
         this.counts.set(tag, (this.counts.get(tag) ?? 0) + 1);
-        if (!known.has(tag)) this.problems.push(`${describe(test)}: unknown tag ${tag} (register it in src/tags.ts)`);
+        if (!known.has(tag) && !RUNNER_TAG.test(tag)) this.problems.push(`${describe(test)}: unknown tag ${tag} (register it in src/tags.ts)`);
       }
 
       const tiers = test.tags.filter((t) => TIER_TAGS.includes(t as TagValue));

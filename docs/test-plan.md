@@ -48,8 +48,8 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | Prefix | Layer | Where |
 |---|---|---|
 | **A** | API: contracts, rules, permissions | `tests/api` |
-| **U** | UI: one page or one widget | `features/ui` (U6, the first journey, sits in `tests/e2e`) |
-| **S** | Story: a journey across pages, roles or layers | `tests/e2e` |
+| **U** | UI: one page or one widget | `features/ui` (U6, the first journey, sits in `features/journeys`) |
+| **S** | Story: a journey across pages, roles or layers | `features/journeys` |
 | **N** | Non-functional: visual, accessibility, architecture | `tests/quality`, `tests/architecture` |
 
 - **A number is given when an item enters this plan**, as the next free number of its prefix, whether or not it
@@ -92,7 +92,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | A10 | A customer cannot publish a product: intended 403, **known defect** today 201 ([ADR 0010](decisions/0010-known-defects-as-tests.md); own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
 | A11 | A customer cannot change the status of another customer's order: intended 403, **known defect** today 200; sends the current status, so nothing changes (own Toolshop only) | `@smoke @negative @admin` | ✅ | ✅ |
 
-### UI and journeys (`features/ui`, `tests/e2e`, project `chromium`; Firefox/WebKit nightly)
+### UI and journeys (`features/ui`, `features/journeys`, project `chromium`; Firefox/WebKit nightly)
 | ID | Test | Tag | Java | Status |
 |---|---|---|---|---|
 | U1 | Login with valid credentials | `@smoke` | ✅ | ✅ |
@@ -107,7 +107,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | U10 | Registration form validation (UI) | `@regression` | | ➖ |
 | U11 | Category filter + sort on the catalogue | `@regression` | | ➖ |
 
-### Journeys (`tests/e2e`, see [roadmap.md](roadmap.md) §2)
+### Journeys (`features/journeys`, see [roadmap.md](roadmap.md) §2)
 | ID | Journey | Tag | Java | Status |
 |---|---|---|---|---|
 | S1 | First purchase: the same test as U6 | `@smoke @e2e` | = U6 | ✅ |
@@ -189,8 +189,8 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | S2 | 6 | regression, e2e | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/checkout.feature` (Scenario Outlines) |
 | S3 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/admin-to-customer.feature` |
 | S4 | 1 | regression, e2e, admin | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/guest-checkout.feature` |
-| S5 | 1 | regression, e2e (own Toolshop only) | – | ✅ | Chromium, Firefox, WebKit | `ReturningCustomerJourneyTest` |
-| S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `ResilienceTest` |
+| S5 | 1 | regression, e2e, own-toolshop | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/shopper.feature` |
+| S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/resilience.feature` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 19 | smoke, architecture | static stage | ✅ | none | TypeScript only |
