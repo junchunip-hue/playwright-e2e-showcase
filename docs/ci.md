@@ -128,9 +128,10 @@ results and the Surefire XML reports and writes the run page's job summary:
   result, the result node the verdict above (so a nightly whose tests failed is red even though its report merge
   succeeded);
 - a **table per test ID** with TypeScript and Java results side by side and whether the ID runs in both;
-- a **Known defects** table (when any test tracks one): per defect and language, 🟨 still present (the test passes
-  because the API answers exactly as today), 🟥 fixed (the test fails on purpose: replace the marker with a plain
-  assertion), or ❌ anything else. TS reads the `known defect` annotation from the JSON report, Java the
+- a **Known defects** table (when any test tracks one): per defect, the step where it fails and how many steps after it
+  did not run, and per language 🟨 still present (the step fails on purpose because the API answers exactly as today:
+  an expected failure, counted as "known defect", not as passed), 🟥 fixed (the test fails: replace the marker with a
+  plain assertion), or ❌ anything else. TS reads the `known defect` annotation from the JSON report, Java the
   `known defect: …` line `KnownDefect` records in the scenario log (`scenarios.jsonl` next to the Surefire XML, written
   by `com.showcase.report.ScenarioLog`). Surefire's XML is not enough: with CI reruns on it drops the output of passed
   tests, and with it these lines ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
@@ -155,9 +156,12 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, and `@admin`. An `@admin` test signs in as
   the seeded admin or can change catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
   fixture or `test.skip(isPublicDemo, ...)`, Java: `Hooks` `@Before("@admin")`) and runs against our own Toolshop only.
-- **Known defects:** A10 and A11 assert the intended rule through `expectKnownDefect` (TS) / `KnownDefect` (Java):
-  green while the API answers exactly as today, red when it is fixed or answers anything else. The report shows a
-  `known defect` annotation ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
+- **Known defects:** A10 and A11 carry `@known-defect` and assert the intended rule at one step through
+  `expectKnownDefect` (TS) / `KnownDefect` (Java). While the API answers exactly as today, that step fails on purpose
+  and the steps after it do not run: TS marks the test as an expected failure (`test.fail`, only for that exact
+  answer), Java aborts the scenario and the scenario log records the step as failed by the known defect. Both count
+  as "known defect", never as passed; the run stays green. Fixed or any other answer: red
+  ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. Java runs the same feature files, so the check covers both.

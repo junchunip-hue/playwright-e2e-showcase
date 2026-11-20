@@ -10,31 +10,60 @@ export interface KnownDefect {
   today: number;
 }
 
+/** Where the defect shows: the Gherkin step that fails, and the steps after it, which then do not run. */
+export interface DefectStep {
+  /** The failing step, with its keyword, e.g. 'Then the API should answer 403 for …'. */
+  failing: string;
+  /** The steps after it, with their keywords. */
+  notRun: string[];
+}
+
 /**
- * Checks a response against a known product defect (Java twin: com.showcase.api.KnownDefect).
+ * Asserts the intended rule at the step where a known product defect shows (ADR 0010; Java twin:
+ * com.showcase.api.KnownDefect). Each step of the scenario ends in one of three states:
  *
- * - The API still behaves as `today`: passes, and the report shows a "known defect" annotation.
- * - The API behaves as `intended`: fails with "fixed", the signal to replace this call with a plain assertion.
- * - Anything else (401, 422, 500): fails like any assertion.
+ * - **Pass:** the steps before this one.
+ * - **Fail:** this step, while the API still answers exactly as `today`. The test is marked as an expected failure
+ *   (`test.fail`), so the run stays green, but the step is red in the report with "expected <intended>, received
+ *   <today>", and the "known defect" annotation names it.
+ * - **Skipped:** the steps after it. They do not run, like after any failing step; the report lists each of them as a
+ *   skipped sub-step "⏭ Not run: …" of the failing step, and the annotation counts them.
  *
- * Not test.fail(): that passes on *any* failure, so a broken arrange step or a server error would hide behind the
- * expected failure. Here only the exact defect keeps the test green.
+ * Any other answer is a real failure, not an expected one: the intended status means the defect is fixed (replace
+ * this call with a plain assertion), and anything else (401, 422, 500) means something else broke. Only the exact
+ * defect is ever marked as expected, so `test.fail` cannot hide another problem.
  */
-export function expectKnownDefect(res: APIResponse, label: string, defect: KnownDefect): void {
-  test.info().annotations.push({ type: 'known defect', description: knownDefectLine(defect, label, res.status()) });
+export async function expectKnownDefect(
+  res: APIResponse,
+  label: string,
+  defect: KnownDefect,
+  where: DefectStep,
+): Promise<void> {
+  const status = res.status();
+  test.info().annotations.push({ type: 'known defect', description: knownDefectLine(defect, label, status, where) });
   expect(
-    res.status(),
+    status,
     `known defect fixed: ${label} now answers ${defect.intended}. Replace expectKnownDefect with a plain assertion.`,
   ).not.toBe(defect.intended);
-  expect(res.status(), `${label}: neither today's behaviour (${defect.today}) nor the fix (${defect.intended})`).toBe(
+  expect(status, `${label}: neither today's behaviour (${defect.today}) nor the fix (${defect.intended})`).toBe(
     defect.today,
   );
+
+  // Exactly the known defect: from here on this test is an expected failure.
+  const notRun = where.notRun.length ? `; ${where.notRun.length} step(s) after it not run` : '';
+  test.fail(true, `Known defect "${defect.summary}": fails on purpose at "${where.failing}"${notRun}`);
+  for (const step of where.notRun) await test.step(`⏭ Not run: ${step}`, (s) => s.skip());
+  expect(status, `${label} should answer ${defect.intended} (known defect: ${defect.summary})`).toBe(defect.intended);
 }
 
 /**
  * One line per check, read back by scripts/pipeline-summary.mjs (the Java twin prints the same line, prefixed with
- * "known defect: "): "<summary> | <label> | answered <status> (today <today>, intended <intended>)".
+ * "known defect: "):
+ * "<summary> | <label> | answered <status> (today <today>, intended <intended>) | fails at: <step> | not run: <n>".
  */
-export function knownDefectLine(defect: KnownDefect, label: string, status: number): string {
-  return `${defect.summary} | ${label} | answered ${status} (today ${defect.today}, intended ${defect.intended})`;
+export function knownDefectLine(defect: KnownDefect, label: string, status: number, where: DefectStep): string {
+  return (
+    `${defect.summary} | ${label} | answered ${status} (today ${defect.today}, intended ${defect.intended})` +
+    ` | fails at: ${where.failing} | not run: ${where.notRun.length}`
+  );
 }

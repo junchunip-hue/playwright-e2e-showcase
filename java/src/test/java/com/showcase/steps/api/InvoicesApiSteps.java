@@ -123,8 +123,12 @@ public class InvoicesApiSteps {
     ctx.response = api().updateInvoiceStatusRequest(customerToken(), order.id(), order.status());
   }
 
-  @Then("the API still answers {int} instead of {int}, known defect {string} for {string}")
-  public void theApiStillAnswersKnownDefect(int today, int intended, String summary, String label) {
+  // The step where a known defect shows (ADR 0010): the scenario carries @known-defect, and the
+  // scenario log marks this step as failing on purpose (ScenarioLog, KnownDefect).
+  @Then(
+      "the API should answer {int} for {string}, but answers {int} because of known defect {string}")
+  public void theApiShouldAnswerButKnownDefect(
+      int intended, String label, int today, String summary) {
     new KnownDefect(summary, intended, today)
         .check(need(ctx.response, "a When step that sends the request"), label);
   }
