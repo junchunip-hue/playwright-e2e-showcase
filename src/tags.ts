@@ -22,9 +22,6 @@ export const Tag = {
   admin: '@admin', // signs in as admin or can change catalogue/orders: only against our own Toolshop
   loggedOut: '@logged-out', // Gherkin: the scenario starts without the shared signed-in session
   ownToolshop: '@own-toolshop', // needs our own Toolshop (e.g. its background jobs): skipped on the public demo
-  // Gherkin: the scenario contains a known-defect step (ADR 0010). It fails there on purpose, and the steps after it
-  // do not run. `npm run check:steps` requires the tag exactly on the scenarios with such a step.
-  knownDefect: '@known-defect',
 } as const;
 
 export type TagValue = (typeof Tag)[keyof typeof Tag];

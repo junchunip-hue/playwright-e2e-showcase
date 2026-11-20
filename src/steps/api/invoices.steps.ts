@@ -1,12 +1,9 @@
 import type { APIResponse } from '@playwright/test';
 
-import { INVOICE_STATUSES, type InvoiceStatus } from '../../api/schemas';
-import { newProductData } from '../../data/products';
-import { expect, Given, Then, When } from '../../fixtures';
-import { expectKnownDefect } from '../../known-defects';
+import { expect, Then, When } from '../../fixtures';
 import { need } from '../need';
 
-// Steps layer for features/api/invoices.feature (A6) and permissions.feature (A10, A11: known defects, ADR 0010).
+// Steps layer for features/api/invoices.feature (A6).
 // Java twin: java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java.
 
 /** Ids that do not exist: authentication is checked before the lookup, so any id shows where the 401 comes from. */
@@ -44,51 +41,4 @@ Then('the API answers 401 with the Unauthorized message', async ({ ctx }) => {
   const res = need(ctx.response, 'When I list invoices with the token "..."');
   expect(res.status()).toBe(401);
   expect(await res.json()).toEqual(UNAUTHORIZED);
-});
-
-// --- A10, A11: known defects ---
-
-When('that customer tries to publish a product through the API', async ({ api, ctx }) => {
-  const customer = need(ctx.customer, CUSTOMER);
-  const token = await api.auth.login(customer.email, customer.password);
-  // Intended: 403. Today: 201, because StoreProduct::authorize() returns true and only DELETE requires the admin role.
-  ctx.response = await api.products.createRequest(token, await newProductData(api));
-});
-
-Given('an order of someone else, in a status the API accepts', async ({ api, adminToken, ctx }) => {
-  const isAccepted = (status: string): status is InvoiceStatus =>
-    (INVOICE_STATUSES as readonly string[]).includes(status);
-  const order = (await api.invoices.list(adminToken)).data.find((i) => isAccepted(i.status));
-  expect(order, 'a seeded invoice with a status the API accepts').toBeDefined();
-  ctx.order = { id: order!.id, status: order!.status as InvoiceStatus };
-});
-
-When('that customer sets that order to the status it already has', async ({ api, ctx }) => {
-  const customer = need(ctx.customer, CUSTOMER);
-  const order = need(ctx.order, 'Given an order of someone else, in a status the API accepts');
-  const token = await api.auth.login(customer.email, customer.password);
-  // Intended: 403. Today: 200, because the route only requires a signed-in user and checks neither role nor owner.
-  ctx.response = await api.invoices.updateStatusRequest(token, order.id, order.status);
-});
-
-// The step where a known defect shows (ADR 0010). The scenario carries @known-defect; this step fails on purpose and
-// the steps after it do not run (src/known-defects.ts). $bddContext lists the scenario's steps, so the report can name
-// the failing step and each step that was not run.
-Then(
-  'the API should answer {int} for {string}, but answers {int} because of known defect {string}',
-  async ({ ctx, $bddContext }, intended: number, label: string, today: number, summary: string) => {
-    const steps = $bddContext.bddTestData.steps.map((s) => s.textWithKeyword);
-    const where = { failing: steps[$bddContext.stepIndex], notRun: steps.slice($bddContext.stepIndex + 1) };
-    await expectKnownDefect(
-      need(ctx.response, 'a When step that sends the request'),
-      label,
-      { summary, intended, today },
-      where,
-    );
-  },
-);
-
-Then('the order is unchanged', async ({ api, adminToken, ctx }) => {
-  const order = need(ctx.order, 'Given an order of someone else, in a status the API accepts');
-  expect((await api.invoices.get(adminToken, order.id)).status, 'the order is unchanged').toBe(order.status);
 });

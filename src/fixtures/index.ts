@@ -12,7 +12,7 @@ import {
   type Product,
   type ProductFilter,
 } from '../api/ApiClient';
-import type { InvoiceStatus, ProductPage as ProductListPage, ProductSearchPage } from '../api/schemas';
+import type { ProductPage as ProductListPage, ProductSearchPage } from '../api/schemas';
 import { env, isPublicDemo } from '../config/env';
 import type { InvalidCard } from '../data/payments';
 import { FooterModule } from '../modules/footer.module';
@@ -71,8 +71,6 @@ export interface ScenarioContext {
   newProduct?: NewProduct;
   /** An address from the postcode lookup (A0). */
   address?: Address;
-  /** Someone else's order (A11). */
-  order?: { id: string; status: InvoiceStatus };
 }
 
 type Fixtures = {
@@ -95,7 +93,7 @@ type Fixtures = {
   network: NetworkPage;
   /**
    * Skips a test tagged @own-toolshop or @admin on the shared public demo (runs on our own Toolshop: CI, local
-   * Docker). @admin tests change catalogue or orders, even when they never sign in as the admin (A10).
+   * Docker). @admin tests change catalogue or orders.
    */
   ownToolshopOnly: void;
   /**
@@ -158,4 +156,4 @@ export { Tag } from '../tags';
 export { expect } from '@playwright/test';
 
 /** Gherkin step functions bound to the fixtures above: steps get page objects injected, like tests do. */
-export const { Given, When, Then } = createBdd(test);
+export const { Given, When, Then, AfterStep } = createBdd(test);

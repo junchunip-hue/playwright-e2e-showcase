@@ -20,8 +20,8 @@ import org.junit.platform.suite.api.Suite;
 @SelectDirectories("../features")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.showcase.steps")
 @ConfigurationParameter(key = JUNIT_PLATFORM_NAMING_STRATEGY_PROPERTY_NAME, value = "long")
-// ScenarioLog: steps and known defects per scenario, which Surefire drops for passed tests when CI
-// reruns are on.
+// ScenarioLog: every step of every scenario with its status (passed, failed, skipped = not run),
+// which Surefire drops for passed tests when CI reruns are on.
 @ConfigurationParameter(
     key = PLUGIN_PROPERTY_NAME,
     value = "pretty, com.showcase.report.ScenarioLog:target/surefire-reports/scenarios.jsonl")

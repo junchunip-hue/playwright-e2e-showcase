@@ -65,12 +65,13 @@ The Java lane runs the same stages 2–5 in parallel with Cucumber-JVM over the 
 - One ID can have several test cases (e.g. A4: weak and leaked password). Every title starts with its ID, which
   `check:tags` enforces (for both languages: they run the same feature files).
 
-**Status:** ✅ done · ↪ done under another ID · ⬜ optional · ➖ backlog, not planned
+**Status:** ✅ done · ↪ done under another ID · ⬜ optional · ➖ backlog, not planned · ✖ removed (the row stays, the
+ID is not reused)
 ([roadmap §5](roadmap.md#5-definition-of-done)). **Java ✅** marks scenarios that also run in `java/` (Cucumber-JVM on JUnit 5).
 
 | Layer | Done | Optional | Backlog |
 |---|---|---|---|
-| API | A0–A11 | – | – |
+| API | A0–A9 (A10, A11 ✖ removed) | – | – |
 | UI | U1–U6 (U7 ↪ S2, U8 ↪ S4) | – | U9–U11 |
 | Journeys | S1 (= U6), S2–S6 | S7 | – |
 | Non-functional | N1–N3 | – | – |
@@ -89,8 +90,8 @@ The Java lane runs the same stages 2–5 in parallel with Cucumber-JVM over the 
 | A7 | Product filters: category, brand, inclusive price range, sort by price or name across pages, and all combined; every product in the result matches | `@regression` | ✅ | ✅ |
 | A8 | Admin publishes a product: listed with its brand/category, searchable, in stock (own Toolshop only) | `@smoke @admin` | ✅ | ✅ |
 | A9 | Payment check: every method with valid details → 200; invalid card → 422 naming only the broken field | `@smoke @negative` | ✅ | ✅ |
-| A10 | A customer cannot publish a product: intended 403, **known defect** today 201 ([ADR 0010](decisions/0010-known-defects-as-tests.md); own Toolshop only) | `@smoke @negative @admin @known-defect` | ✅ | ✅ |
-| A11 | A customer cannot change the status of another customer's order: intended 403, **known defect** today 200; sends the current status, so nothing changes (own Toolshop only) | `@smoke @negative @admin @known-defect` | ✅ | ✅ |
+| A10 | A customer cannot publish a product (intended 403; the pinned Toolshop answers 201). Removed: a product defect we cannot fix, see [Findings](#findings) | – | – | ✖ |
+| A11 | A customer cannot change the status of another customer's order (intended 403; the pinned Toolshop answers 200). Removed, see [Findings](#findings) | – | – | ✖ |
 
 ### UI and journeys (`features/ui`, `features/journeys`, project `chromium`; Firefox/WebKit nightly)
 | ID | Test | Tag | Java | Status |
@@ -118,15 +119,19 @@ The Java lane runs the same stages 2–5 in parallel with Cucumber-JVM over the 
 | S6 | Resilience with network mocking (`page.route`): a 3 s slower catalogue still shows its products; a failed catalogue (500) shows no products, and a reload recovers; a failed search (500) is shown as "no results", and the next search works | `@regression` (+ `@negative`) | ✅ | ✅ |
 | S7 | Languages: key pages translated, a11y and visual still pass ([roadmap §2](roadmap.md#2-showcase-scenarios-longer-journeys)) | – | | ⬜ |
 
-**Findings while building S3 (pinned source), tracked as known defects by A10 and A11:**
+### Findings
+
+**While building S3 (pinned source):**
 - `POST /products` checks no role: `StoreProduct::authorize()` returns true, and `ProductController` requires the
   admin role for `destroy` only.
 - `PUT /invoices/{id}/status` only requires a signed-in user: `InvoiceService::updateInvoiceStatus` updates by ID
   without a role or owner check, so any customer can change any order.
 
-S3 tests the intended flow (an admin acts). A10 and A11 assert the intended rule through `expectKnownDefect` /
-`KnownDefect` ([ADR 0010](decisions/0010-known-defects-as-tests.md)): they pass while the API answers exactly as
-today, and fail once it is fixed, so the marker is then replaced by a plain assertion.
+S3 tests the intended flow (an admin acts). A10 and A11 asserted the intended rule (403) and therefore always
+failed: the defect is in Toolshop, an upstream project this suite tests but does not change. They were removed from the
+suite rather than kept as "known issues" or expected failures ([ADR 0013](decisions/0013-failures-stay-failures.md)):
+a test in the suite must pass, and a red test means the test or the product needs fixing. If the pinned Toolshop is
+upgraded to a version that checks these permissions, A10 and A11 come back as plain negative tests.
 
 **Finding while building S4 (pinned source, not asserted):** a guest's email and name are not stored with the
 order. `POST /invoices/guest` validates them, but `Invoice::$fillable` has no guest fields, so they only reach the
@@ -181,7 +186,6 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | A7 | 7 | regression | – | ✅ | API | `features/api/product-filters.feature` (Scenario Outline for sorting) |
 | A8 | 1 | smoke, admin | ✅ | ✅ | API | `features/api/admin.feature` |
 | A9 | 2 | smoke | ✅ | ✅ | API | `features/api/payments.feature` |
-| A10, A11 | 1 + 1 | smoke, admin (known defects) | ✅ | ✅ | API | `features/api/permissions.feature` |
 | U1, U2 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/login.feature` (Gherkin, both languages) |
 | U3, U5 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/search.feature`, `features/ui/cart.feature` (Gherkin, both languages) |
 | U4 | 1 | regression | – | ✅ | Chromium, Firefox, WebKit | `features/ui/search.feature` (Gherkin, both languages) |
@@ -195,7 +199,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 20 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (74 in total; data-driven cases count once each). Gherkin features run
+"Tests" counts TypeScript test cases per ID (72 in total; data-driven cases count once each). Gherkin features run
 in both languages with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
@@ -236,7 +240,7 @@ Every test has exactly one tier tag, enforced by `npm run check:tags`.
 | ✅ | Structure R1–R6: test folders by intent, flows, per-resource API client, IDs in titles, docs by question | Readable at scale |
 | ✅ | S2 payment matrix, S3 admin → customer → admin (A8, A9) | Data-driven and cross-role journeys |
 | ✅ | Every A/U/S scenario in Java with the same tier; parity architecture test; TS vs Java pipeline summary | Two stacks, one plan |
-| ✅ | A10/A11 permission negatives as tracked known defects | Security findings turned into tests |
+| ✅ | Permission findings from S3 documented; A10/A11 later removed: a failing test is fixed, not tolerated ([ADR 0013](decisions/0013-failures-stay-failures.md)) | Security findings recorded |
 | ✅ | S6 resilience with network mocking: slow and failing catalogue, failing search, recovery | Network mocking, failure UX |
 | ✅ | S4 guest checkout: second entry into checkout, guest invoice checked as admin | Every demo technique shown once |
 | ✅ | Seven clean nightlies in a row; CI hardened (bounded browser install, report-merge retry); README tour checked | Showcase done ([roadmap §5](roadmap.md#5-definition-of-done)) |

@@ -113,27 +113,23 @@ Every scenario goes down the same layers in both languages ([ADR 0012](decisions
 - Test data is created fresh through the API (`src/data/`, `data/`), never taken from shared accounts other than the
   demo customer.
 
-## Known defects
+## When a test fails
 
-A product defect the tests found stays a test ([ADR 0010](decisions/0010-known-defects-as-tests.md)). In the feature:
+A failing test stays a failure ([ADR 0013](decisions/0013-failures-stay-failures.md)): there are no "known issue"
+markers and no expected failures. A red test means one of two things, and that is what gets fixed:
 
-```gherkin
-@known-defect
-Scenario: A11: a customer cannot change the status of an order
-  Given an order of someone else, in a status the API accepts
-  And a newly registered customer
-  When that customer sets that order to the status it already has
-  Then the API should answer 403 for "PUT /invoices/{id}/status as another customer", but answers 200 because of known defect "PUT /invoices/{id}/status checks neither role nor ownership"
-  And the order is unchanged
-```
+- **The test is wrong** (a wrong expectation, a missing wait, test data that changed): fix the step, page or data.
+- **The product is wrong:** fix the product. If it cannot be fixed here (Toolshop is an upstream project), the test
+  leaves the suite and the finding is recorded in the test plan, as for A10 and A11.
 
-- `@known-defect` on the scenario says up front that it breaks at a known defect. `npm run check:steps` requires the
-  tag exactly on the scenarios with a known-defect step.
-- The known-defect step sits where the defect shows and names the intended answer, today's answer and the defect.
-- In every report each step ends in one of three states: **pass** (the steps before), **fail** (this step, on purpose:
-  expected 403, received 200) and **skipped** (the steps after it, which do not run). The test counts as
-  🟨 known defect, not as passed, and the run stays green. When the API answers as intended, the test goes red: replace
-  the step with a plain assertion and remove the tag.
+Every report shows where a scenario failed, step by step: the steps before it passed, one step failed (with its
+error), and every step after it was not run.
+
+| Report | Failed step | Steps after it |
+|---|---|---|
+| TypeScript HTML report | ✗ red, with the error | "⏭ Not run: …" skipped sub-steps of the failed step; test annotations `failed step`, `not run` |
+| Java results page | `[failed]` with the error | `[not run]` (Cucumber skips them) |
+| Run summary and results page | "Failed tests": ID, where, failed step and error | listed one per line |
 
 ## IDs and tags
 

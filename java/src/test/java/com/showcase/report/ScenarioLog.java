@@ -4,11 +4,11 @@ import com.google.gson.Gson;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.EventPublisher;
 import io.cucumber.plugin.event.PickleStepTestStep;
+import io.cucumber.plugin.event.Status;
 import io.cucumber.plugin.event.TestCaseFinished;
 import io.cucumber.plugin.event.TestCaseStarted;
 import io.cucumber.plugin.event.TestRunStarted;
 import io.cucumber.plugin.event.TestStepFinished;
-import io.cucumber.plugin.event.TestStepStarted;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -22,29 +22,21 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Cucumber plugin: one JSON line per scenario attempt (name, status, steps with their status,
- * known-defect notes), appended to a file next to the Surefire XML.
+ * Cucumber plugin: one JSON line per scenario attempt (name, status, every Gherkin step with its
+ * status), appended to a file next to the Surefire XML. A step is "passed", "failed" (with its
+ * error) or "skipped": Cucumber does not run the steps after a failed one, and they are listed as
+ * skipped, so the pipeline summary and the nightly's Java page can show which step failed and which
+ * steps did not run.
  *
  * <p>Why not the XML alone: in CI a failed scenario is rerun (pom.xml, profile ci-retries), and
- * with reruns on, Surefire leaves the output of passed tests out of the XML. That output carried
- * the steps and the known-defect lines (ADR 0010) that the pipeline summary and the nightly's Java
- * page show. Reruns start a new Cucumber run in the same JVM, so the file is truncated once per JVM
- * and appended to after that: a rerun adds its attempt, and readers take the last line per
- * scenario. Not written in a dry run.
- *
- * <p>It also tells KnownDefect which step is running and which steps follow it, and records the
- * step where a known defect fails on purpose as "failed" with "knownDefect" (Cucumber itself sees
- * an aborted step), so the reports show Pass, Fail and Skipped (not run) per step.
+ * with reruns on, Surefire leaves the output of passed tests out of the XML, steps included. Reruns
+ * start a new Cucumber run in the same JVM, so the file is truncated once per JVM and appended to
+ * after that: a rerun adds its attempt, and readers take the last line per scenario. Not written in
+ * a dry run.
  */
 public class ScenarioLog implements ConcurrentEventListener {
   private static final AtomicBoolean TRUNCATED = new AtomicBoolean();
-  private static final ThreadLocal<List<String>> NOTES = ThreadLocal.withInitial(ArrayList::new);
   private static final Gson GSON = new Gson();
-  // The current scenario's steps ("Keyword text"), the running step's index, and whether that step
-  // failed on purpose because of a known defect.
-  private static final ThreadLocal<List<String>> STEPS = ThreadLocal.withInitial(ArrayList::new);
-  private static final ThreadLocal<Integer> CURRENT = ThreadLocal.withInitial(() -> -1);
-  private static final ThreadLocal<Boolean> KNOWN_FAILURE = ThreadLocal.withInitial(() -> false);
 
   private final Path file;
   private final ThreadLocal<List<Map<String, String>>> steps =
@@ -54,57 +46,11 @@ public class ScenarioLog implements ConcurrentEventListener {
     this.file = Path.of(path);
   }
 
-  /**
-   * A line for the current scenario's entry, e.g. a known defect that is still present
-   * (KnownDefect).
-   */
-  public static void note(String line) {
-    NOTES.get().add(line);
-  }
-
-  /** The running step, e.g. "Then the API should answer 403 for …"; "?" without this plugin. */
-  public static String currentStep() {
-    int i = CURRENT.get();
-    return i >= 0 && i < STEPS.get().size() ? STEPS.get().get(i) : "?";
-  }
-
-  /** The steps after the running one: they do not run when it fails. */
-  public static List<String> stepsAfterCurrent() {
-    List<String> all = STEPS.get();
-    return List.copyOf(all.subList(Math.min(CURRENT.get() + 1, all.size()), all.size()));
-  }
-
-  /** The running step fails on purpose because of a known defect (KnownDefect). */
-  public static void markKnownDefectFailure() {
-    KNOWN_FAILURE.set(true);
-  }
-
-  private static String text(PickleStepTestStep step) {
-    return step.getStep().getKeyword() + step.getStep().getText();
-  }
-
   @Override
   public void setEventPublisher(EventPublisher publisher) {
     if (Boolean.parseBoolean(System.getProperty("cucumber.execution.dry-run"))) return;
     publisher.registerHandlerFor(TestRunStarted.class, e -> truncateOnce());
-    publisher.registerHandlerFor(
-        TestCaseStarted.class,
-        e -> {
-          steps.get().clear();
-          NOTES.get().clear();
-          STEPS.set(
-              e.getTestCase().getTestSteps().stream()
-                  .filter(PickleStepTestStep.class::isInstance)
-                  .map(s -> text((PickleStepTestStep) s))
-                  .toList());
-          CURRENT.set(-1);
-          KNOWN_FAILURE.set(false);
-        });
-    publisher.registerHandlerFor(
-        TestStepStarted.class,
-        e -> {
-          if (e.getTestStep() instanceof PickleStepTestStep) CURRENT.set(CURRENT.get() + 1);
-        });
+    publisher.registerHandlerFor(TestCaseStarted.class, e -> steps.get().clear());
     publisher.registerHandlerFor(TestStepFinished.class, this::step);
     publisher.registerHandlerFor(TestCaseFinished.class, this::finished);
   }
@@ -121,17 +67,13 @@ public class ScenarioLog implements ConcurrentEventListener {
 
   private void step(TestStepFinished event) {
     if (!(event.getTestStep() instanceof PickleStepTestStep step)) return; // hooks are not steps
-    if (KNOWN_FAILURE.get()) {
-      // Cucumber sees an aborted (skipped) step; it is the step that fails on purpose.
-      steps.get().add(Map.of("text", text(step), "status", "failed", "knownDefect", "true"));
-      KNOWN_FAILURE.set(false);
-      return;
-    }
-    steps
-        .get()
-        .add(
-            Map.of(
-                "text", text(step), "status", event.getResult().getStatus().name().toLowerCase()));
+    Map<String, String> entry = new LinkedHashMap<>();
+    entry.put("text", step.getStep().getKeyword() + step.getStep().getText());
+    entry.put("status", event.getResult().getStatus().name().toLowerCase());
+    Throwable error = event.getResult().getError();
+    if (event.getResult().getStatus() == Status.FAILED && error != null)
+      entry.put("error", firstLine(error));
+    steps.get().add(entry);
   }
 
   private void finished(TestCaseFinished event) {
@@ -141,12 +83,8 @@ public class ScenarioLog implements ConcurrentEventListener {
         "uri", event.getTestCase().getUri().toString().replaceFirst("^.*?/features/", "features/"));
     entry.put("status", event.getResult().getStatus().name().toLowerCase());
     Throwable error = event.getResult().getError();
-    if (error != null)
-      entry.put("error", String.valueOf(error.getMessage()).lines().findFirst().orElse(""));
+    if (error != null) entry.put("error", firstLine(error));
     entry.put("steps", List.copyOf(steps.get()));
-    if (steps.get().stream().anyMatch(s -> s.containsKey("knownDefect")))
-      entry.put("knownDefect", true);
-    entry.put("notes", List.copyOf(NOTES.get()));
     String line = GSON.toJson(entry) + System.lineSeparator();
     synchronized (ScenarioLog.class) {
       try {
@@ -160,5 +98,9 @@ public class ScenarioLog implements ConcurrentEventListener {
         throw new UncheckedIOException(e);
       }
     }
+  }
+
+  private static String firstLine(Throwable error) {
+    return String.valueOf(error.getMessage()).lines().findFirst().orElse("");
   }
 }

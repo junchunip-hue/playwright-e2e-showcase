@@ -1,6 +1,6 @@
 // Builds the nightly's GitHub Pages landing page, so the README badges open one page for both languages:
 //   index.html       the verdict, both lanes with their counts (the badge's total, split), TypeScript vs Java per test
-//                    ID, flaky tests, known defects and the nightly history
+//                    ID, flaky tests, failed tests with their failed and not-run steps, and the nightly history
 //   java/index.html  every Java scenario with its steps, read from the Surefire XML (reruns included)
 //   typescript/      the merged Playwright HTML report (put there by the workflow)
 // Usage: node scripts/pages-site.mjs <summary.json> <surefire-dir> <site-dir>
@@ -68,7 +68,7 @@ const noAnsi = (s) => s.replace(/&amp#27;\[[0-9;]*m|&#27;\[[0-9;]*m|\u001b\[[0-9
 const STEP = { '✔': 'passed', '✘': 'failed', '↷': 'skipped', '?': 'undefined', '-': 'pending' };
 
 /**
- * The Java scenario log (com.showcase.report.ScenarioLog): steps and known-defect notes per scenario, the last attempt
+ * The Java scenario log (com.showcase.report.ScenarioLog): every step with its status per scenario, the last attempt
  * winning. In CI it is the only source of the steps of a passed scenario: with reruns on, Surefire leaves the output
  * of passed tests out of the XML. The XML stays the source of each scenario's status (it knows reruns: flaky).
  */
@@ -97,23 +97,13 @@ function javaScenarios(dir) {
       const body = m[3] ?? '';
       const time = Number(/time="([^"]*)"/.exec(m[1])?.[1] ?? 0);
       const flakes = [...body.matchAll(/<flaky(?:Failure|Error)\b([^>]*)>/g)];
-      // KnownDefect aborts the scenario at the defect step (Surefire: skipped); the scenario log says it failed there
-      // on purpose, so it is a known defect, not a skip.
-      const ownName =
-        name
-          .split(' - ')
-          .at(-1)
-          ?.replace(/^Example #[\d.]+: /, '') ?? name;
-      const knownDefect = /<skipped\b/.test(body) && log.get(ownName)?.knownDefect === true;
       const status = /<(failure|error)\b/.test(body)
         ? 'failed'
         : flakes.length
           ? 'flaky'
-          : knownDefect
-            ? 'known'
-            : /<skipped\b/.test(body)
-              ? 'skipped'
-              : 'passed';
+          : /<skipped\b/.test(body)
+            ? 'skipped'
+            : 'passed';
       const message = xmlText(
         /<(?:failure|error)\b[^>]*message="([^"]*)"/.exec(body)?.[1] ??
           (flakes[0] ? /message="([^"]*)"/.exec(flakes[0][1])?.[1] : '') ??
@@ -123,13 +113,11 @@ function javaScenarios(dir) {
       const outs = [...body.matchAll(/<system-out><!\[CDATA\[([\s\S]*?)\]\]><\/system-out>/g)];
       const out = xmlText(noAnsi(outs.at(-1)?.[1] ?? ''));
       const steps = [];
-      const notes = [];
       for (const raw of out.split('\n')) {
         const line = raw.trim();
         const step = /^([✔✘↷?-])\s+(.*?)(?:\s+#\s.*)?$/.exec(line);
         if (step && /^(Given|When|Then|And|But)\b/.test(step[2]))
           steps.push({ status: STEP[step[1]] ?? 'unknown', text: step[2] });
-        else if (line.startsWith('known defect: ')) notes.push(line);
       }
       // "Feature - Scenario", and for a Scenario Outline "Feature - Outline - Examples - Example #1.1: Scenario".
       const [feature, ...rest] = name.split(' - ');
@@ -141,7 +129,6 @@ function javaScenarios(dir) {
         status,
         time,
         steps: logged?.steps?.length ? logged.steps : steps,
-        notes: logged?.notes?.length ? logged.notes : notes,
         message: message.split('\n')[0],
         attempts: flakes.length,
       });
@@ -187,8 +174,7 @@ function page(title, body) {
 const cell = (r) => {
   if (!r) return '–';
   const parts = [];
-  if (r.passed || !(r.flaky || r.failed || r.skipped || r.notRun || r.known)) parts.push(`${r.passed} ✅`);
-  if (r.known) parts.push(`${r.known} 🟨 known defect`);
+  if (r.passed || !(r.flaky || r.failed || r.skipped || r.notRun)) parts.push(`${r.passed} ✅`);
   if (r.notRun) parts.push(r.notRunCountUnknown ? '⛔ not run' : `${r.notRun} ⛔ not run`);
   if (r.flaky) parts.push(`${r.flaky} ⚠️ flaky`);
   if (r.failed) parts.push(`${r.failed} ❌`);
@@ -199,16 +185,14 @@ const runCounts = (runs) => {
   if (!runs) return 'no results';
   return [
     `${runs.passed + runs.flaky} passed`,
-    ...(runs.known ? [`${plural(runs.known, 'known defect')} (failing on purpose)`] : []),
     `${runs.flaky} flaky`,
     `${runs.failed} failed`,
     ...(runs.notRun ? [`${runs.notRun} not run`] : []),
     ...(runs.skipped ? [`${runs.skipped} skipped`] : []),
   ].join(' · ');
 };
-const total = (runs) =>
-  runs ? runs.passed + runs.flaky + runs.failed + runs.notRun + runs.skipped + (runs.known ?? 0) : 0;
-const rowRuns = (r) => (r ? r.passed + r.flaky + r.failed + r.notRun + r.skipped + (r.known ?? 0) : 0);
+const total = (runs) => (runs ? runs.passed + runs.flaky + runs.failed + runs.notRun + runs.skipped : 0);
+const rowRuns = (r) => (r ? r.passed + r.flaky + r.failed + r.notRun + r.skipped : 0);
 /** Test-plan aliases (docs/test-plan.md, "How IDs work"): one test, two IDs. U6 is the first journey, S1. */
 const ALIASES = { U6: 'S1' };
 const withAlias = (id) => (ALIASES[id] ? `${id} (${ALIASES[id]})` : id);
@@ -229,8 +213,6 @@ function landing(s, java) {
   const ts = s.lanes.ts;
   const jv = s.lanes.java;
   const badgeTotal = (ts.runs ? ts.runs.passed + ts.runs.flaky : 0) + (jv.runs ? jv.runs.passed + jv.runs.flaky : 0);
-  const knownTotal = (ts.runs?.known ?? 0) + (jv.runs?.known ?? 0);
-  const knownIds = s.rows.filter((r) => r.ts?.known || r.java?.known).map((r) => r.id);
   const failedText =
     s.verdict === 'failed'
       ? [...s.problems, ...(s.cause ? [`cause: ${s.cause}`] : [])].join('; ') || 'a job ended red'
@@ -244,7 +226,7 @@ function landing(s, java) {
 <p class="muted">Playwright E2E Showcase: the same Gherkin scenarios in TypeScript and Java, against our own Toolshop.
 <a href="${REPO}#readme">About the project</a></p>
 <div class="verdict ${v.cls}"><strong>${v.icon} ${esc(v.title)}</strong>${failedText ? `: ${esc(failedText)}` : ''}<br>
-${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}${knownTotal ? `🟨 ${esc(plural(knownTotal, 'test'))} failed on purpose at a known defect (${esc(knownIds.join(', '))}): expected, so the run stays green. <a href="#known-defects">Known defects</a><br>` : ''}
+${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}
 <span>${esc(when)}${s.run.url ? ` · <a href="${esc(s.run.url)}">run #${esc(s.run.number)}</a>` : ''}${s.run.sha ? ` · commit <a href="${REPO}/commit/${esc(s.run.sha)}"><code>${esc(s.run.sha)}</code></a>` : ''}</span></div>`);
 
   sections.push(`<div class="lanes">
@@ -255,11 +237,19 @@ ${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}${knownTotal ? `🟨 ${esc(plural
 <div class="muted">scenarios (Cucumber-JVM, Chromium), the same feature files</div><div>${esc(runCounts(jv.runs))}</div>
 <a class="button" href="java/">Open the Java results →</a></div>
 </div>
-<p class="muted">The README's "nightly tests" badge shows ${badgeTotal} passed${knownTotal ? ` and ${plural(knownTotal, 'known defect')}` : ''}: TypeScript and Java together.</p>`);
+<p class="muted">The README's "nightly tests" badge shows ${badgeTotal} passed: TypeScript and Java together.</p>`);
 
   if (s.failedJobs?.length) {
     sections.push(`<h2>What failed</h2><div class="scroll"><table><tr><th>Job</th><th>Failed step</th><th>What it reported</th></tr>
 ${s.failedJobs.map((j) => `<tr><td>❌ <a href="${esc(j.url)}">${esc(j.name)}</a></td><td>${esc(j.steps.join(', ') || (j.timedOut ? 'timed out' : '–'))}</td><td>${j.why.map(esc).join('<br>') || 'see the job log'}</td></tr>`).join('\n')}
+</table></div>`);
+  }
+
+  // Each failed test: the step where it failed, and the steps after it, which did not run.
+  if (s.failed?.length) {
+    sections.push(`<h2>Failed tests</h2><p>${plural(s.failed.length, 'test')} failed. Each stops at its first failing step; the steps after it did not run.</p>
+<div class="scroll"><table><tr><th>ID</th><th>Where</th><th>Test</th><th>Failed at step</th><th>Not run after it</th></tr>
+${s.failed.map((f) => `<tr><td>❌ ${esc(f.id)}</td><td>${esc(f.project)}</td><td>${esc(f.title)}<br><code>${esc(f.where)}</code></td><td>${f.step ? `❌ ${esc(f.step)}` : '–'}${f.error ? `<br><code>${esc(f.error.slice(0, 200))}</code>` : ''}</td><td>${f.notRun.length ? f.notRun.map((st) => `⏭️ ${esc(st)}`).join('<br>') : '–'}</td></tr>`).join('\n')}
 </table></div>`);
   }
 
@@ -279,33 +269,12 @@ ${[...s.rows]
   .sort((a, b) => byPlanOrder(a.id, b.id))
   .map(
     (r) =>
-      `<tr><td>${esc(withAlias(r.id))}${r.knownDefect ? ' 🟨' : ''}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`,
+      `<tr><td>${esc(withAlias(r.id))}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`,
   )
   .join('\n')}
 </table></div>
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
-TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.${s.rows.some((r) => r.knownDefect) ? ' 🟨 = tracks a known product defect.' : ''}</p>`);
-
-  if (s.defects?.length) {
-    const label = {
-      '🟨': '🟨 still present: fails on purpose',
-      '🟥': '🟥 fixed: replace the marker',
-      '❌': '❌ unexpected',
-      '–': '–',
-    };
-    const failsAt = (d) => {
-      const c = d.ts?.step ? d.ts : d.java;
-      if (!c?.step) return '–';
-      return `❌ ${esc(c.step)}${c.notRun ? `<br><span class="muted">⏭️ ${esc(plural(c.notRun, 'step'))} after it not run</span>` : ''}`;
-    };
-    sections.push(`<h2 id="known-defects">Known defects</h2><div class="scroll"><table><tr><th>ID</th><th>Defect</th><th>Request</th><th>Fails at step</th><th>TypeScript</th><th>Java</th></tr>
-${s.defects.map((d) => `<tr><td>${esc(d.id)}</td><td>${esc(d.summary)}</td><td>${esc((d.ts ?? d.java)?.label)}</td><td>${failsAt(d)}</td><td>${label[d.tsState] ?? esc(d.tsState)}</td><td>${label[d.javaState] ?? esc(d.javaState)}</td></tr>`).join('\n')}
-</table></div>
-<p class="muted">Tracked as tests (<a href="${REPO}/blob/master/docs/decisions/0010-known-defects-as-tests.md">ADR 0010</a>). In each
-scenario the steps before the defect step pass, the defect step fails on purpose, and the steps after it do not run. While
-the API answers exactly as today the failure is expected and the run stays green; once it is fixed, the test fails and the
-marker is replaced by a plain assertion.</p>`);
-  }
+TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.</p>`);
 
   if (history.length) {
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };
@@ -325,16 +294,16 @@ marker is replaced by a plain assertion.</p>`);
 // --- Java page ----------------------------------------------------------------------------------------------------
 
 function javaPage(scenarios, s) {
-  const ICON = { passed: '✅', flaky: '⚠️', failed: '❌', skipped: '⏭️', known: '🟨' };
-  // Per step: Pass, Fail (or Fail on purpose at a known defect), Skipped (not run after a failure).
-  const stepLabel = (st) =>
-    st.knownDefect
-      ? '<strong>[failed: known defect]</strong> '
-      : st.status === 'passed'
-        ? ''
-        : st.status === 'skipped'
-          ? '[skipped: not run] '
-          : `[${esc(st.status)}] `;
+  const ICON = { passed: '✅', flaky: '⚠️', failed: '❌', skipped: '⏭️' };
+  // Per step: passed (no label), failed, or skipped = not run because an earlier step failed.
+  const stepLabel = (status) =>
+    status === 'passed'
+      ? ''
+      : status === 'failed'
+        ? '<strong>[failed]</strong> '
+        : status === 'skipped'
+          ? '[not run] '
+          : `[${esc(status)}] `;
   const byFeature = new Map();
   // Features in the test plan's order (API, UI, journeys), each by its first ID, as on the results page.
   const idOf = (sc) => /^([AUS]\d+):/.exec(sc.title)?.[1] ?? 'S999';
@@ -345,7 +314,7 @@ function javaPage(scenarios, s) {
   const head = `<p><a href="../">← Nightly results</a></p><h1>Java results</h1>
 <p class="muted">Cucumber-JVM on JUnit 5, Chromium, the same feature files as TypeScript. Read from the Surefire XML, so a
 scenario that passed on a rerun shows as flaky.${s?.run?.url ? ` <a href="${esc(s.run.url)}">Run #${esc(s.run.number)}</a>` : ''}</p>
-<p><strong>${scenarios.length} scenarios</strong>: ${count('passed')} passed${count('known') ? ` · 🟨 ${plural(count('known'), 'known defect')} (failing on purpose)` : ''} · ${count('flaky')} flaky · ${count('failed')} failed${count('skipped') ? ` · ${count('skipped')} skipped` : ''}</p>`;
+<p><strong>${scenarios.length} scenarios</strong>: ${count('passed')} passed · ${count('flaky')} flaky · ${count('failed')} failed${count('skipped') ? ` · ${count('skipped')} skipped` : ''}</p>`;
   if (!scenarios.length) return page('Java results', `${head}<p>No Java results in this run.</p>`);
   const features = [...byFeature.entries()].map(
     ([feature, list]) => `<h2>${esc(feature)}</h2>
@@ -353,9 +322,9 @@ ${list
   .map(
     (
       sc,
-    ) => `<details${['failed', 'flaky', 'known'].includes(sc.status) ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}${sc.status === 'known' ? ' · known defect: fails on purpose' : ''}</span></summary>
-${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${stepLabel(st)}${esc(st.text)}</li>`).join('')}</ol>` : ''}
-${sc.message ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}${sc.notes.map((n) => `<p>🟨 <code>${esc(n)}</code></p>`).join('')}</details>`,
+    ) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
+${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${stepLabel(st.status)}${esc(st.text)}${st.error ? `<br><code>${esc(st.error.slice(0, 300))}</code>` : ''}</li>`).join('')}</ol>` : ''}
+${sc.message && !sc.steps.some((st) => st.error) ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}</details>`,
   )
   .join('\n')}`,
   );

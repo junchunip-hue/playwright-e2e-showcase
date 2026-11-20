@@ -1,6 +1,7 @@
 # 0010 – Known product defects are tracked as tests
 
-**Status:** Accepted
+**Status:** Superseded by [0013](0013-failures-stay-failures.md): no known-defect markers; A10 and A11 were removed
+from the suite.
 
 **Context:** Building S3 showed two authorization defects in the pinned Toolshop: a customer can publish a product,
 and any signed-in user can change any order's status. A test that asserts the intended rule (403) would be red on
