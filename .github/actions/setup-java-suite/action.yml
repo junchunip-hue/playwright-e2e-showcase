@@ -11,7 +11,8 @@ runs:
         cache: maven
         cache-dependency-path: java/pom.xml
 
-    - name: Compile tests
+    # In CI every Maven build runs spotless:check first (java/pom.xml, profile ci-retries): unformatted Java fails here.
+    - name: Check code style and compile tests
       shell: bash
       working-directory: java
       run: ./mvnw -B -q test-compile
