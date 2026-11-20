@@ -59,7 +59,7 @@ jobs:
           git push
           echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
-      # GitHub starts no workflow for a push made with GITHUB_TOKEN, so the commit above gets no PR checks. The main
+      # GitHub starts no workflow for a push made with GITHUB_TOKEN, so the commit above gets no PR checks. The master
       # ruleset requires them, so the PR cannot merge until they run; say how to get them.
       - name: Tell the PR how to get checks on the new commit
         if: ${{ steps.commit.outputs.sha != '' }}

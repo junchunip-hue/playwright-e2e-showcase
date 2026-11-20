@@ -1,5 +1,5 @@
-// Keeps the history of nightly verdicts on main and the "clean nightlies in a row" count (roadmap §5: five in a row).
-// Runs in the nightly summary job on main; the files are published with the report on GitHub Pages, and the next run
+// Keeps the history of nightly verdicts on master and the "clean nightlies in a row" count (roadmap §5: five in a row).
+// Runs in the nightly summary job on master; the files are published with the report on GitHub Pages, and the next run
 // reads them back from there.
 // Usage: node scripts/nightly-history.mjs <previous-history.json> <seed.json> <out-dir>
 //   env: VERDICT (passed | flaky | rerun | failed | unverified, from pipeline-summary.mjs), RUN_NUMBER, RUN_ID, SHA

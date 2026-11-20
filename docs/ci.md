@@ -18,7 +18,7 @@ itself and would race S3 and A11.
 ## Workflows
 | Workflow | Trigger | What runs | Browsers |
 |---|---|---|---|
-| `pr-smoke.yml` | Every PR and push to `main` | **Static:** lint, typecheck, `check:tags`, `test:architecture`<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and in parallel the Java lane: a dry run that binds every feature's steps (seconds, no browser), then the Java smoke suite | Chromium |
+| `pr-smoke.yml` | Every PR and push to `master` | **Static:** lint, typecheck, `check:tags`, `test:architecture`<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and in parallel the Java lane: a dry run that binds every feature's steps (seconds, no browser), then the Java smoke suite | Chromium |
 | `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed) in 3 shards, plus the full Java suite | Chromium, Firefox, WebKit |
 | `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR, and comments how to get PR checks on that commit (GitHub runs no workflow for a push made by Actions) | Chromium |
 
@@ -37,7 +37,7 @@ flowchart LR
     direction LR
     R["regression × 3 shards<br/>Chromium · Firefox · WebKit"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
     RJ["regression-java<br/>full suite"] --> S
-    S --> D["deploy-report<br/>landing page · TS report · Java results ·<br/>badges, main only"]
+    S --> D["deploy-report<br/>landing page · TS report · Java results ·<br/>badges, master only"]
   end
 ```
 The nightly's GitHub Pages site, built by the `summary` job because only it has both languages' results:
@@ -48,7 +48,7 @@ The nightly's GitHub Pages site, built by the `summary` job because only it has 
   XML and the scenario log.
 - `badge.json`, which the "nightly tests" badge reads (shields.io endpoint): all test runs of both languages, coloured
   like the verdict (green passed, yellow passed with flaky, red failed); `streak.json` and `history.json` (below).
-**Merging:** a ruleset on `main` makes the PR pipeline a real gate: every change goes through a pull request, and
+**Merging:** a ruleset on `master` makes the PR pipeline a real gate: every change goes through a pull request, and
 `smoke (TypeScript)`, `smoke (Java)` and `test verdict / PR smoke` must pass before it merges (no bypass, also not for
 admins). The nightly is not required: it runs after merge.
 
@@ -78,7 +78,7 @@ test run red or stall it:
 | `blob-report-<shard>` | nightly | Shard results, merged by `merge-reports` |
 
 **Nightly mechanics:** each shard boots its own Toolshop (no shared data between shards) and writes a blob report.
-A merge job turns the blobs into one HTML report, and runs on `main` publish it to GitHub Pages (`/typescript/`). The `setup` login
+A merge job turns the blobs into one HTML report, and runs on `master` publish it to GitHub Pages (`/typescript/`). The `setup` login
 project only runs in shards that contain UI tests. A PR that changes the workflow runs it without publishing.
 
 **Local runs** default to Chromium. Firefox and WebKit are opt-in (`ALL_BROWSERS=1`), because Playwright's Firefox
@@ -119,7 +119,7 @@ results and the Surefire XML reports and writes the run page's job summary:
   commit status. So the summary keeps each earlier attempt's jobs: if one failed, a passing attempt says ⚠️ Passed on a
   rerun ("Passed on attempt 2 (attempt 1 failed: … at "Start Toolshop")"), the badge turns yellow and the run does
   not count as clean. A failed attempt stays failed in `history.json` (one entry per run, the first one wins).
-- **Clean streak.** On `main`, the nightly adds its verdict to `history.json` on Pages (read back from there on the
+- **Clean streak.** On `master`, the nightly adds its verdict to `history.json` on Pages (read back from there on the
   next run; `scripts/nightly-history-seed.json` holds the runs before it existed) and publishes `streak.json`, the
   README's "clean nightlies" badge: passed runs in a row, the stability criterion of roadmap §5.
 - The Actions run list shows only each job's result: a run with a flaky test is ✅ there. The verdict is in the

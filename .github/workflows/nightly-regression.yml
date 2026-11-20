@@ -5,7 +5,7 @@ on:
     - cron: '0 2 * * *' # 02:00 UTC every night
   workflow_dispatch:
   # Runs once on PRs that change this workflow, so it is validated before merge.
-  # The report is only published from main (see deploy-report).
+  # The report is only published from master (see deploy-report).
   pull_request:
     paths:
       - .github/workflows/nightly-regression.yml
@@ -124,7 +124,7 @@ jobs:
   # together by the summary job, which has both languages' results. Requires Settings → Pages → Source: "GitHub Actions".
   deploy-report:
     name: publish report
-    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.summary.result == 'success' }}
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/master' && needs.summary.result == 'success' }}
     needs: [summary]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -273,20 +273,20 @@ jobs:
       # GitHub Pages: a landing page for both languages (built below), the merged TypeScript report under typescript/,
       # the Java results under java/, and badge.json for the README badge (shields.io endpoint).
       - name: Download HTML report for GitHub Pages
-        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         uses: actions/download-artifact@v8
         with:
           name: regression-report
           path: site/typescript
 
       - name: Add the badge to the site
-        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         run: cp badge.json site/badge.json
 
       # history.json and streak.json ("clean nightlies in a row", roadmap §5) live on Pages: read the last ones back,
       # add this run. Before the first publish, scripts/nightly-history-seed.json holds the earlier runs.
       - name: Update the nightly history
-        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         continue-on-error: true
         env:
           VERDICT: ${{ steps.summary.outputs.verdict }}
@@ -299,12 +299,12 @@ jobs:
 
       # index.html (verdict, both lanes, TS vs Java per ID, flaky, known defects, history) and java/index.html.
       - name: Build the landing page
-        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         continue-on-error: true # without it the reports and badges still publish
         run: node scripts/pages-site.mjs summary.json results/java site
 
       - name: Upload GitHub Pages artifact
-        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         uses: actions/upload-pages-artifact@v5
         with:
           path: site/

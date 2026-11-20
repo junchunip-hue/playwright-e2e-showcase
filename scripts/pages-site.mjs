@@ -237,7 +237,7 @@ TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and 
     sections.push(`<h2>Known defects</h2><div class="scroll"><table><tr><th>ID</th><th>Defect</th><th>Request</th><th>TypeScript</th><th>Java</th></tr>
 ${s.defects.map((d) => `<tr><td>${esc(d.id)}</td><td>${esc(d.summary)}</td><td>${esc((d.ts ?? d.java)?.label)}</td><td>${label[d.tsState] ?? esc(d.tsState)}</td><td>${label[d.javaState] ?? esc(d.javaState)}</td></tr>`).join('\n')}
 </table></div>
-<p class="muted">Tracked as tests (<a href="${REPO}/blob/main/docs/decisions/0010-known-defects-as-tests.md">ADR 0010</a>): green while the API answers exactly as today, red once it is fixed.</p>`);
+<p class="muted">Tracked as tests (<a href="${REPO}/blob/master/docs/decisions/0010-known-defects-as-tests.md">ADR 0010</a>): green while the API answers exactly as today, red once it is fixed.</p>`);
   }
 
   if (history.length) {
