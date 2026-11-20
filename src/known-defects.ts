@@ -41,19 +41,24 @@ export async function expectKnownDefect(
 ): Promise<void> {
   const status = res.status();
   test.info().annotations.push({ type: 'known defect', description: knownDefectLine(defect, label, status, where) });
+  // Two guards, shown as sub-steps of this step: they pass while the defect is exactly as known. Their messages are
+  // what a reader sees in the report, and the failure text when the defect is fixed or something else broke.
   expect(
     status,
-    `known defect fixed: ${label} now answers ${defect.intended}. Replace expectKnownDefect with a plain assertion.`,
+    `Defect still present: ${label} does not answer ${defect.intended} yet (if it does, the defect is fixed: replace expectKnownDefect with a plain assertion)`,
   ).not.toBe(defect.intended);
-  expect(status, `${label}: neither today's behaviour (${defect.today}) nor the fix (${defect.intended})`).toBe(
-    defect.today,
-  );
+  expect(
+    status,
+    `Answer unchanged: ${label} answers ${defect.today} as known (anything else, neither ${defect.today} nor ${defect.intended}, is a new problem)`,
+  ).toBe(defect.today);
 
   // Exactly the known defect: from here on this test is an expected failure.
   const notRun = where.notRun.length ? `; ${where.notRun.length} step(s) after it not run` : '';
   test.fail(true, `Known defect "${defect.summary}": fails on purpose at "${where.failing}"${notRun}`);
   for (const step of where.notRun) await test.step(`⏭ Not run: ${step}`, (s) => s.skip());
-  expect(status, `${label} should answer ${defect.intended} (known defect: ${defect.summary})`).toBe(defect.intended);
+  expect(status, `Fails on purpose, known defect "${defect.summary}": ${label} should answer ${defect.intended}`).toBe(
+    defect.intended,
+  );
 }
 
 /**
