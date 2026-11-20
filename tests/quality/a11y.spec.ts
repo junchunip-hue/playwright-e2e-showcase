@@ -28,8 +28,8 @@ test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regress
   });
 
   test('N2: contact page', async ({ contactPage, makeAxeBuilder }, testInfo) => {
-    await contactPage.goto();
-    await expect(contactPage.submit).toBeVisible();
+    await contactPage.open();
+    await expect(contactPage.ui.submit).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'contact');
   });
 });
@@ -47,9 +47,9 @@ test.describe('Accessibility (logged-in customer)', { tag: [Tag.a11y, Tag.regres
   });
 
   test('N2: account page', async ({ accountPage, header, makeAxeBuilder }, testInfo) => {
-    await accountPage.goto();
+    await accountPage.open();
     await expect(header.userMenu).toBeVisible();
-    await expect(accountPage.title).toBeVisible();
+    await expect(accountPage.ui.title).toBeVisible();
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'account');
   });
 });

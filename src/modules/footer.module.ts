@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test';
 
-/** Shared footer, present on every page. */
-export class Footer {
+/** Module layer: the shared footer, present on every page. Only locators, like the header. */
+export class FooterModule {
   /** "vdev | Built YYYY-MM-DD | ...": the Toolshop build date, which changes with every CI build. */
   readonly buildInfo: Locator;
 

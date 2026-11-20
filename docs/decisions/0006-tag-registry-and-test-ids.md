@@ -1,6 +1,8 @@
 # 0006 – One tag registry, one tier and one test-plan ID per test
 
-**Status:** Accepted
+**Status:** Accepted. Since [0012](0012-gherkin-features-with-layered-steps.md) both languages run the same Gherkin
+features, so tiers and IDs live in the feature files and `npm run check:tags` checks them for both; the Java
+`TagGuardTest` and composed annotations below were removed with the last JUnit test class (historical).
 
 **Context:** Tags decide which tests gate a PR. They were string literals spread over specs, config, npm scripts and
 workflows, so a typo silently dropped a test from the gate, and every grep had to remember `@setup`. The test plan

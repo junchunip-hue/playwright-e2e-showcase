@@ -36,7 +36,7 @@ Every API response is also contract-checked (A0); rendering and accessibility ar
 ## 4. Locator strategy
 1. `data-test` attributes via `getByTestId` (configured `testIdAttribute: 'data-test'`)
 2. Role-based locators (`getByRole`) where no test id exists
-3. No CSS/XPath tied to layout; the few exceptions (e.g. `nav.navbar`) live in page objects with a comment
+3. No CSS/XPath tied to layout; the few exceptions (e.g. `nav.navbar`) live in a module (`src/modules`) with a comment
 
 ## 5. Test data & isolation
 - Every test must be runnable alone and in parallel.
@@ -71,11 +71,11 @@ Suites are selected by name (`SUITE=pr`), and a tag check keeps both honest
 
 ## 7. Two languages
 Scenarios are written once as Gherkin features (`features/`) and run by both suites through the same layers:
-steps → pages → modules ([ADR 0012](decisions/0012-gherkin-features-with-layered-steps.md)); until a scenario's
-migration phase it is still a plain spec.
+steps → pages → modules ([ADR 0012](decisions/0012-gherkin-features-with-layered-steps.md)). Only the quality and
+architecture checks (N1–N3) are plain specs.
 
-TypeScript is the primary suite. Every scenario (A, U, S) also exists in Java + JUnit 5 with the same ID and tier, so
-each pipeline runs a TypeScript lane and a Java lane over the same scenarios; only the quality and architecture checks
+TypeScript is the primary suite. Java runs the very same feature files (Cucumber-JVM on JUnit 5), so every scenario (A, U, S)
+has the same ID and tier in both, and each pipeline runs a TypeScript lane and a Java lane over the same scenarios; only the quality and architecture checks
 (N1–N3) are TypeScript-only ([ADR 0002](decisions/0002-typescript-primary-java-twin.md),
 [ADR 0009](decisions/0009-every-journey-in-both-languages.md), [java.md](java.md)).
 

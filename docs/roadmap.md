@@ -45,7 +45,7 @@ its own throwaway data and is tagged `@regression @e2e` (nightly), except the on
 
 ## 3. Structure: refactoring direction (done)
 
-Goal: a reviewer opening the repo for the first time finds a journey, a page object and a CI rule within a
+Goal: a reviewer opening the repo for the first time finds a journey, its layers and a CI rule within a
 minute, and long scenarios read as business steps rather than clicks.
 
 | # | Change | Result |
@@ -55,16 +55,19 @@ minute, and long scenarios read as business steps rather than clicks.
 | **R3** ✅ | `ApiClient` per resource | `src/api/http.ts` + `resources/{products,auth,customers,addresses,invoices,payments,catalog}.ts` behind one `api` (`api.products.search(...)`) |
 | **R4** ✅ | Test-plan ID in every title | `A4: ...`, `U6: ...`; `check:tags` and Java `TagGuardTest` fail on a missing ID or one not in the plan |
 | **R5** ✅ | README as a 3-minute tour | Tour, one Mermaid diagram, layout, how to run, "read more" by question |
-| **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (10 ADRs) |
+| **R6** ✅ | Docs by question | `test-strategy.md` (why), `test-plan.md` (what/where), `ci.md` (pipeline), `java.md`, `decisions/` (ADRs) |
+| **R7** ✅ | Shared Gherkin features in layers ([ADR 0012](decisions/0012-gherkin-features-with-layered-steps.md)) | Every A/U/S scenario is one `features/**/*.feature` run by both languages through steps → pages → modules; replaces R1's `tests/api`/`tests/e2e`, R2's flows and the Java JUnit classes |
 
 **Not planned:** more browsers for
 a11y/visual (no extra signal).
 
-**Conventions for what comes next:** a new journey gets an `S` ID in the test plan and is written twice, with the
-same steps and data:
-- TypeScript: `tests/e2e`, flows from `src/flows`, builders from `src/data`, API calls on `src/api/resources`
-- Java: `java/.../tests`, `flows/`, `data/`, `ApiClient`, with `@RegressionCases`/`@Journey` and the same display name
-- Test plan row marked "Java ✅". The parity architecture test fails until both exist.
+**Conventions for what comes next:** a new scenario gets the next ID in the test plan and is written once, as a
+feature both languages run:
+- The scenario: `features/{api,ui,journeys}/*.feature`, title starting with its ID, one tier tag
+- Steps for each new sentence in both languages: `src/steps/` and `java/.../steps/`, each calling one page method
+  (or the API client); new locators go into a module (`src/modules/`, `java/.../modules/`), never into a step
+- Test plan row marked "Java ✅". An undefined step fails the language that lacks it, and the parity test fails
+  until the plan agrees.
 
 A new decision gets the next ADR number.
 

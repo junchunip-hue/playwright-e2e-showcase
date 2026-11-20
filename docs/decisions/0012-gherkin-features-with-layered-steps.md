@@ -37,7 +37,8 @@ or reviewing a scenario benefits from reading it step by step, and from seeing t
 **Consequences:**
 - One wording per scenario: a step sentence changed in a feature must change in both step layers, or that
   scenario fails in the language that lacks it (an undefined step fails, and `bddgen` refuses missing steps).
-- Moved in phases, each its own PR (UI, journeys, API); until a scenario's phase, it stays a plain spec.
+- Moved in phases, each its own PR: UI (#35, #37), journeys (#38, #39), API (#40), then cleanup. Every A/U/S
+  scenario is now a feature; only N1–N3 (quality and architecture) stay plain specs, by design.
 - `bddgen` runs before every Playwright run; generated tests live in `tests/features/` (git-ignored). playwright-bdd
   requires the projects' testDir to be its output folder, so that is `tests/`; it deletes only `*.spec.js` there,
   and hand-written tests are `*.spec.ts` (an architecture test forbids hand-written `.spec.js`).

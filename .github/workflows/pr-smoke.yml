@@ -88,7 +88,7 @@ jobs:
       - name: Wait for Toolshop and start its background jobs
         uses: ./.github/actions/toolshop-ready
 
-      - name: Run smoke tests (JUnit 5)
+      - name: Run smoke scenarios (Cucumber-JVM)
         working-directory: java
         run: ./mvnw -B test -Dgroups=smoke
 

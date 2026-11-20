@@ -13,7 +13,7 @@ import java.nio.file.Path;
 /**
  * One scenario's browser and API client: a fresh browser context (signed out) per scenario, on one Playwright and
  * Chromium per thread. PicoContainer creates it per scenario and injects it into the step classes; {@link Hooks}
- * opens and closes it. Same settings as config/ToolshopOptions (the JUnit tests) and the TypeScript `use` block:
+ * opens and closes it. Same settings as the TypeScript `use` block in playwright.config.ts:
  * base URL, data-test ids, headless unless HEADED=1, trace kept only when the scenario fails.
  * TypeScript twin: the Playwright Test fixtures (page, api) that playwright-bdd injects into the steps.
  */
@@ -41,7 +41,7 @@ public class PlaywrightContext {
     page = context.newPage();
   }
 
-  /** Keeps the trace only for a failed scenario, like Options.Trace.RETAIN_ON_FAILURE in the JUnit tests. */
+  /** Keeps the trace only for a failed scenario (open it with `show-trace`), like TypeScript's trace on failure. */
   void close(boolean failed, String scenarioName) {
     if (context == null) return;
     Tracing.StopOptions stop = new Tracing.StopOptions();

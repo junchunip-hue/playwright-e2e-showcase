@@ -16,7 +16,7 @@ public class Hooks {
 
   /**
    * @admin scenarios change catalogue or orders (or need the admin to look them up): our own Toolshop only, never the
-   * shared public demo. Same rule as the @Admin JUnit annotation and the TS adminToken fixture. Runs before the browser
+   * shared public demo. Same rule as the TS ownToolshopOnly and adminToken fixtures. Runs before the browser
    * opens, so a skipped scenario costs nothing.
    */
   @Before(value = "@admin", order = 0)

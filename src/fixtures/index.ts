@@ -8,12 +8,11 @@ import { createBdd } from 'playwright-bdd';
 import type { InvalidCard } from '../data/payments';
 import { env, isPublicDemo } from '../config/env';
 import { Tag } from '../tags';
-import { ComparisonPage, FavoritesPage, InvoiceDetailsPage, InvoicesPage } from '../pages/account.page';
-import { AccountPage } from '../pages/AccountPage';
+import { AccountPage, ComparisonPage, FavoritesPage, InvoiceDetailsPage, InvoicesPage } from '../pages/account.page';
 import { CheckoutPage } from '../pages/checkout.page';
-import { Footer } from '../pages/components/Footer';
+import { FooterModule } from '../modules/footer.module';
 import { HeaderModule } from '../modules/header.module';
-import { ContactPage } from '../pages/ContactPage';
+import { ContactPage } from '../pages/contact.page';
 import { HomePage } from '../pages/home.page';
 import { NetworkPage } from '../pages/network.page';
 import { LoginPage } from '../pages/login.page';
@@ -82,7 +81,7 @@ type Fixtures = {
   comparisonPage: ComparisonPage;
   favoritesPage: FavoritesPage;
   header: HeaderModule;
-  footer: Footer;
+  footer: FooterModule;
   api: ApiClient;
   /** The network as the browser sees it: delay or fail requests (S6, network mocking). */
   network: NetworkPage;
@@ -120,7 +119,7 @@ export const test = base.extend<Fixtures>({
   comparisonPage: async ({ page }, use) => use(new ComparisonPage(page)),
   favoritesPage: async ({ page }, use) => use(new FavoritesPage(page)),
   header: async ({ page }, use) => use(new HeaderModule(page)),
-  footer: async ({ page }, use) => use(new Footer(page)),
+  footer: async ({ page }, use) => use(new FooterModule(page)),
   network: async ({ page }, use) => use(new NetworkPage(page)),
   ownToolshopOnly: [
     async ({}, use, testInfo) => {

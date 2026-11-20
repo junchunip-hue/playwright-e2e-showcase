@@ -1,5 +1,5 @@
 name: Set up Java suite
-description: JDK, compiled tests and Chromium (with OS dependencies) for the Java + JUnit 5 suite in java/.
+description: JDK, compiled tests and Chromium (with OS dependencies) for the Java suite in java/ (Cucumber-JVM on JUnit 5).
 
 runs:
   using: composite

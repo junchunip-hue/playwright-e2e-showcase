@@ -44,4 +44,16 @@ test.describe('Gherkin layers', { tag: [Tag.smoke, Tag.architecture] }, () => {
 
     expect(handWritten.map(rel), 'hand-written .spec.js files').toEqual([]);
   });
+
+  test('N3: every page and module file follows the layer naming', () => {
+    // One name per layer, so a file's job shows in its name and no older page-object style creeps back in.
+    const misnamed = [
+      ...filesUnder(join(ROOT, 'src', 'pages'), (n) => n.endsWith('.ts') && !n.endsWith('.page.ts')),
+      ...filesUnder(join(ROOT, 'src', 'modules'), (n) => n.endsWith('.ts') && !n.endsWith('.module.ts')),
+      ...filesUnder(join(JAVA, 'pages'), (n) => n.endsWith('.java') && !n.endsWith('Page.java')),
+      ...filesUnder(join(JAVA, 'modules'), (n) => n.endsWith('.java') && !n.endsWith('Module.java')),
+    ];
+
+    expect(misnamed.map(rel), 'pages must be *.page.ts / *Page.java, modules *.module.ts / *Module.java').toEqual([]);
+  });
 });
