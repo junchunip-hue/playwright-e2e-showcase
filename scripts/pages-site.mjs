@@ -166,6 +166,9 @@ const runCounts = (runs) => {
 };
 const total = (runs) => (runs ? runs.passed + runs.flaky + runs.failed + runs.notRun + runs.skipped : 0);
 const rowRuns = (r) => (r ? r.passed + r.flaky + r.failed + r.notRun + r.skipped : 0);
+/** Test-plan aliases (docs/test-plan.md, "How IDs work"): one test, two IDs. U6 is the first journey, S1. */
+const ALIASES = { U6: 'S1' };
+const withAlias = (id) => (ALIASES[id] ? `${id} (${ALIASES[id]})` : id);
 /** The test plan's order: API, UI, journeys, then the TypeScript-only checks. */
 const LAYER = 'AUSN';
 const byPlanOrder = (a, b) => LAYER.indexOf(a[0]) - LAYER.indexOf(b[0]) || Number(a.slice(1)) - Number(b.slice(1));
@@ -224,10 +227,10 @@ ${s.flaky.map((f) => `<tr><td>⚠️ ${esc(f.id)}</td><td>${esc(f.project)}</td>
   }
 
   sections.push(`<h2>TypeScript vs Java by test ID</h2><div class="scroll"><table><tr><th>ID</th><th>TypeScript</th><th>Java</th><th>Coverage</th></tr>
-${[...s.rows].sort((a, b) => byPlanOrder(a.id, b.id)).map((r) => `<tr><td>${esc(r.id)}${r.knownDefect ? ' 🟨' : ''}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`).join('\n')}
+${[...s.rows].sort((a, b) => byPlanOrder(a.id, b.id)).map((r) => `<tr><td>${esc(withAlias(r.id))}${r.knownDefect ? ' 🟨' : ''}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`).join('\n')}
 </table></div>
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
-TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once.${s.rows.some((r) => r.knownDefect) ? ' 🟨 = tracks a known product defect.' : ''}</p>`);
+TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.${s.rows.some((r) => r.knownDefect) ? ' 🟨 = tracks a known product defect.' : ''}</p>`);
 
   if (s.defects?.length) {
     const label = { '🟨': '🟨 still present', '🟥': '🟥 fixed: replace the marker', '❌': '❌ unexpected', '–': '–' };
@@ -270,7 +273,7 @@ scenario that passed on a rerun shows as flaky.${s?.run?.url ? ` <a href="${esc(
     ([feature, list]) => `<h2>${esc(feature)}</h2>
 ${list
   .map(
-    (sc) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title)} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
+    (sc) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
 ${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${st.status === 'passed' ? '' : `[${st.status}] `}${esc(st.text)}</li>`).join('')}</ol>` : ''}
 ${sc.message ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}${sc.notes.map((n) => `<p>🟨 <code>${esc(n)}</code></p>`).join('')}</details>`,
   )

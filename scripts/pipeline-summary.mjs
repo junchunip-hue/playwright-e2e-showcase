@@ -487,7 +487,8 @@ const md = [
     : []),
   '| ID | TypeScript | Java | Coverage |',
   '|---|---|---|---|',
-  ...ids.map((id) => `| ${knownIds.has(id) ? `${id} 🟨` : id} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`),
+  // U6 is also S1, the first journey (test-plan alias): one test, shown with both IDs.
+  ...ids.map((id) => `| ${id === 'U6' ? 'U6 (S1)' : id}${knownIds.has(id) ? ' 🟨' : ''} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`),
   '',
   'Every A, U and S ID must show results in both columns (same tier, so same pipeline); N IDs are TypeScript-only (ADR 0009).',
   knownIds.size ? '🟨 = the ID tracks a known product defect (see below).' : '',
