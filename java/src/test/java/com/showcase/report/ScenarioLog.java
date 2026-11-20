@@ -140,6 +140,9 @@ public class ScenarioLog implements ConcurrentEventListener {
     entry.put(
         "uri", event.getTestCase().getUri().toString().replaceFirst("^.*?/features/", "features/"));
     entry.put("status", event.getResult().getStatus().name().toLowerCase());
+    // Surefire records an aborted scenario (a known defect) with 0 s, so the log keeps the real
+    // duration.
+    entry.put("seconds", event.getResult().getDuration().toMillis() / 1000.0);
     Throwable error = event.getResult().getError();
     if (error != null)
       entry.put("error", String.valueOf(error.getMessage()).lines().findFirst().orElse(""));

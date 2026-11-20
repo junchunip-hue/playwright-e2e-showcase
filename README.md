@@ -10,7 +10,8 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 
 **At a glance:** 36 feature scenarios (43 test cases with Scenario Outline examples) run in both languages ·
 74 TypeScript test cases including quality and architecture checks: 112 runs a night across Chromium, Firefox and
-WebKit (110 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
+WebKit (110 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed; tests that stop at a known
+product defect are counted apart as 🟨 known defect.
 The "nightly tests" badge above is the latest nightly's count of runs in both languages (112 TypeScript, including the
 sign-in setups, + 43 Java = 155: 151 passed + 4 known defects, A10 and A11 in each language), coloured like its verdict. Both badges open the nightly's results page: the verdict,
 the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
@@ -116,7 +117,7 @@ flowchart LR
     direction LR
     S["Static: lint · types ·<br/>tag check · architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
     J["Java: step dry run of every feature ·<br/>Cucumber-JVM smoke (same features)"]
-    TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>flaky tests · TS vs Java per ID<br/>+ commit status"]
+    TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>flaky tests · known defects · TS vs Java per ID<br/>+ commit status"]
     J --> SUM
   end
   subgraph N["Nightly 02:00 UTC"]
@@ -128,8 +129,8 @@ flowchart LR
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
 
-Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every flaky test by name, and
-TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`), and the
+Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every flaky test by name, every
+known defect with the step where it fails, and TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`), and the
 nightly's lands on its [results page](https://junchunip-hue.github.io/playwright-e2e-showcase/) with both reports and
 the history.
 

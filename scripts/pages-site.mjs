@@ -139,7 +139,8 @@ function javaScenarios(dir) {
         feature,
         title,
         status,
-        time,
+        // An aborted scenario (known defect) has 0 s in the XML; the scenario log has its real duration.
+        time: time || logged?.seconds || 0,
         steps: logged?.steps?.length ? logged.steps : steps,
         notes: logged?.notes?.length ? logged.notes : notes,
         message: message.split('\n')[0],
@@ -311,7 +312,7 @@ marker is replaced by a plain assertion.</p>`);
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };
     const recent = history.slice(-30).reverse();
     sections.push(`<h2 id="history">Nightly history</h2>
-<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun). ` : ''}Latest first; each links to its run.</p>
+<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun; a known defect failing on purpose does not break it). ` : ''}Latest first; each links to its run.</p>
 <div class="dots">${recent.map((r) => `<a class="dot ${cls[r.verdict] ?? 'skip'}" href="${REPO}/actions/runs/${esc(r.id)}" title="${esc(`#${r.run} · ${r.date} · ${r.verdict}${r.note ? ` · ${r.note}` : ''}`)}">#${esc(r.run)}</a>`).join('')}</div>
 <p class="muted">Green passed · gold flaky, passed on a rerun or unverified · red failed. Data: <a href="history.json">history.json</a>.</p>`);
   }
