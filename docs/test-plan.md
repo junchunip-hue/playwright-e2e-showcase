@@ -47,7 +47,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 ### How IDs work
 | Prefix | Layer | Where |
 |---|---|---|
-| **A** | API: contracts, rules, permissions | `tests/api` |
+| **A** | API: contracts, rules, permissions | `features/api` |
 | **U** | UI: one page or one widget | `features/ui` (U6, the first journey, sits in `features/journeys`) |
 | **S** | Story: a journey across pages, roles or layers | `features/journeys` |
 | **N** | Non-functional: visual, accessibility, architecture | `tests/quality`, `tests/architecture` |
@@ -63,10 +63,10 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 - **Aliases:** U6 is also S1 (the first journey). U7 and U8 were planned as UI tests and became journeys S2 and S4;
   they keep their row so old references still resolve.
 - One ID can have several test cases (e.g. A4: weak and leaked password). Every title starts with its ID, which
-  `check:tags` and the Java `TagGuardTest` enforce.
+  `check:tags` enforces (for both languages: they run the same feature files).
 
 **Status:** ✅ done · ↪ done under another ID · ⬜ optional · ➖ backlog, not planned
-([roadmap §5](roadmap.md#5-definition-of-done)). **Java ✅** marks scenarios mirrored in `java/` (JUnit 5).
+([roadmap §5](roadmap.md#5-definition-of-done)). **Java ✅** marks scenarios that also run in `java/` (Cucumber-JVM on JUnit 5).
 
 | Layer | Done | Optional | Backlog |
 |---|---|---|---|
@@ -75,7 +75,7 @@ The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test 
 | Journeys | S1 (= U6), S2–S6 | S7 | – |
 | Non-functional | N1–N3 | – | – |
 
-### API (`tests/api`, project `api`, no browser)
+### API (`features/api`, project `api`, no browser)
 | ID | Test | Tag | Java | Status |
 |---|---|---|---|---|
 | A0 | Response contracts: every response validated against `src/api/schemas.ts` (zod); explicit checks for list/detail/search, empty paginator, login + invoices, postcode lookup, and the guard itself | `@smoke` | ✅ | ✅ |
@@ -170,18 +170,18 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, bddgen before every Playwright run) | PR static stage | ✅ |
 
 ### Where each ID runs (today)
-| ID | Tests | Tier | PR gate | Nightly | Browsers | Java class |
+| ID | Tests | Tier | PR gate | Nightly | Browsers | Where (both languages unless noted) |
 |---|---|---|---|---|---|---|
-| A0 | 5 | smoke | ✅ | ✅ | API | `ContractsApiTest` |
-| A1, A2 | 1 + 1 | smoke | ✅ | ✅ | API | `ApiTest` |
-| A3 | 1 | regression | – | ✅ | API | `ApiTest` |
-| A4 | 2 | smoke (weak) + regression (leaked) | weak only | ✅ | API | `RegistrationApiTest` |
-| A5 | 1 | smoke | ✅ | ✅ | API | `RegistrationApiTest` |
-| A6 | 2 | smoke (no token) + regression (malformed) | no token | ✅ | API | `InvoicesApiTest` |
-| A7 | 7 | regression | – | ✅ | API | `ProductFiltersApiTest` |
-| A8 | 1 | smoke, admin | ✅ | ✅ | API | `AdminApiTest` |
-| A9 | 2 | smoke | ✅ | ✅ | API | `PaymentApiTest` |
-| A10, A11 | 1 + 1 | smoke, admin (known defects) | ✅ | ✅ | API | `PermissionsApiTest` |
+| A0 | 5 | smoke | ✅ | ✅ | API | `features/api/contracts.feature` |
+| A1, A2 | 1 + 1 | smoke | ✅ | ✅ | API | `features/api/products.feature`, `features/api/auth.feature` |
+| A3 | 1 | regression | – | ✅ | API | `features/api/auth.feature` |
+| A4 | 2 | smoke (weak) + regression (leaked) | weak only | ✅ | API | `features/api/registration.feature` |
+| A5 | 1 | smoke | ✅ | ✅ | API | `features/api/registration.feature` |
+| A6 | 2 | smoke (no token) + regression (malformed) | no token | ✅ | API | `features/api/invoices.feature` |
+| A7 | 7 | regression | – | ✅ | API | `features/api/product-filters.feature` (Scenario Outline for sorting) |
+| A8 | 1 | smoke, admin | ✅ | ✅ | API | `features/api/admin.feature` |
+| A9 | 2 | smoke | ✅ | ✅ | API | `features/api/payments.feature` |
+| A10, A11 | 1 + 1 | smoke, admin (known defects) | ✅ | ✅ | API | `features/api/permissions.feature` |
 | U1, U2 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/login.feature` (Gherkin, both languages) |
 | U3, U5 | 1 each | smoke | ✅ | ✅ | Chromium; nightly + Firefox, WebKit | `features/ui/search.feature`, `features/ui/cart.feature` (Gherkin, both languages) |
 | U4 | 1 | regression | – | ✅ | Chromium, Firefox, WebKit | `features/ui/search.feature` (Gherkin, both languages) |
@@ -195,14 +195,14 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 19 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (69 in total; data-driven cases count once each). The Java class
-covers the same ID with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
+"Tests" counts TypeScript test cases per ID (69 in total; data-driven cases count once each). Gherkin features run
+in both languages with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
 selects it.
 
-Tags and suites are defined in `src/tags.ts` (Java: `com.showcase.annotations`); see [ci.md](ci.md#tags-and-suites).
-Every test has exactly one tier tag, enforced by `npm run check:tags` and the Java `TagGuardTest`.
+Tags and suites are defined in `src/tags.ts` (Java reads the same Gherkin tags); see [ci.md](ci.md#tags-and-suites).
+Every test has exactly one tier tag, enforced by `npm run check:tags`.
 
 ## 4. Which platform checks what
 

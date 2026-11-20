@@ -1,7 +1,9 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test as base } from 'playwright-bdd';
 import { WCAG_TAGS } from '../a11y/accessibility';
-import { ApiClient, type NewCustomer, type Product } from '../api/ApiClient';
+import type { APIResponse } from '@playwright/test';
+import { ApiClient, type Address, type NewCustomer, type NewProduct, type Product, type ProductFilter } from '../api/ApiClient';
+import type { InvoiceStatus, ProductPage as ProductListPage, ProductSearchPage } from '../api/schemas';
 import { createBdd } from 'playwright-bdd';
 import type { InvalidCard } from '../data/payments';
 import { env, isPublicDemo } from '../config/env';
@@ -45,6 +47,25 @@ export interface ScenarioContext {
   comparison?: Map<string, number>;
   /** The invoice PDF as downloaded (S5). */
   pdf?: { fileName: string; body: Buffer };
+  // API scenarios (features/api)
+  /** The last raw API response a When step sent, for status and body checks. */
+  response?: APIResponse;
+  /** An access token a step signed in for. */
+  token?: string;
+  /** A page of the catalogue list (A1). */
+  productPage?: ProductListPage;
+  /** A search result (A0). */
+  searchResult?: ProductSearchPage;
+  /** Field paths a contract check reported (A0, the schema guard). */
+  contractProblems?: string[];
+  /** The sort of a filtered listing (A7). */
+  sort?: NonNullable<ProductFilter['sort']>;
+  /** The data the admin published a product with (A8). */
+  newProduct?: NewProduct;
+  /** An address from the postcode lookup (A0). */
+  address?: Address;
+  /** Someone else's order (A11). */
+  order?: { id: string; status: InvoiceStatus };
 }
 
 type Fixtures = {
@@ -65,7 +86,10 @@ type Fixtures = {
   api: ApiClient;
   /** The network as the browser sees it: delay or fail requests (S6, network mocking). */
   network: NetworkPage;
-  /** Skips a test tagged @own-toolshop on the shared public demo (runs on our own Toolshop: CI, local Docker). */
+  /**
+   * Skips a test tagged @own-toolshop or @admin on the shared public demo (runs on our own Toolshop: CI, local
+   * Docker). @admin tests change catalogue or orders, even when they never sign in as the admin (A10).
+   */
   ownToolshopOnly: void;
   /**
    * Access token of the seeded admin. Tests that use it change shared data (catalogue, orders), so they are
@@ -100,7 +124,8 @@ export const test = base.extend<Fixtures>({
   network: async ({ page }, use) => use(new NetworkPage(page)),
   ownToolshopOnly: [
     async ({}, use, testInfo) => {
-      testInfo.skip(isPublicDemo && testInfo.tags.includes(Tag.ownToolshop), 'needs our own Toolshop (CI, local Docker), not the public demo');
+      const ownOnly = testInfo.tags.includes(Tag.ownToolshop) || testInfo.tags.includes(Tag.admin);
+      testInfo.skip(isPublicDemo && ownOnly, 'needs our own Toolshop (CI, local Docker), not the public demo');
       await use();
     },
     { auto: true },

@@ -49,7 +49,7 @@ the waits and retries), which uses the page's locators (`src/modules/checkout.mo
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Defects the tests found are tracked as tests: green while the defect exists, red once it is fixed
-  ([`permissions.api.spec.ts`](tests/api/permissions.api.spec.ts), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)).
+  ([`permissions.feature`](features/api/permissions.feature), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
 
 **3. A pipeline that guards itself**
@@ -120,9 +120,9 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       Gherkin scenarios shared by both languages (ADR 0012): ui/ (U1–U5), journeys/ (U6, S2–S6); API (A0–A11) follows
+features/       Gherkin scenarios shared by both languages (ADR 0012): api/ (A0–A11), ui/ (U1–U5), journeys/ (U6, S2–S6)
 src/
-  steps/        Gherkin bindings: one sentence → one page method (playwright-bdd)
+  steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client
   pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
   modules/      locators only (*.module.ts)
   api/          API client per resource + zod schemas (types derived from them)
@@ -132,7 +132,6 @@ src/
   known-defects.ts  tracked product defects (ADR 0010)
   a11y/ visual/ reporters/ config/
 tests/
-  api/          contracts, auth, registration, invoices, filters, payments, admin and permissions
   ui/           the Playwright Test Agents' seed (UI scenarios are in features/ui)
   quality/      accessibility and visual regression
   architecture/ rules about the pipeline and the code itself

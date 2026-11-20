@@ -70,7 +70,7 @@ A new decision gets the next ADR number.
 
 ## 4. Guard rails that already keep this manageable
 
-- **Tags and suites** in one registry, checked by `npm run check:tags` (TS) and `TagGuardTest` (Java).
+- **Tags and suites** in one registry, checked by `npm run check:tags` (shared Gherkin features, so it covers both languages).
 - **Architecture tests** (`tests/architecture/`) fail on pipeline loops and cycles:
   - self-triggering workflows (a workflow that pushes must not be triggered by a push, must use `GITHUB_TOKEN`, and must remove its trigger label)
   - `workflow_run` cycles, workflows that start other workflows

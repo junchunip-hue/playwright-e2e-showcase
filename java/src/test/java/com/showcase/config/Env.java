@@ -19,7 +19,7 @@ public final class Env {
   // Publicly documented Toolshop demo account.
   public static final String CUSTOMER_EMAIL = get("CUSTOMER_EMAIL", "customer@practicesoftwaretesting.com");
   public static final String CUSTOMER_PASSWORD = get("CUSTOMER_PASSWORD", "welcome01");
-  // Seeded admin of Toolshop; only used against our own instance (see annotations.Admin).
+  // Seeded admin of Toolshop; only used against our own instance (@admin scenarios, see steps/Hooks).
   public static final String ADMIN_EMAIL = get("ADMIN_EMAIL", "admin@practicesoftwaretesting.com");
   public static final String ADMIN_PASSWORD = get("ADMIN_PASSWORD", "welcome01");
 

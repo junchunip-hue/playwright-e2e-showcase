@@ -22,25 +22,25 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 | Modules (locators only) | `src/modules/*.module.ts` | `modules/*Module.java` |
 | Page objects | `src/pages/*.ts` | `pages/*.java` |
 | Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
-| API client | `src/api/` (per resource) | `api/ApiClient.java` |
+| API client (the page layer of API steps) | `src/api/` (per resource), steps in `src/steps/api/` | `api/ApiClient.java`, steps in `steps/api/` |
 | Response contracts | `src/api/schemas.ts` (zod) | `api/Contracts.java` (same rules, same failure format) |
-| Tags and tiers | `src/tags.ts`, `Tag.smoke` | `annotations/`, `@SmokeTest`, `@RegressionCases`, `@Journey` |
-| Data-driven tests | `for (const payment of methods) test(...)` | `@RegressionCases` + `@MethodSource` (one case per argument) |
-| Tag/ID guard | `npm run check:tags` | `TagGuardTest` |
+| Tags and tiers | `src/tags.ts`; Gherkin tags become Playwright tags | the same Gherkin tags; Cucumber tags are JUnit tags (`-Dgroups=smoke`) |
+| Data-driven tests | Scenario Outline / data table in the shared feature | the same feature |
+| Tag/ID guard | `npm run check:tags` (covers the shared features for both languages) | – (same features, same tags) |
 
 ## What runs in both
 In test-plan order (A, then U, then S):
 
 | ID | Scenario | TypeScript | Java |
 |---|---|---|---|
-| A0 | Response contracts (5 checks incl. the guard itself) | `tests/api/contracts.api.spec.ts` | `ContractsApiTest` |
-| A1–A3 | Products and auth API | `tests/api/products.api.spec.ts` | `ApiTest` |
-| A4, A5 | Registration rules (weak / leaked password, duplicate email) | `tests/api/registration.api.spec.ts` | `RegistrationApiTest` |
-| A6 | Invoices need a signed-in user (no token, malformed token) | `tests/api/invoices.api.spec.ts` | `InvoicesApiTest` |
-| A7 | Product filters: category, brand, price range, sort, combined | `tests/api/product-filters.api.spec.ts` | `ProductFiltersApiTest` |
-| A8 | Admin publishes a product (own Toolshop only) | `tests/api/admin.api.spec.ts` | `AdminApiTest` |
-| A9 | Payment check API | `tests/api/payments.api.spec.ts` | `PaymentApiTest` |
-| A10, A11 | A customer cannot publish a product or change an order: known defects (own Toolshop only) | `tests/api/permissions.api.spec.ts` | `PermissionsApiTest` |
+| A0 | Response contracts (5 checks incl. the guard itself) | `features/api/contracts.feature` (shared) | `RunCucumberTest` + `steps/api/ProductsApiSteps`, `CustomersApiSteps` |
+| A1–A3 | Products and auth API | `features/api/products.feature` (shared), `features/api/auth.feature` (shared) | `RunCucumberTest` + `steps/api/ProductsApiSteps`, `CustomersApiSteps` |
+| A4, A5 | Registration rules (weak / leaked password, duplicate email) | `features/api/registration.feature` (shared) | `RunCucumberTest` + `steps/api/CustomersApiSteps` |
+| A6 | Invoices need a signed-in user (no token, malformed token; routes as a data table) | `features/api/invoices.feature` (shared) | `RunCucumberTest` + `steps/api/InvoicesApiSteps` |
+| A7 | Product filters: category, brand, price range, sort (Scenario Outline), combined | `features/api/product-filters.feature` (shared) | `RunCucumberTest` + `steps/api/ProductsApiSteps` |
+| A8 | Admin publishes a product (own Toolshop only) | `features/api/admin.feature` (shared) | `RunCucumberTest` + `steps/api/ProductsApiSteps` |
+| A9 | Payment check API | `features/api/payments.feature` (shared) | `RunCucumberTest` + `steps/api/PaymentsApiSteps` |
+| A10, A11 | A customer cannot publish a product or change an order: known defects (own Toolshop only) | `features/api/permissions.feature` (shared) | `RunCucumberTest` + `steps/api/InvoicesApiSteps` |
 | U1, U2 | Login (valid / wrong password) | `features/ui/login.feature` (shared) | `RunCucumberTest` + `steps/LoginSteps` |
 | U3, U4 | Search results match the term; UI agrees with the search API | `features/ui/search.feature` (shared) | `RunCucumberTest` + `steps/SearchSteps` |
 | U5 | Add to cart updates the badge | `features/ui/cart.feature` (shared) | `RunCucumberTest` + `steps/CartSteps` |
@@ -56,8 +56,8 @@ repository, not a scenario.
 
 ## How the two stay in sync
 - **Parity is a CI rule.** `tests/architecture/parity.arch.spec.ts` fails when an A/U/S ID exists in only one
-  language, or when the test plan's "Java" column disagrees with the Java suite; `check:tags` fails when an ID's tier
-  differs between the languages (so both lanes of a pipeline run the same scenarios).
+  language, or when the test plan's "Java" column disagrees with the Java suite. Both languages run the same feature
+  files, so an ID has the same tier in both by construction (both lanes of a pipeline run the same scenarios).
 - **The pipeline shows both.** The summary job draws the run and lists every test ID with its TypeScript and Java
   results side by side (see [ci.md](ci.md#pipeline-summary)).
 - **Same contract, same names.** Same `data-test` locators, env variables, test data and IDs. A locator change is
