@@ -14,6 +14,10 @@ export class HomePage {
     await this.page.goto('/');
   }
 
+  async reload(): Promise<void> {
+    await this.page.reload();
+  }
+
   /** Waits for the search API response so the result list is stable before assertions. */
   async search(term: string): Promise<void> {
     await this.ui.searchInput.fill(term);

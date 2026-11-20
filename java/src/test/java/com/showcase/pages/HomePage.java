@@ -20,6 +20,10 @@ public class HomePage {
     page.navigate("/");
   }
 
+  public void reload() {
+    page.reload();
+  }
+
   /** Waits for the search API response so the result list is stable before assertions. */
   public void search(String term) {
     ui.searchInput.fill(term);

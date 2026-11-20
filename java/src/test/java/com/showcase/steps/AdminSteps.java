@@ -10,7 +10,7 @@ import com.showcase.api.ApiClient.Invoice;
 import com.showcase.api.ApiClient.InvoiceDetail;
 import com.showcase.data.Customers.Customer;
 import com.showcase.data.Products;
-import com.showcase.pages.AccountInvoicesPage;
+import com.showcase.pages.InvoicesPage;
 import com.showcase.pages.HomePage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -67,9 +67,9 @@ public class AdminSteps {
 
   @Then("my invoices list shows the order")
   public void myInvoicesListShowsTheOrder() {
-    AccountInvoicesPage invoices = new AccountInvoicesPage(playwright.page());
-    invoices.navigate();
-    assertThat(invoices.row(need(ctx.invoiceNumber, PAID))).isVisible();
+    InvoicesPage invoices = new InvoicesPage(playwright.page());
+    invoices.open();
+    assertThat(invoices.ui.row(need(ctx.invoiceNumber, PAID))).isVisible();
   }
 
   @Then("my own view of the order says it was shipped")

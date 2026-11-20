@@ -24,6 +24,12 @@ public class Hooks {
     Assumptions.assumeFalse(Env.isPublicDemo(), "changes catalogue and orders: our own Toolshop only");
   }
 
+  /** @own-toolshop scenarios need our own Toolshop (e.g. its background jobs): skipped on the public demo. */
+  @Before(value = "@own-toolshop", order = 0)
+  public void ownToolshopTag() {
+    Assumptions.assumeFalse(Env.isPublicDemo(), "needs our own Toolshop (CI, local Docker), not the public demo");
+  }
+
   @Before(order = 1)
   public void openBrowser() {
     playwright.open();

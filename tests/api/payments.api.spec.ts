@@ -2,7 +2,7 @@ import { invalidCards, payments } from '../../src/data/payments';
 import { expect, Tag, test } from '../../src/fixtures';
 
 // A9: POST /payment/check, the server-side twin of the payment form's validation (pinned PaymentController::check).
-// The same Payment objects drive the UI journeys in tests/e2e/payments.spec.ts.
+// The same Payment objects drive the UI journeys in features/journeys/checkout.feature (S2).
 
 test.describe('Payment check API', () => {
   test('A9: accepts every payment method with valid details', { tag: [Tag.smoke] }, async ({ api }) => {

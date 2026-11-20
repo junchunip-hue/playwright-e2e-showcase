@@ -33,9 +33,9 @@ When('the admin marks the order as shipped', async ({ api, adminToken, ctx }) =>
   await api.invoices.updateStatus(adminToken, need(ctx.invoiceId, 'Then the admin finds the order at the cart total'), 'SHIPPED', ctx.shippedMessage);
 });
 
-Then('my invoices list shows the order', async ({ accountInvoicesPage, ctx }) => {
-  await accountInvoicesPage.goto();
-  await expect(accountInvoicesPage.row(need(ctx.invoiceNumber, PAID))).toBeVisible();
+Then('my invoices list shows the order', async ({ invoicesPage, ctx }) => {
+  await invoicesPage.open();
+  await expect(invoicesPage.ui.row(need(ctx.invoiceNumber, PAID))).toBeVisible();
 });
 
 Then('my own view of the order says it was shipped', async ({ api, ctx }) => {

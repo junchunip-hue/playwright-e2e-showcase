@@ -17,4 +17,17 @@ export class ProductPage {
   async addToCart(): Promise<void> {
     await this.ui.addToCart.click();
   }
+
+  /** Adds the product to the favourites and waits until the API has stored it (POST /favorites → 201). */
+  async addToFavorites(): Promise<void> {
+    const stored = this.page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/favorites'));
+    await this.ui.addToFavorites.click();
+    const status = (await stored).status();
+    if (status !== 201) throw new Error(`POST /favorites answered ${status}`);
+  }
+
+  /** Marks the product for the comparison (kept in sessionStorage, at most 4 products). */
+  async addToCompare(): Promise<void> {
+    await this.ui.addToCompare.click();
+  }
 }
