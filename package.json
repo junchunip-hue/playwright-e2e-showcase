@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "private": true,
-  "description": "Production-style Playwright E2E + API test framework with CI/CD, targeting the public Practice Software Testing (Toolshop) demo app.",
+  "description": "Playwright E2E and API tests for the Toolshop demo shop: scenarios written once in Gherkin, run in TypeScript (playwright-bdd) and Java (Cucumber-JVM), with CI against its own Toolshop.",
   "scripts": {
     "test": "bddgen && playwright test",
     "test:pr": "node scripts/run-suite.mjs pr --project=api --project=chromium",
@@ -15,6 +15,7 @@
     "test:architecture": "node scripts/run-suite.mjs architecture --project=architecture",
     "check:tags": "bddgen && playwright test --list --reporter=./src/reporters/tag-guard.ts",
     "report": "playwright show-report",
+    "demo": "node scripts/demo.mjs",
     "codegen": "playwright codegen https://practicesoftwaretesting.com",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

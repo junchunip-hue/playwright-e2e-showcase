@@ -22,12 +22,20 @@ public class PlaywrightContext {
   private static final ThreadLocal<Browser> BROWSER =
       ThreadLocal.withInitial(
           () ->
-              PLAYWRIGHT.get().chromium().launch(new BrowserType.LaunchOptions().setHeadless(!"1".equals(System.getenv("HEADED")))));
+              PLAYWRIGHT.get().chromium().launch(new BrowserType.LaunchOptions()
+                  .setHeadless(!"1".equals(System.getenv("HEADED")))
+                  // SLOW_MO=<ms> slows every action down, for a live demo; 0 otherwise.
+                  .setSlowMo(slowMo())));
 
   private BrowserContext context;
   private Page page;
   private ApiClient api;
   private String adminToken;
+
+  private static double slowMo() {
+    String value = System.getenv("SLOW_MO");
+    return value == null || value.isBlank() ? 0 : Double.parseDouble(value);
+  }
 
   private static Playwright startPlaywright() {
     Playwright playwright = Playwright.create();
