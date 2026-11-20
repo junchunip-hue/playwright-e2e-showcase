@@ -9,10 +9,10 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 (Cucumber-JVM on JUnit 5). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
 
 **At a glance:** 36 feature scenarios (43 test cases with Scenario Outline examples) run in both languages ·
-74 TypeScript test cases including quality and architecture checks: 110 test runs a night across Chromium, Firefox and
-WebKit (plus a sign-in setup per browser shard) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
-The "nightly tests" badge above is the latest nightly's count of test runs in both languages (TypeScript, including
-its sign-in setup, plus Java), coloured like its verdict. Both badges open the nightly's results page: the verdict,
+74 TypeScript test cases including quality and architecture checks: 112 runs a night across Chromium, Firefox and
+WebKit (110 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
+The "nightly tests" badge above is the latest nightly's count of runs in both languages (112 TypeScript, including the
+sign-in setups, + 43 Java = 155), coloured like its verdict. Both badges open the nightly's results page: the verdict,
 the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
 history.
 
@@ -143,7 +143,7 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 |---|---|---|---|
 | API | A0–A11 | Contracts, auth, registration rules, invoice access, catalogue filters, payment check, admin publishing; customer-vs-admin permissions as tracked known defects | [`features/api`](features/api/), TS + Java |
 | UI | U1–U5 | Login, search (incl. UI = API), cart | [`features/ui`](features/ui/), TS + Java |
-| Journeys | U6/S1, S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
+| Journeys | U6 (S1), S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | [`tests/quality`](tests/quality/), TS |
 | Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, TS/Java parity, equal CI retries | [`tests/architecture`](tests/architecture/), TS |
 
@@ -155,7 +155,7 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A11), ui/ (U1–U5), journeys/ (U6, S2–S6)
+features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A11), ui/ (U1–U5), journeys/ (U6 = S1, S2–S6)
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client
   pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
@@ -169,6 +169,7 @@ src/
 tests/
   quality/      accessibility and visual regression (N1, N2)
   architecture/ rules about the pipeline and the code itself (N3)
+  auth.setup.ts the sign-in setup: signs the demo customer in once per shard with browser tests
   ui/           the Playwright Test Agents' seed
   features/     generated from features/ by `npx bddgen` (git-ignored)
 java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/; report/ScenarioLog
