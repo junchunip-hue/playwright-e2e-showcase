@@ -24,7 +24,7 @@ Every API response is also contract-checked (A0); rendering and accessibility ar
 
 ## 3. Layers
 - **API first:** contracts, validation and negative cases are faster and more stable at API level
-  (`tests/api`). Every response is schema-checked ([ADR 0005](decisions/0005-api-contracts-with-zod.md)).
+  (`features/api`, as Gherkin). Every response is schema-checked ([ADR 0005](decisions/0005-api-contracts-with-zod.md)).
 - **UI for what only a browser shows:** navigation, state and rendering (`features/ui`, single pages, as Gherkin).
 - **Journeys** (`features/journeys`, as Gherkin) follow one pattern: **arrange via
   API (Given), act via UI (When), assert via UI and API (Then)**. Each step calls one page method

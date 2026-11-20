@@ -35,6 +35,8 @@ public class ScenarioContext {
   public Map<String, Double> comparison;
   /** The invoice PDF as downloaded (S5). */
   public PdfFile pdf;
+  /** The last raw API response a When step sent, for status and body checks (API scenarios). */
+  public com.microsoft.playwright.APIResponse response;
 
   public Customer customer() {
     if (customer == null) {
