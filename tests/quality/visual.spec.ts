@@ -22,9 +22,9 @@ test.describe('Visual regression', { tag: [Tag.visual, Tag.regression] }, () => 
   });
 
   test('N1: contact form', async ({ contactPage }) => {
-    await contactPage.goto();
-    await expect(contactPage.submit).toBeVisible();
-    await expect(contactPage.form).toHaveScreenshot('contact-form.png');
+    await contactPage.open();
+    await expect(contactPage.ui.submit).toBeVisible();
+    await expect(contactPage.ui.form).toHaveScreenshot('contact-form.png');
   });
 
   test('N1: catalogue filters', async ({ homePage }) => {

@@ -24,7 +24,7 @@ flowchart LR
   end
   subgraph JV["Job: smoke (Java), in parallel"]
     direction TB
-    J0["Toolshop build starts"] --> J1["JDK + Maven cache"] --> J2["2 · Toolshop ready"] --> J4["3–4 · JUnit 5<br/>-Dgroups=smoke"] --> J5["5 · Surefire XML<br/>traces on failure"]
+    J0["Toolshop build starts"] --> J1["JDK + Maven cache"] --> J2["2 · Toolshop ready"] --> J4["3–4 · Cucumber-JVM<br/>-Dgroups=smoke"] --> J5["5 · Surefire XML<br/>traces on failure"]
   end
   T5 & J5 --> SUM["6 · Job: summary<br/>run diagram + TS vs Java per ID"]
 ```
@@ -39,7 +39,7 @@ Stages of the TypeScript lane:
 | 4 | `chromium` | UI smoke incl. checkout E2E, accessibility, visual (depends on `setup`) | Only runs when login works |
 | 5 | Report | HTML report + trace/video on failure, uploaded as artifact | Every failure is debuggable without re-running |
 
-The Java lane runs the same stages 2–5 in parallel with JUnit 5 (`./mvnw test -Dgroups=smoke`), and the summary job
+The Java lane runs the same stages 2–5 in parallel with Cucumber-JVM over the same features (`./mvnw test -Dgroups=smoke`), and the summary job
 (stage 6) runs after both, whatever their result. Nightly runs the same shape with every tier: see [ci.md](ci.md#workflows).
 
 ## 3. Test inventory
@@ -167,7 +167,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 |---|---|---|---|
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
-| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, bddgen before every Playwright run) | PR static stage | ✅ |
+| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, page/module file naming, bddgen before every Playwright run) | PR static stage | ✅ |
 
 ### Where each ID runs (today)
 | ID | Tests | Tier | PR gate | Nightly | Browsers | Where (both languages unless noted) |
@@ -193,9 +193,9 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/resilience.feature` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
-| N3 | 19 | smoke, architecture | static stage | ✅ | none | TypeScript only |
+| N3 | 20 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 
-"Tests" counts TypeScript test cases per ID (69 in total; data-driven cases count once each). Gherkin features run
+"Tests" counts TypeScript test cases per ID (74 in total; data-driven cases count once each). Gherkin features run
 in both languages with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
 `tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
@@ -227,7 +227,7 @@ Every test has exactly one tier tag, enforced by `npm run check:tags`.
 | ✅ | Framework, POM, fixtures, smoke suite, PR CI | Structure, conventions |
 | ✅ | Toolshop in Docker in CI | Environment isolation, CI debugging |
 | ✅ | Checkout E2E with API-created customer (U6) | Test data design, hybrid API/UI |
-| ✅ | Java + JUnit 5 twin suite for the smoke scenarios | Same design in two stacks |
+| ✅ | Java twin suite, now running the same Gherkin features (Cucumber-JVM) | Same design in two stacks |
 | ✅ | Nightly: 3 browsers, sharding, merged blob report on GitHub Pages | CI scalability |
 | ✅ | N1 visual regression, N2 axe-core | Quality beyond functional |
 | ✅ | A0 API schema validation (types derived from the schemas) | Contract testing |

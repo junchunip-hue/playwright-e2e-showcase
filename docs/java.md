@@ -1,4 +1,4 @@
-# Java + JUnit 5 twin
+# Java twin (Cucumber-JVM on JUnit 5)
 
 > Why there are two languages: [ADR 0002](decisions/0002-typescript-primary-java-twin.md). Since
 > [ADR 0009](decisions/0009-every-journey-in-both-languages.md), **every scenario (A, U, S) ships in both, with the same tier**: in every pipeline the TypeScript and Java lanes run the same scenarios.
@@ -17,10 +17,9 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
 | Layer | TypeScript | Java |
 |---|---|---|
 | Features (shared Gherkin, ADR 0012) | `features/**/*.feature`, run by playwright-bdd | the same files, run by `RunCucumberTest` (Cucumber-JVM) |
-| Steps (Gherkin bindings) | `src/steps/*.steps.ts` | `steps/*Steps.java` (+ `PlaywrightContext`, `ScenarioContext`, `Hooks`) |
-| Pages (what a user does) | `src/pages/*.page.ts` (migrated) | `pages/*Page.java` |
+| Steps (Gherkin bindings) | `src/steps/*.steps.ts`, `src/steps/api/` | `steps/*Steps.java`, `steps/api/` (+ `PlaywrightContext`, `ScenarioContext`, `Hooks`) |
+| Pages (what a user does) | `src/pages/*.page.ts` | `pages/*Page.java` |
 | Modules (locators only) | `src/modules/*.module.ts` | `modules/*Module.java` |
-| Page objects | `src/pages/*.ts` | `pages/*.java` |
 | Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
 | API client (the page layer of API steps) | `src/api/` (per resource), steps in `src/steps/api/` | `api/ApiClient.java`, steps in `steps/api/` |
 | Response contracts | `src/api/schemas.ts` (zod) | `api/Contracts.java` (same rules, same failure format) |

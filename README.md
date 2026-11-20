@@ -4,12 +4,13 @@
 [![Nightly tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fbadge.json&label=nightly%20tests&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/)
 [![Clean nightlies](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fstreak.json&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/history.json)
 
-A test automation framework built the way I would set it up in a real team, with **Playwright + TypeScript**
-and the same scenarios in **Java + JUnit 5**. It targets the open-source [Toolshop](https://practicesoftwaretesting.com)
-demo shop.
+A test automation framework built the way I would set it up in a real team. Every scenario is written **once, as a
+Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwright-bdd) and **Playwright for Java**
+(Cucumber-JVM on JUnit 5). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
 
-**At a glance:** 69 TypeScript test cases, run 107 times a night across Chromium, Firefox and WebKit · 44 Java tests ·
-every API, UI and journey ID in both languages · one verdict per run: ✅ passed, ⚠️ passed with flaky, ❌ failed.
+**At a glance:** 36 feature scenarios (43 test cases with Scenario Outline examples) run in both languages ·
+74 TypeScript test cases including quality and architecture checks, run 110 times a night across Chromium, Firefox and
+WebKit · one verdict per run: ✅ passed, ⚠️ passed with flaky, ❌ failed.
 The "nightly tests" badge above is the latest nightly's count, coloured like its verdict; click it for that run's HTML report.
 
 <p align="center">
@@ -21,9 +22,11 @@ The "nightly tests" badge above is the latest nightly's count, coloured like its
 **Status:** done by its own [definition](docs/roadmap.md#5-definition-of-done): every P1/P2 risk covered, every demo
 technique shown, five clean nightlies in a row in both languages. A flaky S2 on 2026-11-19 (a test race, fixed in
 [#27](https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27)) reset that count the same day it was first
-met; it was earned again with nightlies #40–#53. The "clean nightlies" badge above keeps counting after every nightly
-(the runs are in its `history.json`). Next steps are in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and why
-some numbers are missing are explained in the [test plan](docs/test-plan.md#how-ids-work).
+met; it was earned again with nightlies #40–#53. Since then every scenario moved to shared Gherkin features
+([ADR 0012](docs/decisions/0012-gherkin-features-with-layered-steps.md)), with a clean nightly after each step. The
+"clean nightlies" badge above keeps counting after every nightly (the runs are in its `history.json`). Next steps are
+in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and
+why some numbers are missing are explained in the [test plan](docs/test-plan.md#how-ids-work).
 
 ## The 3-minute tour
 
@@ -40,21 +43,43 @@ Scenario: U6: new customer buys an in-stock product with cash on delivery
   And I pay with "cash-on-delivery"
   Then that customer's invoice exists at the cart total   # assert via API
 ```
-Each sentence is one step (`src/steps/checkout.steps.ts`) that calls one page method (`src/pages/checkout.page.ts`:
-the waits and retries), which uses the page's locators (`src/modules/checkout.module.ts`); Java mirrors each file
-([ADR 0012](docs/decisions/0012-gherkin-features-with-layered-steps.md)).
 
-**2. Quality beyond "it works"**
-- Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts)).
-- Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
-- Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
+**2. Each sentence goes down the same layers in both languages**
+([ADR 0012](docs/decisions/0012-gherkin-features-with-layered-steps.md)); an architecture test keeps every layer to its job.
+
+```mermaid
+flowchart LR
+  F["Feature<br/>features/**/*.feature<br/>the story, shared"] --> S["Steps<br/>one sentence → one call<br/>src/steps · steps/"]
+  S --> P["Pages<br/>what a user does: waits, retries<br/>src/pages · pages/"]
+  S --> A["API client<br/>requests + response contracts<br/>src/api · api/"]
+  P --> M["Modules<br/>locators only<br/>src/modules · modules/"]
+```
+
+| Layer | `I pay with "cash-on-delivery"` in TypeScript | … and in Java |
+|---|---|---|
+| Step | [`checkout.steps.ts`](src/steps/checkout.steps.ts): `ctx.invoiceNumber = await checkoutPage.pay(paymentFor(method))` | [`CheckoutSteps.java`](java/src/test/java/com/showcase/steps/CheckoutSteps.java): `ctx.invoiceNumber = checkoutPage().pay(Payments.forMethod(method))` |
+| Page | [`checkout.page.ts`](src/pages/checkout.page.ts) `pay()`: enter details, payment check, place the order, wait for `POST /invoices` | [`CheckoutPage.java`](java/src/test/java/com/showcase/pages/CheckoutPage.java) `pay()`: the same sequence |
+| Module | [`checkout.module.ts`](src/modules/checkout.module.ts): `finish`, `paymentSuccess`, `orderConfirmation` | [`CheckoutModule.java`](java/src/test/java/com/showcase/modules/CheckoutModule.java): the same locators |
+
+API scenarios read the same way; the API client stands in for the page
+([`features/api/`](features/api/), steps in [`src/steps/api/`](src/steps/api/)).
+
+**3. Quality beyond "it works"**
+- Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts), Java: [`Contracts.java`](java/src/test/java/com/showcase/api/Contracts.java)).
 - Defects the tests found are tracked as tests: green while the defect exists, red once it is fixed
-  ([`permissions.feature`](features/api/permissions.feature), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)).
+  ([`permissions.feature`](features/api/permissions.feature), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)):
+  ```gherkin
+  Then the API still answers 201 instead of 403, known defect "POST /products checks no role" for "POST /products as a customer"
+  ```
+- Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
+- Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
 
-**3. A pipeline that guards itself**
-- Tags and suites live in one registry ([`src/tags.ts`](src/tags.ts)), and every test title carries its test-plan ID.
-- [Architecture tests](tests/architecture/) fail if a workflow could trigger itself, a dependency loops, or a job could hang.
+**4. A pipeline that guards itself**
+- Tags and suites live in one registry ([`src/tags.ts`](src/tags.ts)); Gherkin tags are the tiers, and every scenario
+  title carries its test-plan ID, checked by `npm run check:tags` for both languages at once.
+- [Architecture tests](tests/architecture/) fail if a workflow could trigger itself, a dependency loops, a job could
+  hang, a step creates a locator, or the test plan and the two languages disagree.
 - Every scenario runs in a TypeScript lane and a Java lane. A summary on each CI run compares them per test ID and lists
   the known defects (see "How it runs").
 - Flaky is visible, never silent: both lanes retry a failed test twice in CI, and a test that passed only on a retry
@@ -70,14 +95,14 @@ flowchart LR
   subgraph PR["Every pull request: two lanes in parallel, each with its own Toolshop"]
     direction LR
     S["Static: lint · types ·<br/>tag check · architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
-    J["Java: JUnit 5 smoke<br/>(same scenario IDs)"]
+    J["Java: Cucumber-JVM smoke<br/>(same features)"]
     TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>flaky tests · TS vs Java per ID<br/>+ commit status"]
     J --> SUM
   end
   subgraph N["Nightly 02:00 UTC"]
     direction LR
     SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> NS["Summary: verdict<br/>+ commit status"]
-    NJ["Java: full suite,<br/>all journeys"] --> NS
+    NJ["Java: every feature"] --> NS
     NS --> P["GitHub Pages:<br/>report + badge"]
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
@@ -104,13 +129,13 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 <a href="https://github.com/junchunip-hue/playwright-e2e-showcase/pull/28">#28</a>, and is shown here as scored since.</sub>
 </details>
 
-| Layer | IDs | What it proves | Languages |
+| Layer | IDs | What it proves | Where |
 |---|---|---|---|
-| API | A0–A11 | Contracts, auth, registration rules, invoice access, catalogue filters, payment check, admin publishing; customer-vs-admin permissions as tracked known defects | TS + Java |
-| UI | U1–U5 | Login, search (incl. UI = API), cart | TS + Java |
-| Journeys | U6/S1, S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | TS + Java |
-| Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | TS |
-| Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), TS/Java parity, equal CI retries | TS |
+| API | A0–A11 | Contracts, auth, registration rules, invoice access, catalogue filters, payment check, admin publishing; customer-vs-admin permissions as tracked known defects | [`features/api`](features/api/), TS + Java |
+| UI | U1–U5 | Login, search (incl. UI = API), cart | [`features/ui`](features/ui/), TS + Java |
+| Journeys | U6/S1, S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
+| Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | [`tests/quality`](tests/quality/), TS |
+| Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, TS/Java parity, equal CI retries | [`tests/architecture`](tests/architecture/), TS |
 
 Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).
 
@@ -120,22 +145,23 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       Gherkin scenarios shared by both languages (ADR 0012): api/ (A0–A11), ui/ (U1–U5), journeys/ (U6, S2–S6)
+features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A11), ui/ (U1–U5), journeys/ (U6, S2–S6)
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client
   pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
   modules/      locators only (*.module.ts)
   api/          API client per resource + zod schemas (types derived from them)
   data/         test data builders (fresh customers per test)
-  fixtures/     everything above, injected into tests
+  fixtures/     pages, API client and the scenario context, injected into steps and specs
   tags.ts       tag and suite registry
   known-defects.ts  tracked product defects (ADR 0010)
   a11y/ visual/ reporters/ config/
 tests/
-  ui/           the Playwright Test Agents' seed (UI scenarios are in features/ui)
-  quality/      accessibility and visual regression
-  architecture/ rules about the pipeline and the code itself
-java/           Playwright for Java + JUnit 5: every A/U/S scenario, same IDs and tiers
+  quality/      accessibility and visual regression (N1, N2)
+  architecture/ rules about the pipeline and the code itself (N3)
+  ui/           the Playwright Test Agents' seed
+  features/     generated from features/ by `npx bddgen` (git-ignored)
+java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/
 scripts/        suite runner, bounded browser install and the CI pipeline summary
 docs/           strategy, test plan, CI, Java, roadmap, decisions (ADRs)
 .github/        workflows (PR, nightly, baselines) and shared actions
@@ -146,19 +172,28 @@ docs/           strategy, test plan, CI, Java, roadmap, decisions (ADRs)
 ```bash
 npm install && npx playwright install && cp .env.example .env
 npm run test:pr             # what the PR gate runs (API + Chromium)
+npm run test:api            # the API features only, no browser
 npm run test:architecture   # pipeline/code rules, no browser
 npm run check:tags          # tag counts; fails on unknown tags, missing tier or ID
 npm test                    # everything (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
 npm run report              # open the HTML report
 ```
+Every npm test script runs `bddgen` first, which turns the features into Playwright tests; after editing a feature or
+a step outside these scripts, run `npx bddgen` before `npx playwright test`.
+
 Locally the tests run against the public demo, which other people use too:
-- **`@admin` tests are skipped** there: they change catalogue or orders, so they run against our own Toolshop only (CI).
+- **`@admin` scenarios are skipped** there: they change catalogue or orders, so they run against our own Toolshop only (CI).
 - **Visual baselines are per OS and stay local:** CI compares the committed Linux ones. Your first run creates baselines
   for your OS, and the demo's shared data (e.g. new brands in the filter list) can make them stale later. Refresh them
   with `npx playwright test tests/quality/visual.spec.ts --update-snapshots`
   ([why](docs/decisions/0004-visual-baselines-from-ci.md)).
-Java: `cd java && ./mvnw test` (JDK 21+, see [docs/java.md](docs/java.md)). Every scenario exists in both languages,
-and each CI run ends with a summary that draws the run and compares TypeScript and Java per test ID.
+
+Java (JDK 21+, the same `.env`), see [docs/java.md](docs/java.md):
+```bash
+cd java
+./mvnw test -Dgroups=smoke   # the smoke scenarios (the PR gate)
+./mvnw test                  # every feature (nightly)
+```
 
 ## Read more
 

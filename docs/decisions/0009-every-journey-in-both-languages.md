@@ -1,7 +1,9 @@
 # 0009 – Every scenario ships in TypeScript and Java
 
 **Status:** Accepted (amends [0002](0002-typescript-primary-java-twin.md)); scope extended from journeys to all
-scenario tests
+scenario tests. Since [0012](0012-gherkin-features-with-layered-steps.md) both languages run the same feature
+files, so "the same steps, the same tier" holds by construction; Java's flow and page objects named below became
+steps → pages → modules, and the cross-language tier check in `check:tags` is no longer needed (historical).
 
 **Context:** The showcase is meant to compare the same design in two stacks. Under 0002, Java only mirrored the
 single-page smoke tests, so the journeys (the strongest part of the demo), the contract checks and the

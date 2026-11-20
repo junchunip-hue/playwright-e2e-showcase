@@ -251,7 +251,7 @@ const flow = nightly
       `  TS2 --> TS3["TypeScript suite pr<br/>${counts(tsSum)}"]`,
       '  PR --> J1[Compile + Chromium]',
       '  J1 --> J2[Toolshop in Docker]',
-      `  J2 --> J3["Java JUnit smoke<br/>${counts(javaSum)}"]`,
+      `  J2 --> J3["Java smoke (Cucumber)<br/>${counts(javaSum)}"]`,
     ];
 
 /** State of one language's check: still present (green, tracked), fixed (red: replace the marker), or unexpected. */

@@ -11,7 +11,7 @@ against real responses. `src/api/http.ts` validates every JSON body and reports 
 value. TypeScript types are `z.infer` of the same schemas. Objects allow new fields; missing or retyped fields fail.
 
 **Consequences:**
-- Every test that calls the API also checks the contract; `tests/api/contracts.api.spec.ts` (A0) covers what a
+- Every test that calls the API also checks the contract; `features/api/contracts.feature` (A0) covers what a
   schema cannot (list/detail/search agreement, empty paginator, the guard itself).
 - Findings recorded rather than hidden: `GET /products/search` omits `category.slug` (modelled as
   `ProductSearchItemSchema`, so either side changing is reported); IDs are ULIDs in upper case for seeded rows and

@@ -7,8 +7,8 @@
   <groupId>com.showcase</groupId>
   <artifactId>playwright-e2e-showcase-java</artifactId>
   <version>0.1.0</version>
-  <name>Playwright E2E Showcase (Java + JUnit 5)</name>
-  <description>Core Toolshop scenarios ported from the TypeScript suite to Playwright for Java and JUnit 5.</description>
+  <name>Playwright E2E Showcase (Java: Cucumber-JVM + JUnit 5)</name>
+  <description>The Gherkin features shared with the TypeScript suite (../features), run with Playwright for Java and Cucumber-JVM on the JUnit Platform.</description>
 
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
@@ -93,13 +93,13 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
         <configuration>
-          <!-- Record display names ("U6: ...") in the XML reports, so the CI summary can match tests to IDs. -->
+          <!-- Record scenario names ("U6: ...") in the XML reports, so the CI summary can match tests to IDs. -->
           <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
             <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
           </statelessTestsetReporter>
         </configuration>
       </plugin>
-      <!-- Runs Playwright's CLI, e.g. to install browsers: see README "Java suite". -->
+      <!-- Runs Playwright's CLI, e.g. to install browsers: see docs/java.md "Run". -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>

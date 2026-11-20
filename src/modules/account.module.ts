@@ -3,6 +3,15 @@ import type { Locator, Page } from '@playwright/test';
 // Module layer: locators of a signed-in customer's account pages. Java twins: modules/FavoritesModule.java,
 // ComparisonModule.java, InvoicesModule.java, InvoiceDetailsModule.java.
 
+/** "My account" (/account), the landing page of a signed-in customer. Used by the accessibility check (N2). */
+export class AccountModule {
+  readonly title: Locator;
+
+  constructor(page: Page) {
+    this.title = page.getByTestId('page-title');
+  }
+}
+
 /** "My favorites" (/account/favorites): one card per product. */
 export class FavoritesModule {
   readonly title: Locator;

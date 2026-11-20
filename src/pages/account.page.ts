@@ -1,12 +1,25 @@
 import { readFile } from 'node:fs/promises';
 import { expect, type Page } from '@playwright/test';
-import { ComparisonModule, FavoritesModule, InvoiceDetailsModule, InvoicesModule } from '../modules/account.module';
+import { AccountModule, ComparisonModule, FavoritesModule, InvoiceDetailsModule, InvoicesModule } from '../modules/account.module';
 
 // Page layer: what a signed-in customer does on their account pages. Java twins: pages/FavoritesPage.java,
 // ComparisonPage.java, InvoicesPage.java, InvoiceDetailsPage.java.
 
 /** How long the invoice PDF may take: a background job writes it, and the page polls its status every 20 s. */
 const PDF_READY_TIMEOUT = 180_000;
+
+/** "My account", the landing page of a signed-in customer. */
+export class AccountPage {
+  readonly ui: AccountModule;
+
+  constructor(private readonly page: Page) {
+    this.ui = new AccountModule(page);
+  }
+
+  async open(): Promise<void> {
+    await this.page.goto('/account');
+  }
+}
 
 export class FavoritesPage {
   readonly ui: FavoritesModule;

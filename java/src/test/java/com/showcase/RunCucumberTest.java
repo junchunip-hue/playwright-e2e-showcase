@@ -11,7 +11,7 @@ import org.junit.platform.suite.api.Suite;
 
 /**
  * Runs the Gherkin features shared with the TypeScript suite (../features) with the steps in com.showcase.steps.
- * Cucumber tags become JUnit tags, so `-Dgroups=smoke` selects @smoke scenarios like @SmokeTest classes.
+ * Cucumber tags become JUnit tags, so `-Dgroups=smoke` selects the @smoke scenarios (the PR gate).
  * The "long" naming puts the scenario name ("U1: ...") into the Surefire XML, where the CI summary reads IDs.
  */
 @Suite
