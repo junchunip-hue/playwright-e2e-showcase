@@ -1,4 +1,4 @@
 #!/bin/sh
-# Runs the code style check before every push, so a PR never starts with unformatted code (docs/coding-rules.md).
+# Runs the code style and step catalogue checks before every push, so a PR never starts with unformatted code (docs/coding-rules.md).
 # Installed by "npm install" (package.json "prepare" sets core.hooksPath). Skip once with: git push --no-verify
-npm run --silent format:check
+npm run --silent format:check && npm run --silent check:steps

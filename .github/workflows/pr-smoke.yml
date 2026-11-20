@@ -34,12 +34,13 @@ jobs:
       # test:architecture fails on pipeline loops: self-triggering workflows, cycles, unbounded waits.
       # Code style (docs/coding-rules.md): ESLint includes the import order, Prettier the layout of TS/JS/JSON/YAML and
       # the Gherkin features. Java's style is checked by Spotless in the Java job (it runs on every Maven build in CI).
-      - name: Static checks (lint, format, types, tags, architecture)
+      - name: Static checks (lint, format, types, tags, steps, architecture)
         run: |
           npm run lint
           npx prettier --check .
           npm run typecheck
           npm run check:tags
+          npm run check:steps
           npm run test:architecture
 
       - name: Install Chromium

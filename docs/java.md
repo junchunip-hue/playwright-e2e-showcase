@@ -14,6 +14,9 @@ cd java
 On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser and `SLOW_MO=400` to slow it down. One scenario:
 `-Dcucumber.filter.name="U6: .*"` (a regex for the whole scenario name; the Java side of `npm run demo`).
 
+Every build formats the Java code first (Spotless with google-java-format, `./mvnw spotless:apply` on its own); in CI
+the build only checks it and fails on an unformatted file ([coding rules](coding-rules.md#code-style)).
+
 ## Same layers, side by side
 | Layer | TypeScript | Java |
 |---|---|---|
