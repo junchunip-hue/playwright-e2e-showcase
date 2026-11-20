@@ -58,6 +58,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // SLOW_MO=<ms> slows every action down, for a live demo (`npm run demo`); 0 otherwise.
+    launchOptions: { slowMo: Number(process.env.SLOW_MO) || 0 },
   },
 
   projects: [

@@ -49,11 +49,13 @@ Scenario: U6: new customer buys an in-stock product with cash on delivery
 
 ```mermaid
 flowchart LR
-  F["Feature<br/>features/**/*.feature<br/>the story, shared"] --> S["Steps<br/>one sentence → one call<br/>src/steps · steps/"]
-  S --> P["Pages<br/>what a user does: waits, retries<br/>src/pages · pages/"]
-  S --> A["API client<br/>requests + response contracts<br/>src/api · api/"]
-  P --> M["Modules<br/>locators only<br/>src/modules · modules/"]
+  F["Feature<br/>(the shared story)"] --> S["Steps<br/>(one sentence, one call)"]
+  S --> P["Pages<br/>(user actions, waits)"]
+  S --> A["API client<br/>(requests, contracts)"]
+  P --> M["Modules<br/>(locators only)"]
 ```
+Folders, TypeScript · Java: `features/` (shared) → `src/steps` · `steps/` → `src/pages` · `pages/` and `src/api` · `api/`
+→ `src/modules` · `modules/` (Java under `java/src/test/java/com/showcase/`).
 
 | Layer | `I pay with "cash-on-delivery"` in TypeScript | … and in Java |
 |---|---|---|
@@ -163,6 +165,8 @@ tests/
   features/     generated from features/ by `npx bddgen` (git-ignored)
 java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/
 scripts/        suite runner, bounded browser install and the CI pipeline summary
+.claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
+                specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, CI, Java, roadmap, decisions (ADRs)
 .github/        workflows (PR, nightly, baselines) and shared actions
 ```
@@ -177,6 +181,7 @@ npm run test:architecture   # pipeline/code rules, no browser
 npm run check:tags          # tag counts; fails on unknown tags, missing tier or ID
 npm test                    # everything (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
 npm run report              # open the HTML report
+npm run demo                # live demo: U6 in a visible, slowed-down Chromium, trace kept (`npm run demo -- S2` for another ID)
 ```
 Every npm test script runs `bddgen` first, which turns the features into Playwright tests; after editing a feature or
 a step outside these scripts, run `npx bddgen` before `npx playwright test`.
@@ -193,6 +198,7 @@ Java (JDK 21+, the same `.env`), see [docs/java.md](docs/java.md):
 cd java
 ./mvnw test -Dgroups=smoke   # the smoke scenarios (the PR gate)
 ./mvnw test                  # every feature (nightly)
+HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo of one scenario
 ```
 
 ## Read more

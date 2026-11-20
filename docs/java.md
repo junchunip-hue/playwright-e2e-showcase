@@ -11,7 +11,8 @@ cd java
 ./mvnw test -Dgroups=smoke                          # smoke scenarios (the PR gate)
 ./mvnw test                                         # everything (nightly)
 ```
-On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser.
+On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser and `SLOW_MO=400` to slow it down. One scenario:
+`-Dcucumber.filter.name="U6: .*"` (a regex for the whole scenario name; the Java side of `npm run demo`).
 
 ## Same layers, side by side
 | Layer | TypeScript | Java |

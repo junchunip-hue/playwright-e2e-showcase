@@ -9,19 +9,23 @@ fixed in #27), and met again the same day: nightlies #40, #44, #47, #50 and #53 
 nightlies" README badge keeps counting after every nightly. Nothing is in progress. What comes next is keeping it
 green and, only if wanted, the optional or backlog items: see [§6](#6-what-comes-next).
 
+**2026-11-20:** every A/U/S scenario is now a shared Gherkin feature run by both languages through steps → pages →
+modules (R7, [ADR 0012](decisions/0012-gherkin-features-with-layered-steps.md), PRs #35–#41), with a clean nightly
+after each phase.
+
 ## 1. What a demo should show in 3 minutes
 
 | Minute | Show | Where it lives today |
 |---|---|---|
 | 1 | One business journey that reads like a story, API and UI working together | `features/journeys/checkout.feature` (U6, Gherkin) |
-| 2 | Quality beyond functional: contracts, accessibility, visual, cross-browser | `tests/api/contracts.api.spec.ts`, `tests/quality/a11y.spec.ts`, `tests/quality/visual.spec.ts`, nightly report |
+| 2 | Quality beyond functional: contracts, accessibility, visual, cross-browser | `features/api/contracts.feature`, `tests/quality/a11y.spec.ts`, `tests/quality/visual.spec.ts`, nightly report |
 | 3 | A pipeline that guards itself: tag check, architecture tests, Auto-fix-able CI | `src/tags.ts`, `tests/architecture/`, `.github/` |
 
 Everything below either makes one of these three minutes stronger or keeps the repository easy to walk through.
 
 ## 2. Showcase scenarios (longer journeys)
 
-Each scenario reuses the existing building blocks (API client + schemas, data builders, page objects, tags).
+Each scenario reuses the existing building blocks (API client + schemas, data builders, steps, pages and modules, tags).
 The IDs continue the test plan: `S` = story, a multi-step journey across roles or layers.
 
 | ID | Scenario | Steps (abridged) | Builds on | Shows |
@@ -92,7 +96,7 @@ A new decision gets the next ADR number.
 | # | Criterion | Enforced by |
 |---|---|---|
 | 1 | It has a row in [test-plan.md](test-plan.md) with its ID, tier and "Java ✅" | `check:tags`, parity test |
-| 2 | It exists in TypeScript and Java with the same ID, tier, steps and data | parity test, tier check in `check:tags` |
+| 2 | It exists in TypeScript and Java with the same ID, tier, steps and data | parity test; both languages run the same feature, so steps, data and tier are shared |
 | 3 | Arrange via API, act via UI, assert via UI and API (journeys) | review |
 | 4 | It creates its own data and passes alone and in parallel | review |
 | 5 | It passes in the PR gate (if smoke) and in nightly: three browsers and Java | CI |
@@ -164,7 +168,7 @@ Ranked by what they add to a 3-minute demo against what they cost.
 
 | Rank | Candidate | Technique it adds | Layer | Cost, risk |
 |---|---|---|---|---|
-| 1 | **Admin and customer side by side:** the admin changes an order in the back-office UI while the customer's page shows it | Two browser contexts in one test (two users at once, both in the UI) | S | Medium: admin UI page objects; own Toolshop only |
+| 1 | **Admin and customer side by side:** the admin changes an order in the back-office UI while the customer's page shows it | Two browser contexts in one test (two users at once, both in the UI) | S | Medium: admin UI pages and modules; own Toolshop only |
 | 2 | **Two-factor sign-in:** enable TOTP for a fresh customer via API, sign in with a code generated in the test, a wrong or reused code is refused | Time-based secrets in tests (TOTP generator in TS and Java) | A + S | Medium: a TOTP library per language; clock skew handled by the code window |
 | 3 | **Keyboard-only checkout:** U6 with Tab, Enter and arrow keys only | Accessibility beyond axe: focus order and operability | N or S | Low to build; may find real defects (a finding is a result, see ADR 0010) |
 | 4 | **Live sales feed:** the `/sales-stream` server-sent events and the live activity widget | Asserting a server push (SSE) in API and UI | A + U | Medium: stream parsing in both languages |
