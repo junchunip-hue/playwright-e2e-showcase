@@ -2,7 +2,7 @@
 
 [![PR Smoke Tests](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml/badge.svg)](https://github.com/junchunip-hue/playwright-e2e-showcase/actions/workflows/pr-smoke.yml)
 [![Nightly tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fbadge.json&label=nightly%20tests&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/)
-[![Clean nightlies](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fstreak.json&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/history.json)
+[![Clean nightlies](https://img.shields.io/endpoint?url=https%3A%2F%2Fjunchunip-hue.github.io%2Fplaywright-e2e-showcase%2Fstreak.json&logo=githubactions&logoColor=white)](https://junchunip-hue.github.io/playwright-e2e-showcase/#history)
 
 A test automation framework built the way I would set it up in a real team. Every scenario is written **once, as a
 Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwright-bdd) and **Playwright for Java**
@@ -12,7 +12,9 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 74 TypeScript test cases including quality and architecture checks, run 110 times a night across Chromium, Firefox and
 WebKit · one verdict per run: ✅ passed, ⚠️ passed with flaky, ❌ failed.
 The "nightly tests" badge above is the latest nightly's count of test runs in both languages (TypeScript, including
-its sign-in setup, plus Java), coloured like its verdict; click it for that run's HTML report.
+its sign-in setup, plus Java), coloured like its verdict. Both badges open the nightly's results page: the verdict,
+the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
+history.
 
 <p align="center">
   <img src="docs/images/checkout-journey.gif" width="720"
@@ -107,7 +109,7 @@ flowchart LR
     direction LR
     SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> NS["Summary: verdict<br/>+ commit status"]
     NJ["Java: every feature"] --> NS
-    NS --> P["GitHub Pages:<br/>report + badge"]
+    NS --> P["GitHub Pages: results page,<br/>TS report, Java results, badges"]
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
@@ -213,7 +215,7 @@ HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo o
 | What runs, where, and which IDs exist? | [docs/test-plan.md](docs/test-plan.md) |
 | How does the pipeline work and protect itself? | [docs/ci.md](docs/ci.md) |
 | Which decisions were made, and why? | [docs/decisions/](docs/decisions/) |
-| Where do I see the latest results? | [Nightly report](https://junchunip-hue.github.io/playwright-e2e-showcase/) (3 browsers) · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram + TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
+| Where do I see the latest results? | [Nightly results page](https://junchunip-hue.github.io/playwright-e2e-showcase/): verdict, [TypeScript report](https://junchunip-hue.github.io/playwright-e2e-showcase/typescript/) (3 browsers), [Java results](https://junchunip-hue.github.io/playwright-e2e-showcase/java/), history · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram + TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
 | What comes next? | [docs/roadmap.md §6](docs/roadmap.md#6-what-comes-next): keep it green, optional S7, ranked candidates, backlog |
 | How do the TypeScript and Java lanes stay in sync? | [docs/java.md](docs/java.md) |
 

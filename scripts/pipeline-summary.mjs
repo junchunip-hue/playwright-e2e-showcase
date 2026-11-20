@@ -103,14 +103,41 @@ function typescriptResults(file) {
   return byId;
 }
 
+/**
+ * The Java scenario log (com.showcase.report.ScenarioLog, next to the XML): one JSON line per attempt, the last one per
+ * scenario wins. It keeps the known-defect lines that Surefire drops for passed tests when CI reruns are on.
+ */
+function javaScenarioLog(dir) {
+  const file = dir && join(dir, 'scenarios.jsonl');
+  const byName = new Map();
+  if (!file || !existsSync(file)) return byName;
+  for (const line of readFileSync(file, 'utf8').split('\n')) {
+    if (!line.trim()) continue;
+    try {
+      const entry = JSON.parse(line);
+      byName.set(entry.name, entry);
+    } catch {
+      // a line cut off by a crashed JVM: skip it
+    }
+  }
+  return byName;
+}
+/** "Feature - Scenario" or "Feature - Outline - Examples - Example #1.1: Scenario" → the scenario's own name. */
+const javaScenarioName = (testcaseName) => testcaseName.split(' - ').at(-1).replace(/^Example #[\d.]+: /, '');
+
 function javaResults(dir) {
   const byId = new Map();
   if (!dir || !existsSync(dir)) return byId;
+  const log = javaScenarioLog(dir);
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.xml'))) {
     const xml = readFileSync(join(dir, f), 'utf8');
     for (const m of xml.matchAll(/<testcase\b([^>]*?)(\/>|>([\s\S]*?)<\/testcase>)/g)) {
       const name = /name="([^"]*)"/.exec(m[1])?.[1] ?? '';
       const body = m[3] ?? '';
+      for (const note of log.get(javaScenarioName(xmlText(name)))?.notes ?? []) {
+        const id = ID.exec(name)?.[1];
+        if (id && note.startsWith('known defect: ')) recordDefect(id, 'java', note.slice('known defect: '.length));
+      }
       countRun(
         'java',
         /<(failure|error)\b/.test(body) ? 'failed' : /<flaky(Failure|Error)\b/.test(body) ? 'flaky' : /<skipped\b/.test(body) ? 'skipped' : 'passed',
@@ -310,6 +337,37 @@ function failedJobs(dir) {
     });
 }
 const failed = failedJobs(jobsDir);
+
+/**
+ * Earlier attempts of this run ("Re-run failed jobs", written as attempt-<n>.json by "Collect failed jobs"): which
+ * jobs failed there. A rerun that passes must not read as a clean first run, so it says which attempt failed and why.
+ */
+const attempt = Number(process.env.GITHUB_RUN_ATTEMPT ?? 1);
+function earlierAttempts(dir) {
+  if (!dir || !existsSync(dir)) return [];
+  return readdirSync(dir)
+    .map((n) => /^attempt-(\d+)\.json$/.exec(n))
+    .filter(Boolean)
+    .map((m) => {
+      const jobs = JSON.parse(readFileSync(join(dir, m[0]), 'utf8')).jobs ?? [];
+      return {
+        attempt: Number(m[1]),
+        failed: jobs
+          .filter((j) => ['failure', 'timed_out', 'cancelled'].includes(j.conclusion))
+          .map((j) => ({
+            name: j.name,
+            url: j.html_url,
+            step: (j.steps ?? []).find((s) => s.conclusion === 'failure' || s.conclusion === 'timed_out')?.name ?? null,
+          })),
+      };
+    })
+    .sort((a, b) => a.attempt - b.attempt);
+}
+const earlier = earlierAttempts(jobsDir);
+const earlierFailed = earlier.filter((e) => e.failed.length);
+const rerunNote = earlierFailed.length
+  ? `Attempt ${attempt} of this run; ${earlierFailed.map((e) => `attempt ${e.attempt} failed (${e.failed.map((j) => (j.step ? `${j.name} at "${j.step}"` : j.name)).join(', ')})`).join('; ')}.`
+  : '';
 const firstFailure = failed[0];
 const whereFailed = (j) => `**${j.name}**${j.steps.length ? ` at "${j.steps[0]}"` : j.timedOut ? ' (timed out)' : ''}`;
 
@@ -352,6 +410,14 @@ const verdict =
       : tsState === 'ok' || javaState === 'ok'
         ? ['> [!TIP]', '> **Passed:** no failed and no flaky tests.']
         : ['> [!NOTE]', `> **No result:** TypeScript job ${tsJob}, Java job ${javaJob}.`];
+/** Passed now, but an earlier attempt of this run failed: gold like flaky, never a plain green "Passed". */
+const passedOnRerun = !(tsState === 'bad' || javaState === 'bad') && earlierFailed.length > 0;
+const verdictLines =
+  passedOnRerun && verdict[0] === '> [!TIP]'
+    ? ['> [!WARNING]', `> **Passed on a rerun:** every test passed on this attempt, but an earlier one did not. ${rerunNote}`]
+    : rerunNote
+      ? [...verdict, `> ${rerunNote}`]
+      : verdict;
 
 const cellText = (s) => s.replaceAll('|', '\\|').replaceAll('`', "'");
 const ATTEMPT = { passed: '✅', failed: '❌', timedOut: '⏱️', interrupted: '⏹️', skipped: '⏭️' };
@@ -392,7 +458,7 @@ const whatFailed = failed.length
 const md = [
   nightly ? '## Nightly regression' : '## PR pipeline',
   '',
-  ...verdict,
+  ...verdictLines,
   '',
   ...whatFailed,
   '```mermaid',
@@ -446,17 +512,27 @@ if (process.env.GITHUB_OUTPUT) {
       : planUnavailable
         ? '⚠️ Unverified: passed what ran, but the planned test list is missing'
         : '✅ Passed: no failed and no flaky tests';
+  // A rerun says so first (GitHub cuts the description at 140 characters): "Passed on attempt 2 (attempt 1 failed: …)".
+  const first = earlierFailed[0];
+  const earlierShort = first ? `attempt ${first.attempt} failed: ${first.failed[0].name}${first.failed[0].step ? ` at "${first.failed[0].step}"` : ''}` : '';
+  const withRerun = !first
+    ? description
+    : failed
+      ? `${description} · ${earlierShort}`
+      : `✅ Passed on attempt ${attempt} (${earlierShort})${flakyTotal ? ` · ⚠️ ${flakyTotal} flaky: ${flakyNames}` : ''}`;
   const ran = [tsState, javaState].some((s) => s === 'ok' || s === 'flaky');
   // GitHub cuts status descriptions at 140 characters. No state (both lanes skipped or cancelled) = no status.
-  const short = description.length > 140 ? `${description.slice(0, 139)}…` : description;
+  const short = withRerun.length > 140 ? `${withRerun.slice(0, 139)}…` : withRerun;
   if (failed || ran) appendFileSync(process.env.GITHUB_OUTPUT, `state=${failed ? 'failure' : 'success'}\ndescription=${short}\n`);
   // For the nightly history (clean streak): one word per run.
-  const word = failed ? 'failed' : flakyTotal ? 'flaky' : planUnavailable ? 'unverified' : ran ? 'passed' : 'none';
+  // A rerun after a failed attempt is not a clean nightly: 'rerun' breaks the streak like 'flaky' does.
+  const word = failed ? 'failed' : flakyTotal ? 'flaky' : passedOnRerun ? 'rerun' : planUnavailable ? 'unverified' : ran ? 'passed' : 'none';
   appendFileSync(process.env.GITHUB_OUTPUT, `verdict=${word}\n`);
 }
 
 // The nightly's README badge (shields.io endpoint format), published next to the report on GitHub Pages: test runs
-// in both languages, and the same verdict colour as above (green passed, yellow passed with flaky, red failed).
+// in both languages, and the same verdict colour as above (green passed, yellow passed with flaky or on a rerun, red
+// failed).
 if (process.env.BADGE_FILE) {
   const total = (k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0);
   const [passed, flaky, failedRuns, notRunRuns, skippedRuns] = ['passed', 'flaky', 'failed', 'notRun', 'skipped'].map(total);
@@ -472,17 +548,47 @@ if (process.env.BADGE_FILE) {
         ...(skippedRuns ? [`${skippedRuns} skipped`] : []),
         ...(failedRuns || notRunRuns || javaNotRun || skippedRuns ? [`${passed + flaky} passed`] : ['failed (a job ended red)']),
       ]
-    : [`${passed + flaky} passed`, `${flaky} flaky`, ...(planUnavailable ? ['unverified'] : [])];
+    : [`${passed + flaky} passed`, `${flaky} flaky`, ...(passedOnRerun ? [`on attempt ${attempt}`] : []), ...(planUnavailable ? ['unverified'] : [])];
   const badge = {
     schemaVersion: 1,
     label: 'nightly',
     message: [...parts, date].join(' · '),
-    color: failed ? 'red' : flaky || planUnavailable ? 'yellow' : 'brightgreen',
+    color: failed ? 'red' : flaky || passedOnRerun || planUnavailable ? 'yellow' : 'brightgreen',
   };
   writeFileSync(process.env.BADGE_FILE, `${JSON.stringify(badge)}
 `);
 }
 
+// The same result as data, for the nightly's GitHub Pages landing page (scripts/pages-site.mjs).
+if (process.env.SUMMARY_JSON) {
+  const failedRun = tsState === 'bad' || javaState === 'bad';
+  const ran = [tsState, javaState].some((s) => s === 'ok' || s === 'flaky');
+  const { GITHUB_SERVER_URL, GITHUB_REPOSITORY, GITHUB_RUN_ID, GITHUB_RUN_NUMBER, GITHUB_SHA } = process.env;
+  const data = {
+    pipeline: nightly ? 'nightly' : 'pr',
+    date: new Date().toISOString(),
+    run: {
+      number: GITHUB_RUN_NUMBER ? Number(GITHUB_RUN_NUMBER) : null,
+      url: GITHUB_RUN_ID ? `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}` : null,
+      sha: (GITHUB_SHA ?? '').slice(0, 7),
+    },
+    verdict: failedRun ? 'failed' : flakyTotal ? 'flaky' : passedOnRerun ? 'rerun' : planUnavailable ? 'unverified' : ran ? 'passed' : 'none',
+    attempt,
+    earlierAttempts: earlier,
+    rerunNote,
+    problems,
+    cause,
+    lanes: {
+      ts: { job: tsJob, state: tsState, runs: totals.ts, byId: tsSum },
+      java: { job: javaJob, state: javaState, runs: totals.java, byId: javaSum },
+    },
+    rows: ids.map((id) => ({ id, ts: ts.get(id) ?? null, java: java.get(id) ?? null, coverage: coverage(id), knownDefect: knownIds.has(id) })),
+    flaky: flakyCases,
+    defects: defectRows.map((d) => ({ ...d, tsState: defectState(d.ts).icon, javaState: defectState(d.java).icon })),
+    failedJobs: failed,
+  };
+  writeFileSync(process.env.SUMMARY_JSON, `${JSON.stringify(data, null, 2)}\n`);
+}
 
 // A warning annotation per flaky test: it shows on the run page and in the PR's checks without opening the summary.
 if (process.env.GITHUB_ACTIONS) {
