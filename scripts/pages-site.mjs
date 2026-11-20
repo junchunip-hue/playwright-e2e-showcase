@@ -165,6 +165,19 @@ const runCounts = (runs) => {
   ].join(' · ');
 };
 const total = (runs) => (runs ? runs.passed + runs.flaky + runs.failed + runs.notRun + runs.skipped : 0);
+const rowRuns = (r) => (r ? r.passed + r.flaky + r.failed + r.notRun + r.skipped : 0);
+/** Test-plan aliases (docs/test-plan.md, "How IDs work"): one test, two IDs. U6 is the first journey, S1. */
+const ALIASES = { U6: 'S1' };
+const withAlias = (id) => (ALIASES[id] ? `${id} (${ALIASES[id]})` : id);
+/** The test plan's order: API, UI, journeys, then the TypeScript-only checks. */
+const LAYER = 'AUSN';
+const byPlanOrder = (a, b) => LAYER.indexOf(a[0]) - LAYER.indexOf(b[0]) || Number(a.slice(1)) - Number(b.slice(1));
+
+/** "9 in a row" or "3 in a row (goal 5)" from streak.json → "9 clean nightlies in a row". */
+const streakText = (message) => {
+  const m = /^(\d+) in a row(.*)$/.exec(message ?? '');
+  return m ? `${m[1]} clean ${Number(m[1]) === 1 ? 'nightly' : 'nightlies'} in a row${m[2]}` : message;
+};
 
 function landing(s, java) {
   if (!s) return page('Nightly results', '<h1>Nightly results</h1><p>No summary for the latest nightly.</p>');
@@ -175,6 +188,9 @@ function landing(s, java) {
   const badgeTotal = (ts.runs ? ts.runs.passed + ts.runs.flaky : 0) + (jv.runs ? jv.runs.passed + jv.runs.flaky : 0);
   const failedText = s.verdict === 'failed' ? [...s.problems, ...(s.cause ? [`cause: ${s.cause}`] : [])].join('; ') || 'a job ended red' : v.text;
 
+  // The test runs with a plan ID, and the rest: the sign-in setup, which a shard runs before its browser tests.
+  const tsTests = s.rows.reduce((n, r) => n + rowRuns(r.ts), 0);
+  const tsSetup = Math.max(total(ts.runs) - tsTests, 0);
   const sections = [];
   sections.push(`<h1>Nightly results</h1>
 <p class="muted">Playwright E2E Showcase: the same Gherkin scenarios in TypeScript and Java, against our own Toolshop.
@@ -185,7 +201,7 @@ ${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}
 
   sections.push(`<div class="lanes">
 <div class="lane"><h3>TypeScript</h3><div class="big">${total(ts.runs)}</div>
-<div class="muted">test runs: Chromium, Firefox and WebKit, incl. the sign-in setup</div><div>${esc(runCounts(ts.runs))}</div>
+<div class="muted">${tsTests} test runs on Chromium, Firefox and WebKit${tsSetup ? ` + ${plural(tsSetup, 'sign-in setup')} (one per shard with browser tests)` : ''}</div><div>${esc(runCounts(ts.runs))}</div>
 <a class="button" href="typescript/">Open the TypeScript report →</a></div>
 <div class="lane"><h3>Java</h3><div class="big">${total(jv.runs)}</div>
 <div class="muted">scenarios (Cucumber-JVM, Chromium), the same feature files</div><div>${esc(runCounts(jv.runs))}</div>
@@ -199,6 +215,9 @@ ${s.failedJobs.map((j) => `<tr><td>❌ <a href="${esc(j.url)}">${esc(j.name)}</a
 </table></div>`);
   }
 
+  if (!s.flaky?.length && s.verdict !== 'failed' && s.verdict !== 'none') {
+    sections.push('<h2>Flaky tests</h2><p>No flaky tests in this run: no test needed a retry to pass.</p>');
+  }
   if (s.flaky?.length) {
     const ATTEMPT = { passed: '✅', failed: '❌', timedOut: '⏱️', interrupted: '⏹️', skipped: '⏭️' };
     sections.push(`<h2>Flaky tests</h2><p>${plural(s.flaky.length, 'test')} passed only on a retry: the run counts as passed, but the cause gets fixed.</p>
@@ -208,10 +227,10 @@ ${s.flaky.map((f) => `<tr><td>⚠️ ${esc(f.id)}</td><td>${esc(f.project)}</td>
   }
 
   sections.push(`<h2>TypeScript vs Java by test ID</h2><div class="scroll"><table><tr><th>ID</th><th>TypeScript</th><th>Java</th><th>Coverage</th></tr>
-${s.rows.map((r) => `<tr><td>${esc(r.id)}${r.knownDefect ? ' 🟨' : ''}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`).join('\n')}
+${[...s.rows].sort((a, b) => byPlanOrder(a.id, b.id)).map((r) => `<tr><td>${esc(withAlias(r.id))}${r.knownDefect ? ' 🟨' : ''}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`).join('\n')}
 </table></div>
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
-TypeScript counts one run per browser.${s.rows.some((r) => r.knownDefect) ? ' 🟨 = tracks a known product defect.' : ''}</p>`);
+TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.${s.rows.some((r) => r.knownDefect) ? ' 🟨 = tracks a known product defect.' : ''}</p>`);
 
   if (s.defects?.length) {
     const label = { '🟨': '🟨 still present', '🟥': '🟥 fixed: replace the marker', '❌': '❌ unexpected', '–': '–' };
@@ -225,7 +244,7 @@ ${s.defects.map((d) => `<tr><td>${esc(d.id)}</td><td>${esc(d.summary)}</td><td>$
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };
     const recent = history.slice(-30).reverse();
     sections.push(`<h2 id="history">Nightly history</h2>
-<p>${streak ? `<strong>${esc(streak.message)}</strong> clean nightlies (no failed, flaky, skipped or not-run test in either language). ` : ''}Latest first; each links to its run.</p>
+<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun). ` : ''}Latest first; each links to its run.</p>
 <div class="dots">${recent.map((r) => `<a class="dot ${cls[r.verdict] ?? 'skip'}" href="${REPO}/actions/runs/${esc(r.id)}" title="${esc(`#${r.run} · ${r.date} · ${r.verdict}${r.note ? ` · ${r.note}` : ''}`)}">#${esc(r.run)}</a>`).join('')}</div>
 <p class="muted">Green passed · gold flaky, passed on a rerun or unverified · red failed. Data: <a href="history.json">history.json</a>.</p>`);
   }
@@ -239,7 +258,11 @@ ${s.defects.map((d) => `<tr><td>${esc(d.id)}</td><td>${esc(d.summary)}</td><td>$
 function javaPage(scenarios, s) {
   const ICON = { passed: '✅', flaky: '⚠️', failed: '❌', skipped: '⏭️' };
   const byFeature = new Map();
-  for (const sc of scenarios) byFeature.set(sc.feature, [...(byFeature.get(sc.feature) ?? []), sc]);
+  // Features in the test plan's order (API, UI, journeys), each by its first ID, as on the results page.
+  const idOf = (sc) => /^([AUS]\d+):/.exec(sc.title)?.[1] ?? 'S999';
+  for (const sc of [...scenarios].sort((a, b) => byPlanOrder(idOf(a), idOf(b)))) {
+    byFeature.set(sc.feature, [...(byFeature.get(sc.feature) ?? []), sc]);
+  }
   const count = (st) => scenarios.filter((x) => x.status === st).length;
   const head = `<p><a href="../">← Nightly results</a></p><h1>Java results</h1>
 <p class="muted">Cucumber-JVM on JUnit 5, Chromium, the same feature files as TypeScript. Read from the Surefire XML, so a
@@ -250,7 +273,7 @@ scenario that passed on a rerun shows as flaky.${s?.run?.url ? ` <a href="${esc(
     ([feature, list]) => `<h2>${esc(feature)}</h2>
 ${list
   .map(
-    (sc) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title)} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
+    (sc) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
 ${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${st.status === 'passed' ? '' : `[${st.status}] `}${esc(st.text)}</li>`).join('')}</ol>` : ''}
 ${sc.message ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}${sc.notes.map((n) => `<p>🟨 <code>${esc(n)}</code></p>`).join('')}</details>`,
   )

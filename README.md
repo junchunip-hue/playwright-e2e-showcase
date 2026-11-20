@@ -9,8 +9,8 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 (Cucumber-JVM on JUnit 5). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
 
 **At a glance:** 36 feature scenarios (43 test cases with Scenario Outline examples) run in both languages ·
-74 TypeScript test cases including quality and architecture checks, run 110 times a night across Chromium, Firefox and
-WebKit · one verdict per run: ✅ passed, ⚠️ passed with flaky, ❌ failed.
+74 TypeScript test cases including quality and architecture checks: 110 test runs a night across Chromium, Firefox and
+WebKit (plus a sign-in setup per browser shard) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
 The "nightly tests" badge above is the latest nightly's count of test runs in both languages (TypeScript, including
 its sign-in setup, plus Java), coloured like its verdict. Both badges open the nightly's results page: the verdict,
 the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
@@ -115,7 +115,9 @@ flowchart LR
 ```
 
 Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every flaky test by name, and
-TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`).
+TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`), and the
+nightly's lands on its [results page](https://junchunip-hue.github.io/playwright-e2e-showcase/) with both reports and
+the history.
 
 <p align="center">
   <img src="docs/images/pipeline-summary.png" width="760"
@@ -169,8 +171,10 @@ tests/
   architecture/ rules about the pipeline and the code itself (N3)
   ui/           the Playwright Test Agents' seed
   features/     generated from features/ by `npx bddgen` (git-ignored)
-java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/
-scripts/        suite runner, bounded browser install and the CI pipeline summary
+java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/; report/ScenarioLog
+                keeps each scenario's steps and known defects for the summary
+scripts/        suite runner, demo, bounded browser install, the CI pipeline summary, and the nightly's history and
+                results page on GitHub Pages
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, CI, Java, roadmap, decisions (ADRs)
