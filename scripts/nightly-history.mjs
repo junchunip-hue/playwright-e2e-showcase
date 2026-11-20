@@ -2,7 +2,7 @@
 // Runs in the nightly summary job on main; the files are published with the report on GitHub Pages, and the next run
 // reads them back from there.
 // Usage: node scripts/nightly-history.mjs <previous-history.json> <seed.json> <out-dir>
-//   env: VERDICT (passed | flaky | failed | unverified, from pipeline-summary.mjs), RUN_NUMBER, RUN_ID, SHA
+//   env: VERDICT (passed | flaky | rerun | failed | unverified, from pipeline-summary.mjs), RUN_NUMBER, RUN_ID, SHA
 //   Writes <out-dir>/history.json and <out-dir>/streak.json (a shields.io endpoint badge).
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -33,7 +33,7 @@ if (VERDICT && VERDICT !== 'none' && !history.some((r) => String(r.id) === Strin
 }
 const kept = history.slice(-KEEP);
 
-// Clean = passed, nothing flaky, failed or unverified. The streak counts back from the latest run.
+// Clean = passed, nothing flaky, failed, unverified or passed only on a rerun. The streak counts back from the latest run.
 let streak = 0;
 for (let i = kept.length - 1; i >= 0 && kept[i].verdict === 'passed'; i--) streak++;
 

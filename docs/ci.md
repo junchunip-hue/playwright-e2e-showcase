@@ -37,12 +37,17 @@ flowchart LR
     direction LR
     R["regression × 3 shards<br/>Chromium · Firefox · WebKit"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
     RJ["regression-java<br/>full suite"] --> S
-    S --> D["deploy-report<br/>report + badge.json, main only"]
+    S --> D["deploy-report<br/>landing page · TS report · Java results ·<br/>badges, main only"]
   end
 ```
-The nightly's GitHub Pages site is the merged HTML report plus `badge.json`, which the README badge reads
-(shields.io endpoint): all test runs of both languages, coloured like the verdict (green passed, yellow passed with
-flaky, red failed). The `summary` job builds it, because only it has both languages' results.
+The nightly's GitHub Pages site, built by the `summary` job because only it has both languages' results:
+- `/` a **landing page** (`scripts/pages-site.mjs`, from the summary's data): the verdict, both lanes with their
+  counts and links, TypeScript vs Java per test ID, flaky tests, known defects and the nightly history. Both README
+  badges open it.
+- `/typescript/` the merged Playwright HTML report; `/java/` every Java scenario with its steps, from the Surefire
+  XML and the scenario log.
+- `badge.json`, which the "nightly tests" badge reads (shields.io endpoint): all test runs of both languages, coloured
+  like the verdict (green passed, yellow passed with flaky, red failed); `streak.json` and `history.json` (below).
 **Merging:** a ruleset on `main` makes the PR pipeline a real gate: every change goes through a pull request, and
 `smoke (TypeScript)`, `smoke (Java)` and `test verdict / PR smoke` must pass before it merges (no bypass, also not for
 admins). The nightly is not required: it runs after merge.
@@ -73,7 +78,7 @@ test run red or stall it:
 | `blob-report-<shard>` | nightly | Shard results, merged by `merge-reports` |
 
 **Nightly mechanics:** each shard boots its own Toolshop (no shared data between shards) and writes a blob report.
-A merge job turns the blobs into one HTML report, and runs on `main` publish it to GitHub Pages. The `setup` login
+A merge job turns the blobs into one HTML report, and runs on `main` publish it to GitHub Pages (`/typescript/`). The `setup` login
 project only runs in shards that contain UI tests. A PR that changes the workflow runs it without publishing.
 
 **Local runs** default to Chromium. Firefox and WebKit are opt-in (`ALL_BROWSERS=1`), because Playwright's Firefox
@@ -110,6 +115,10 @@ results and the Surefire XML reports and writes the run page's job summary:
   uses; a skip in CI means a test silently did not run (e.g. a wrong `BASE_URL`), so it turns the run red.
 - **No list, no "Passed".** If the planned-test list cannot be made, the summary cannot see tests that never ran: the
   verdict is ⚠️ Unverified (yellow badge, status says so) instead of ✅ Passed.
+- **A rerun is not a fresh pass.** "Re-run failed jobs" gives the run a new attempt, and its verdict replaces the
+  commit status. So the summary keeps each earlier attempt's jobs: if one failed, a passing attempt says ⚠️ Passed on a
+  rerun ("Passed on attempt 2 (attempt 1 failed: … at "Start Toolshop")"), the badge turns yellow and the run does
+  not count as clean. A failed attempt stays failed in `history.json` (one entry per run, the first one wins).
 - **Clean streak.** On `main`, the nightly adds its verdict to `history.json` on Pages (read back from there on the
   next run; `scripts/nightly-history-seed.json` holds the runs before it existed) and publishes `streak.json`, the
   README's "clean nightlies" badge: passed runs in a row, the stability criterion of roadmap §5.
@@ -122,7 +131,9 @@ results and the Surefire XML reports and writes the run page's job summary:
 - a **Known defects** table (when any test tracks one): per defect and language, 🟨 still present (the test passes
   because the API answers exactly as today), 🟥 fixed (the test fails on purpose: replace the marker with a plain
   assertion), or ❌ anything else. TS reads the `known defect` annotation from the JSON report, Java the
-  `known defect: …` line the test prints, which Surefire keeps in the XML ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
+  `known defect: …` line `KnownDefect` records in the scenario log (`scenarios.jsonl` next to the Surefire XML, written
+  by `com.showcase.report.ScenarioLog`). Surefire's XML is not enough: with CI reruns on it drops the output of passed
+  tests, and with it these lines ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
 
 Java reports carry display names (`U6: ...`, `S2: ... › gift-card`) via Surefire's phrased names, so both sides are
 matched by test ID. Every A, U and S ID must appear in both columns: the parity architecture test (and the

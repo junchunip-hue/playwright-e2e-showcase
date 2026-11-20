@@ -228,7 +228,7 @@ Every test has exactly one tier tag, enforced by `npm run check:tags`.
 | ✅ | Toolshop in Docker in CI | Environment isolation, CI debugging |
 | ✅ | Checkout E2E with API-created customer (U6) | Test data design, hybrid API/UI |
 | ✅ | Java twin suite, now running the same Gherkin features (Cucumber-JVM) | Same design in two stacks |
-| ✅ | Nightly: 3 browsers, sharding, merged blob report on GitHub Pages | CI scalability |
+| ✅ | Nightly: 3 browsers, sharding, merged blob report and a results page for both languages on GitHub Pages | CI scalability |
 | ✅ | N1 visual regression, N2 axe-core | Quality beyond functional |
 | ✅ | A0 API schema validation (types derived from the schemas) | Contract testing |
 | ✅ | Negative login tests on throwaway accounts (the shared demo account locks after repeated failures) | Test data isolation |

@@ -176,6 +176,11 @@ jobs:
           for id in $(jq -r '.jobs[] | select(.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "cancelled") | .id' results/jobs/jobs.json); do
             gh api "repos/$GITHUB_REPOSITORY/check-runs/$id/annotations" > "results/jobs/annotations-$id.json"
           done
+          # A rerun ("Re-run failed jobs") must not pass for a clean first run: keep each earlier attempt's jobs, so the
+          # summary can say that attempt N passed after attempt M failed.
+          for attempt in $(seq 1 $((GITHUB_RUN_ATTEMPT - 1))); do
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$attempt/jobs?per_page=100" > "results/jobs/attempt-$attempt.json"
+          done
 
       - name: Write pipeline summary
         id: summary

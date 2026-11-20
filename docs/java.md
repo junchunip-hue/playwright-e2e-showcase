@@ -24,6 +24,7 @@ On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser and `SLOW_MO=400`
 | Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
 | API client (the page layer of API steps) | `src/api/` (per resource), steps in `src/steps/api/` | `api/ApiClient.java`, steps in `steps/api/` |
 | Response contracts | `src/api/schemas.ts` (zod) | `api/Contracts.java` (same rules, same failure format) |
+| Known defects (ADR 0010) | `src/known-defects.ts`: a test annotation | `api/KnownDefect.java`: a line in the scenario log (`report/ScenarioLog`, a Cucumber plugin), which survives CI reruns |
 | Tags and tiers | `src/tags.ts`; Gherkin tags become Playwright tags | the same Gherkin tags; Cucumber tags are JUnit tags (`-Dgroups=smoke`) |
 | Data-driven tests | Scenario Outline / data table in the shared feature | the same feature |
 | Tag/ID guard | `npm run check:tags` (covers the shared features for both languages) | – (same features, same tags) |
