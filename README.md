@@ -11,7 +11,8 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 **At a glance:** 36 feature scenarios (43 test cases with Scenario Outline examples) run in both languages ·
 74 TypeScript test cases including quality and architecture checks, run 110 times a night across Chromium, Firefox and
 WebKit · one verdict per run: ✅ passed, ⚠️ passed with flaky, ❌ failed.
-The "nightly tests" badge above is the latest nightly's count, coloured like its verdict; click it for that run's HTML report.
+The "nightly tests" badge above is the latest nightly's count of test runs in both languages (TypeScript, including
+its sign-in setup, plus Java), coloured like its verdict; click it for that run's HTML report.
 
 <p align="center">
   <img src="docs/images/checkout-journey.gif" width="720"
@@ -82,8 +83,9 @@ API scenarios read the same way; the API client stands in for the page
   title carries its test-plan ID, checked by `npm run check:tags` for both languages at once.
 - [Architecture tests](tests/architecture/) fail if a workflow could trigger itself, a dependency loops, a job could
   hang, a step creates a locator, or the test plan and the two languages disagree.
-- Every scenario runs in a TypeScript lane and a Java lane. A summary on each CI run compares them per test ID and lists
-  the known defects (see "How it runs").
+- Every scenario runs in a TypeScript lane and a Java lane. A missing step fails the PR in either language: `bddgen` for
+  TypeScript, a Cucumber dry run over every feature for Java. A summary on each CI run compares the lanes per test ID
+  and lists the known defects (see "How it runs").
 - Flaky is visible, never silent: both lanes retry a failed test twice in CI, and a test that passed only on a retry
   turns the verdict gold (⚠️ passed with flaky) and is listed by name with its first error, as an annotation and in the
   commit status ([ADR 0011](docs/decisions/0011-retries-and-flaky-tests.md)).
@@ -97,7 +99,7 @@ flowchart LR
   subgraph PR["Every pull request: two lanes in parallel, each with its own Toolshop"]
     direction LR
     S["Static: lint · types ·<br/>tag check · architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
-    J["Java: Cucumber-JVM smoke<br/>(same features)"]
+    J["Java: step dry run of every feature ·<br/>Cucumber-JVM smoke (same features)"]
     TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>flaky tests · TS vs Java per ID<br/>+ commit status"]
     J --> SUM
   end
@@ -118,7 +120,9 @@ TypeScript vs Java per test ID. The verdict is also posted as a commit status (`
        alt="Pipeline summary of nightly 44511396786: Passed with 1 flaky test, run diagram with the TypeScript result node gold, and the flaky table naming S2 on Firefox with its attempts and first error">
   <br><sub>Nightly 44511396786, rendered from its results by the same summary script (top part): it passed, but S2
   failed once on Firefox and passed on the retry, so the verdict is gold and the test is listed with its first error.
-  That flake was a test race, fixed in <a href="https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27">#27</a>.</sub>
+  That flake was a test race, fixed in <a href="https://github.com/junchunip-hue/playwright-e2e-showcase/pull/27">#27</a>.
+  The run predates the Gherkin features: S2 lived in <code>tests/e2e/payments.spec.ts</code> then and is now in
+  <code>features/journeys/checkout.feature</code>.</sub>
 </p>
 
 <details>

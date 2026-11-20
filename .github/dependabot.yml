@@ -1,0 +1,47 @@
+# Weekly dependency updates, one grouped PR per ecosystem, gated by the same PR smoke as any change.
+# Major versions of npm and Maven packages stay manual: they change APIs (ESLint, TypeScript, JUnit 6 for Cucumber 8) and need a planned PR.
+# Playwright minors stay manual too: TypeScript (@playwright/test) and Java (com.microsoft.playwright) must move to the
+# same minor in one PR, which an architecture test checks and Dependabot cannot do across ecosystems
+# (roadmap §6, "Keep it green"). Their patch releases come through here.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      npm:
+        patterns: ['*']
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@playwright/test'
+        update-types: ['version-update:semver-minor']
+
+  - package-ecosystem: maven
+    directory: /java
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      maven:
+        patterns: ['*']
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'com.microsoft.playwright:playwright'
+        update-types: ['version-update:semver-minor']
+
+  - package-ecosystem: github-actions
+    # The workflows and the shared composite actions.
+    directories: ['/', '/.github/actions/*']
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns: ['*']

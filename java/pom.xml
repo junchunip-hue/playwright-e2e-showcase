@@ -19,6 +19,8 @@
     <gson.version>2.13.2</gson.version>
     <!-- 7.x is the last line on JUnit 5 (8.x needs JUnit 6) -->
     <cucumber.version>7.34.9</cucumber.version>
+    <!-- Where Surefire writes its XML; the PR's step dry run points it elsewhere (-Dsurefire.reportsDirectory=...). -->
+    <surefire.reportsDirectory>${project.build.directory}/surefire-reports</surefire.reportsDirectory>
   </properties>
 
   <dependencyManagement>
@@ -93,6 +95,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.5.4</version>
         <configuration>
+          <reportsDirectory>${surefire.reportsDirectory}</reportsDirectory>
           <!-- Record scenario names ("U6: ...") in the XML reports, so the CI summary can match tests to IDs. -->
           <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
             <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>

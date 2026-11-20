@@ -18,16 +18,20 @@ itself and would race S3 and A11.
 ## Workflows
 | Workflow | Trigger | What runs | Browsers |
 |---|---|---|---|
-| `pr-smoke.yml` | Every PR and push to `main` | **Static:** lint, typecheck, `check:tags`, `test:architecture`<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and the Java smoke suite, in parallel | Chromium |
+| `pr-smoke.yml` | Every PR and push to `main` | **Static:** lint, typecheck, `check:tags`, `test:architecture`<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and in parallel the Java lane: a dry run that binds every feature's steps (seconds, no browser), then the Java smoke suite | Chromium |
 | `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed) in 3 shards, plus the full Java suite | Chromium, Firefox, WebKit |
 | `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR, and comments how to get PR checks on that commit (GitHub runs no workflow for a push made by Actions) | Chromium |
+
+**Dependency updates:** Dependabot (`.github/dependabot.yml`) opens one grouped PR per week for npm, Maven and GitHub
+Actions, gated by the same PR checks. Major versions of npm and Maven packages stay manual, and so do Playwright minors: TypeScript and Java move
+to the same minor in one PR, which an architecture test checks ([roadmap §6](roadmap.md#6-what-comes-next)).
 
 ```mermaid
 flowchart LR
   subgraph PRW["pr-smoke.yml"]
     direction LR
     A["smoke (TypeScript)<br/>static → Toolshop → suite pr"] --> C["summary"]
-    B["smoke (Java)<br/>Toolshop → -Dgroups=smoke"] --> C
+    B["smoke (Java)<br/>step dry run → Toolshop → -Dgroups=smoke"] --> C
   end
   subgraph NW["nightly-regression.yml"]
     direction LR
