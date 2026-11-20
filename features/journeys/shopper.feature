@@ -14,13 +14,16 @@ Feature: Returning customer
   Scenario: S5: a returning customer saves a favourite, compares two products, buys the cheaper one and downloads the invoice
     Given a newly registered customer
     And two different products that are in stock
-    And I am signed in as that customer
-    When I add the first product to my favourites
+    And I have signed in as that customer on the login page
+    When I add the first product to my favourites on its product page
     Then my favourites list only the first product
     When I compare both products
     Then the comparison shows both products at their catalogue prices
-    When I add the cheaper product to the cart
-    And I review the cart
+    When I choose the cheaper of the two products
+    And I open that product's page
+    And I add it to the cart on the product page
+    Then the cart badge shows 1
+    When I review the cart
     And I continue as the signed-in customer
     And I confirm my saved billing address
     And I pay with "cash-on-delivery"

@@ -41,11 +41,9 @@ public class AdminSteps {
     ctx.product = api.getProduct(published.id());
   }
 
-  @When("I search the catalogue for that product")
-  public void iSearchTheCatalogueForThatProduct() {
-    HomePage homePage = new HomePage(playwright.page());
-    homePage.open();
-    homePage.search(ctx.product().name());
+  @When("I search the catalogue page for that product")
+  public void iSearchTheCataloguePageForThatProduct() {
+    new HomePage(playwright.page()).search(ctx.product().name());
   }
 
   @Then("the search shows only that product")

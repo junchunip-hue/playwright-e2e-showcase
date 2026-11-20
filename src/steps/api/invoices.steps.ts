@@ -40,7 +40,7 @@ When('I list invoices with the token {string}', async ({ api, ctx }, token: stri
   ctx.response = await api.invoices.listRequest(token);
 });
 
-Then('the API answers 401 Unauthorized', async ({ ctx }) => {
+Then('the API answers 401 with the Unauthorized message', async ({ ctx }) => {
   const res = need(ctx.response, 'When I list invoices with the token "..."');
   expect(res.status()).toBe(401);
   expect(await res.json()).toEqual(UNAUTHORIZED);

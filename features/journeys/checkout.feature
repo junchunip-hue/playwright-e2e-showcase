@@ -10,9 +10,11 @@ Feature: Checkout
   Scenario: U6: new customer buys an in-stock product with cash on delivery
     Given a newly registered customer
     And a product that is in stock
-    When I add that product to the cart
-    And I review the cart
-    And I sign in as that customer during checkout
+    When I open that product's page
+    And I add it to the cart on the product page
+    Then the cart badge shows 1
+    When I review the cart
+    And I sign in as that customer at the checkout's sign-in step
     And I confirm my saved billing address
     And I pay with "cash-on-delivery"
     Then that customer's invoice exists at the cart total
@@ -24,9 +26,11 @@ Feature: Checkout
   Scenario Outline: S2: new customer pays with <method>
     Given a newly registered customer
     And a product that is in stock
-    When I add that product to the cart
-    And I review the cart
-    And I sign in as that customer during checkout
+    When I open that product's page
+    And I add it to the cart on the product page
+    Then the cart badge shows 1
+    When I review the cart
+    And I sign in as that customer at the checkout's sign-in step
     And I confirm my saved billing address
     And I pay with "<method>"
     Then that customer's invoice exists at the cart total
@@ -45,9 +49,11 @@ Feature: Checkout
   Scenario Outline: S2: <card> is blocked before payment and creates no invoice
     Given a newly registered customer
     And a product that is in stock
-    When I add that product to the cart
-    And I review the cart
-    And I sign in as that customer during checkout
+    When I open that product's page
+    And I add it to the cart on the product page
+    Then the cart badge shows 1
+    When I review the cart
+    And I sign in as that customer at the checkout's sign-in step
     And I confirm my saved billing address
     And I enter the payment details of a "<card>"
     Then the form flags that card's invalid field and cannot be submitted

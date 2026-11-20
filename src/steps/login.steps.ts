@@ -4,15 +4,15 @@ import { expect, Given, Then, When } from '../fixtures';
 // Steps layer for features/ui/login.feature: each step calls one page method or asserts on the page's module
 // (`loginPage.ui`). No locators are created here. Java twin: java/src/test/java/com/showcase/steps/LoginSteps.java.
 
-Given('I am on the login page', async ({ loginPage }) => {
+Given('I open the login page', async ({ loginPage }) => {
   await loginPage.open();
 });
 
-When('I sign in as the demo customer', async ({ loginPage }) => {
+When('I sign in as the demo customer on the login page', async ({ loginPage }) => {
   await loginPage.signIn(env.customer.email, env.customer.password);
 });
 
-When('I sign in as that customer with a wrong password', async ({ loginPage, ctx }) => {
+When('I sign in as that customer with a wrong password on the login page', async ({ loginPage, ctx }) => {
   if (!ctx.customer) throw new Error('No customer yet: add "Given a newly registered customer" before this step');
   await loginPage.signIn(ctx.customer.email, 'definitely-wrong-password');
 });

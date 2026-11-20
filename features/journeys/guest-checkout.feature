@@ -11,8 +11,10 @@ Feature: Guest checkout
   Scenario: S4: a guest buys without an account and the order exists at the cart total
     Given guest details that were never registered
     And a product that is in stock
-    When I add that product to the cart
-    And I review the cart
+    When I open that product's page
+    And I add it to the cart on the product page
+    Then the cart badge shows 1
+    When I review the cart
     And I continue as that guest
     And I enter the guest's billing address for the postcode lookup
     And I pay with "cash-on-delivery"

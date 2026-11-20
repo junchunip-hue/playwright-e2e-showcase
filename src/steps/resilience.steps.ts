@@ -15,22 +15,20 @@ Given('the search answers with a server error', async ({ network }) => {
   await network.failSearch();
 });
 
-When('I open the product catalogue', async ({ homePage }) => {
-  await homePage.open();
+When('the catalogue API works again', async ({ network }) => {
+  await network.restoreCatalogue();
 });
 
-When('the catalogue works again and I reload the page', async ({ network, homePage }) => {
-  await network.restoreCatalogue();
+When('I reload the catalogue page', async ({ homePage }) => {
   await homePage.reload();
 });
 
-When('I submit a search for {string}', async ({ homePage }, term: string) => {
+When('I submit a search for {string} on the catalogue page', async ({ homePage }, term: string) => {
   await homePage.submitSearch(term); // waits for the (failing) answer, whatever its status
 });
 
-When('the search works again and I search for {string}', async ({ network, homePage }, term: string) => {
+When('the search API works again', async ({ network }) => {
   await network.restoreSearch();
-  await homePage.search(term);
 });
 
 // Web-first assertions wait for a late answer: up to 10 s, enough for the 3 s delay; no fixed sleep.

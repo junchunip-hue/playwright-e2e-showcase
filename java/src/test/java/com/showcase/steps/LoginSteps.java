@@ -31,17 +31,17 @@ public class LoginSteps {
     return loginPage;
   }
 
-  @Given("I am on the login page")
+  @Given("I open the login page")
   public void iAmOnTheLoginPage() {
     loginPage().open();
   }
 
-  @When("I sign in as the demo customer")
+  @When("I sign in as the demo customer on the login page")
   public void iSignInAsTheDemoCustomer() {
     loginPage().signIn(Env.CUSTOMER_EMAIL, Env.CUSTOMER_PASSWORD);
   }
 
-  @When("I sign in as that customer with a wrong password")
+  @When("I sign in as that customer with a wrong password on the login page")
   public void iSignInWithAWrongPassword() {
     loginPage().signIn(ctx.customer().email(), "definitely-wrong-password");
   }

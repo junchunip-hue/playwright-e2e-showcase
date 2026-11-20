@@ -51,26 +51,24 @@ public class ResilienceSteps {
     network().failSearch();
   }
 
-  @When("I open the product catalogue")
-  public void iOpenTheProductCatalogue() {
-    homePage().open();
+  @When("the catalogue API works again")
+  public void theCatalogueApiWorksAgain() {
+    network().restoreCatalogue();
   }
 
-  @When("the catalogue works again and I reload the page")
-  public void theCatalogueWorksAgainAndIReloadThePage() {
-    network().restoreCatalogue();
+  @When("I reload the catalogue page")
+  public void iReloadTheCataloguePage() {
     homePage().reload();
   }
 
-  @When("I submit a search for {string}")
+  @When("I submit a search for {string} on the catalogue page")
   public void iSubmitASearchFor(String term) {
     homePage().submitSearch(term); // waits for the (failing) answer, whatever its status
   }
 
-  @When("the search works again and I search for {string}")
-  public void theSearchWorksAgainAndISearchFor(String term) {
+  @When("the search API works again")
+  public void theSearchApiWorksAgain() {
     network().restoreSearch();
-    homePage().search(term);
   }
 
   // Web-first assertions wait for a late answer: up to 10 s, enough for the 3 s delay; no fixed

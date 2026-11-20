@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.showcase.pages.HomePage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
 import java.util.List;
 
 /** Steps layer for features/ui/search.feature. TypeScript twin: src/steps/search.steps.ts. */
@@ -26,20 +25,10 @@ public class SearchSteps {
     return homePage;
   }
 
-  @Given("I am on the product catalogue")
-  public void iAmOnTheProductCatalogue() {
-    homePage().open();
-  }
-
   @Given("the search API's results for {string}")
   public void theSearchApisResultsFor(String term) {
     ctx.searchApiNames =
         playwright.api().searchProducts(term).data().stream().map(p -> p.name().trim()).toList();
-  }
-
-  @When("I search for {string}")
-  public void iSearchFor(String term) {
-    homePage().search(term);
   }
 
   @Then("every product shown has {string} in its name")

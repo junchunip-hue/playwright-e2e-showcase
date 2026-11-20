@@ -6,8 +6,8 @@ Feature: Login
 
   @smoke
   Scenario: U1: customer can log in with valid credentials
-    Given I am on the login page
-    When I sign in as the demo customer
+    Given I open the login page
+    When I sign in as the demo customer on the login page
     Then I am on my account page
     And the header shows my user menu
 
@@ -17,7 +17,7 @@ Feature: Login
   @negative
   Scenario: U2: shows an error for a wrong password
     Given a newly registered customer
-    And I am on the login page
-    When I sign in as that customer with a wrong password
+    And I open the login page
+    When I sign in as that customer with a wrong password on the login page
     Then I see a login error
     And I am still on the login page

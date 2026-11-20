@@ -10,9 +10,7 @@ import com.showcase.data.Customers;
 import com.showcase.data.Customers.Customer;
 import com.showcase.data.Payments;
 import com.showcase.data.Payments.InvalidCard;
-import com.showcase.modules.HeaderModule;
 import com.showcase.pages.CheckoutPage;
-import com.showcase.pages.ProductPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -47,21 +45,13 @@ public class CheckoutSteps {
     ctx.guest = Customers.data(playwright.api(), Map.of());
   }
 
-  @When("I add that product to the cart")
-  public void iAddThatProductToTheCart() {
-    ProductPage productPage = new ProductPage(playwright.page());
-    productPage.open(ctx.product().id());
-    productPage.addToCart();
-    assertThat(new HeaderModule(playwright.page()).cartQuantity).hasText("1");
-  }
-
   @When("I review the cart")
   public void iReviewTheCart() {
     ctx.cartTotal = checkoutPage().reviewCart(List.of(ctx.product().name()));
   }
 
-  @When("I sign in as that customer during checkout")
-  public void iSignInAsThatCustomerDuringCheckout() {
+  @When("I sign in as that customer at the checkout's sign-in step")
+  public void iSignInAsThatCustomerAtCheckout() {
     Customer customer = ctx.customer();
     checkoutPage().signIn(customer.email(), customer.password());
   }

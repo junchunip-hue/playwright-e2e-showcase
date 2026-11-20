@@ -19,4 +19,4 @@ Feature: Invoices API: authentication
   @negative
   Scenario: A6: a malformed token is refused like a missing one
     When I list invoices with the token "not-a-jwt"
-    Then the API answers 401 Unauthorized
+    Then the API answers 401 with the Unauthorized message

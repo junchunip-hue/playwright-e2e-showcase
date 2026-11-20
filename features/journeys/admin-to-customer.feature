@@ -10,11 +10,14 @@ Feature: Admin to customer
   Scenario: S3: admin publishes a product, a customer buys it, the admin ships it
     Given the admin has published a new product
     And a newly registered customer
-    When I search the catalogue for that product
+    When I open the catalogue page
+    And I search the catalogue page for that product
     Then the search shows only that product
-    When I add that product to the cart
-    And I review the cart
-    And I sign in as that customer during checkout
+    When I open that product's page
+    And I add it to the cart on the product page
+    Then the cart badge shows 1
+    When I review the cart
+    And I sign in as that customer at the checkout's sign-in step
     And I confirm my saved billing address
     And I pay with "cash-on-delivery"
     Then the admin finds the order at the cart total

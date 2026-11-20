@@ -1,20 +1,17 @@
 package com.showcase.steps;
 
-import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static com.showcase.steps.ScenarioContext.need;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.showcase.api.ApiClient;
 import com.showcase.api.ApiClient.Product;
 import com.showcase.data.Customers.Customer;
-import com.showcase.modules.HeaderModule;
 import com.showcase.pages.CheckoutPage;
 import com.showcase.pages.ComparisonPage;
 import com.showcase.pages.FavoritesPage;
 import com.showcase.pages.InvoiceDetailsPage;
 import com.showcase.pages.InvoiceDetailsPage.PdfFile;
 import com.showcase.pages.InvoicesPage;
-import com.showcase.pages.LoginPage;
 import com.showcase.pages.ProductPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -25,7 +22,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Steps layer for features/journeys/shopper.feature (S5): what a signed-in customer does outside
@@ -51,16 +47,7 @@ public class ShopperSteps {
     ctx.products = playwright.api().findInStockProducts(2);
   }
 
-  @Given("I am signed in as that customer")
-  public void iAmSignedInAsThatCustomer() {
-    Customer customer = ctx.customer();
-    LoginPage loginPage = new LoginPage(playwright.page());
-    loginPage.open();
-    loginPage.signIn(customer.email(), customer.password());
-    assertThat(playwright.page()).hasURL(Pattern.compile("/account$"));
-  }
-
-  @When("I add the first product to my favourites")
+  @When("I add the first product to my favourites on its product page")
   public void iAddTheFirstProductToMyFavourites() {
     ProductPage productPage = new ProductPage(playwright.page());
     productPage.open(products().get(0).id());
@@ -93,15 +80,10 @@ public class ShopperSteps {
     assertEquals(expected, need(ctx.comparison, "When I compare both products"));
   }
 
-  @When("I add the cheaper product to the cart")
-  public void iAddTheCheaperProductToTheCart() {
-    Product cheaper =
-        products().stream().min(Comparator.comparingDouble(Product::price)).orElseThrow();
-    ctx.product = cheaper; // the product the checkout steps buy
-    ProductPage productPage = new ProductPage(playwright.page());
-    productPage.open(cheaper.id());
-    productPage.addToCart();
-    assertThat(new HeaderModule(playwright.page()).cartQuantity).hasText("1");
+  @When("I choose the cheaper of the two products")
+  public void iChooseTheCheaperOfTheTwoProducts() {
+    // the product the next steps open, add to the cart and buy
+    ctx.product = products().stream().min(Comparator.comparingDouble(Product::price)).orElseThrow();
   }
 
   @When("I continue as the signed-in customer")

@@ -88,7 +88,7 @@ public class InvoicesApiSteps {
     ctx.response = api().invoicesRequest(token);
   }
 
-  @Then("the API answers 401 Unauthorized")
+  @Then("the API answers 401 with the Unauthorized message")
   public void theApiAnswers401Unauthorized() {
     APIResponse res = need(ctx.response, "When I list invoices with the token \"...\"");
     assertEquals(401, res.status());

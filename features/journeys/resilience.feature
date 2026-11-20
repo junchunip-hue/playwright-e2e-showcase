@@ -9,7 +9,7 @@ Feature: Resilience
   @regression
   Scenario: S6: a slow catalogue response still shows the products once it arrives
     Given the catalogue answers 3 seconds late
-    When I open the product catalogue
+    When I open the catalogue page
     Then products are shown
     And no "no results" message is shown
     And the catalogue answer went through the delay
@@ -18,21 +18,23 @@ Feature: Resilience
   @negative
   Scenario: S6: a failed catalogue request shows no products and no error; a reload recovers
     Given the catalogue answers with a server error
-    When I open the product catalogue
+    When I open the catalogue page
     Then the catalogue request got the server error
     And no products are shown
     And no "no results" message is shown
-    When the catalogue works again and I reload the page
+    When the catalogue API works again
+    And I reload the catalogue page
     Then products are shown
 
   @regression
   @negative
   Scenario: S6: a failed search is shown as "no results"; the next search works
-    Given I am on the product catalogue
+    Given I open the catalogue page
     And products are shown
     And the search answers with a server error
-    When I submit a search for "pliers"
+    When I submit a search for "pliers" on the catalogue page
     Then a "no results" message is shown
     And no products are shown
-    When the search works again and I search for "pliers"
+    When the search API works again
+    And I search the catalogue page for "pliers"
     Then the first product shown has "pliers" in its name

@@ -8,8 +8,8 @@ Feature: Cart
   @smoke
   Scenario: U5: adding a product updates the cart badge
     Given a product that is in stock
-    And I am signed in as the demo customer
+    And I have signed in as the demo customer on the login page
     When I open that product's page
-    Then the page shows that product
-    When I add it to the cart
+    Then the product page shows that product
+    When I add it to the cart on the product page
     Then the cart badge shows 1

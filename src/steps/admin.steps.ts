@@ -13,8 +13,7 @@ Given('the admin has published a new product', async ({ api, adminToken, ctx }) 
   ctx.product = await api.products.get(published.id);
 });
 
-When('I search the catalogue for that product', async ({ homePage, ctx }) => {
-  await homePage.open();
+When('I search the catalogue page for that product', async ({ homePage, ctx }) => {
   await homePage.search(need(ctx.product, 'Given the admin has published a new product').name);
 });
 
