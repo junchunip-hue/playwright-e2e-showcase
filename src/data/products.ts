@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+
 import type { ApiClient, NewProduct } from '../api/ApiClient';
 
 /**
@@ -7,7 +8,11 @@ import type { ApiClient, NewProduct } from '../api/ApiClient';
  */
 export async function newProductData(api: ApiClient): Promise<NewProduct> {
   const id = randomUUID().slice(0, 8);
-  const [brands, categories, images] = await Promise.all([api.catalog.brands(), api.catalog.categories(), api.catalog.images()]);
+  const [brands, categories, images] = await Promise.all([
+    api.catalog.brands(),
+    api.catalog.categories(),
+    api.catalog.images(),
+  ]);
   const subCategory = categories.find((c) => c.parent_id !== null) ?? categories[0];
 
   return {

@@ -7,6 +7,7 @@ Feature: Payment check API
   Scenario: A9: accepts every payment method with valid details
     Then the payment check accepts every payment method with valid details
 
-  @smoke @negative
+  @smoke
+  @negative
   Scenario: A9: rejects an invalid card, naming only the broken field
     Then the payment check rejects each invalid card, naming only its broken field

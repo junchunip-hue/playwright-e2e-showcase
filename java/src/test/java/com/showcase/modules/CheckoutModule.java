@@ -6,8 +6,8 @@ import com.microsoft.playwright.options.AriaRole;
 import java.util.regex.Pattern;
 
 /**
- * Module layer: locators of the 4-step checkout wizard (cart → sign in → billing address → payment).
- * TypeScript twin: src/modules/checkout.module.ts.
+ * Module layer: locators of the 4-step checkout wizard (cart → sign in → billing address →
+ * payment). TypeScript twin: src/modules/checkout.module.ts.
  */
 public class CheckoutModule {
   private final Page page;
@@ -38,8 +38,10 @@ public class CheckoutModule {
   public final Locator paymentMethod;
   public final Locator finish;
   public final Locator paymentSuccess;
+
   /** Inline field errors of the payment form (Bootstrap alerts, no data-test). */
   public final Locator paymentFieldErrors;
+
   public final Locator orderConfirmation;
 
   public CheckoutModule(Page page) {
@@ -52,7 +54,11 @@ public class CheckoutModule {
     this.proceedFromSignIn = page.getByTestId("proceed-2");
 
     // Bootstrap tab link, no data-test
-    this.guestTab = page.getByRole(AriaRole.TAB, new Page.GetByRoleOptions().setName(Pattern.compile("guest", Pattern.CASE_INSENSITIVE)));
+    this.guestTab =
+        page.getByRole(
+            AriaRole.TAB,
+            new Page.GetByRoleOptions()
+                .setName(Pattern.compile("guest", Pattern.CASE_INSENSITIVE)));
     this.guestEmail = page.getByTestId("guest-email");
     this.guestFirstName = page.getByTestId("guest-first-name");
     this.guestLastName = page.getByTestId("guest-last-name");

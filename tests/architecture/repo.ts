@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+
 import { parse } from 'yaml';
 
 /** Helpers for the architecture tests: read pipeline/source files and find cycles. No browser, no network. */
@@ -51,7 +52,12 @@ export function workflows(): Workflow[] {
   return filesUnder(join(ROOT, '.github', 'workflows'), (n) => /\.ya?ml$/.test(n)).map((file) => {
     const doc = parse(readFileSync(file, 'utf8'));
     // `on: push` (string) and `on: [a, b]` (list) are normalised to an object.
-    const on = typeof doc.on === 'string' ? { [doc.on]: {} } : Array.isArray(doc.on) ? Object.fromEntries(doc.on.map((e: string) => [e, {}])) : doc.on ?? {};
+    const on =
+      typeof doc.on === 'string'
+        ? { [doc.on]: {} }
+        : Array.isArray(doc.on)
+          ? Object.fromEntries(doc.on.map((e: string) => [e, {}]))
+          : (doc.on ?? {});
     return { file: rel(file), name: doc.name ?? rel(file), on, concurrency: doc.concurrency, jobs: doc.jobs ?? {} };
   });
 }
@@ -67,7 +73,9 @@ export function compositeActions(): CompositeAction[] {
 export function allSteps(): { where: string; step: Step }[] {
   return [
     ...workflows().flatMap((w) =>
-      Object.entries(w.jobs).flatMap(([id, job]) => (job.steps ?? []).map((step) => ({ where: `${w.file} › ${id}`, step }))),
+      Object.entries(w.jobs).flatMap(([id, job]) =>
+        (job.steps ?? []).map((step) => ({ where: `${w.file} › ${id}`, step })),
+      ),
     ),
     ...compositeActions().flatMap((a) => a.steps.map((step) => ({ where: a.file, step }))),
   ];

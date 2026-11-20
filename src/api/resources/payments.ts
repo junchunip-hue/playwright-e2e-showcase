@@ -1,4 +1,5 @@
 import type { APIResponse } from '@playwright/test';
+
 import type { Payment } from '../../data/payments';
 import type { Http } from '../http';
 import { LaravelValidationErrorSchema, PaymentCheckSchema, type ValidationErrors } from '../schemas';

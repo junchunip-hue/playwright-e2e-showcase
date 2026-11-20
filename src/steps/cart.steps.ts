@@ -7,11 +7,11 @@ When("I open that product's page", async ({ productPage, ctx }) => {
   await productPage.open(ctx.product.id);
 });
 
-Then('the page shows that product', async ({ productPage, ctx }) => {
+Then('the product page shows that product', async ({ productPage, ctx }) => {
   await expect(productPage.ui.name).toHaveText(ctx.product!.name);
 });
 
-When('I add it to the cart', async ({ productPage }) => {
+When('I add it to the cart on the product page', async ({ productPage }) => {
   await productPage.addToCart();
 });
 

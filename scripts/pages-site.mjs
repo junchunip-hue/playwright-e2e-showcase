@@ -26,15 +26,34 @@ const summary = read(summaryFile);
 const history = read(join(siteDir, 'history.json')) ?? [];
 const streak = read(join(siteDir, 'streak.json'));
 
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const esc = (s) =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 const VERDICT = {
   passed: { cls: 'ok', icon: '✅', title: 'Passed', text: 'no failed and no flaky tests' },
-  flaky: { cls: 'flaky', icon: '⚠️', title: 'Passed with flaky', text: 'every test passed in the end, but some only on a retry' },
-  rerun: { cls: 'flaky', icon: '⚠️', title: 'Passed on a rerun', text: 'every test passed on this attempt, but an earlier one did not' },
+  flaky: {
+    cls: 'flaky',
+    icon: '⚠️',
+    title: 'Passed with flaky',
+    text: 'every test passed in the end, but some only on a retry',
+  },
+  rerun: {
+    cls: 'flaky',
+    icon: '⚠️',
+    title: 'Passed on a rerun',
+    text: 'every test passed on this attempt, but an earlier one did not',
+  },
   failed: { cls: 'bad', icon: '❌', title: 'Failed', text: '' },
-  unverified: { cls: 'flaky', icon: '⚠️', title: 'Unverified', text: 'what ran passed, but the planned test list is missing' },
+  unverified: {
+    cls: 'flaky',
+    icon: '⚠️',
+    title: 'Unverified',
+    text: 'what ran passed, but the planned test list is missing',
+  },
   none: { cls: 'skip', icon: '⏹️', title: 'No result', text: 'neither lane ran' },
 };
 
@@ -78,8 +97,18 @@ function javaScenarios(dir) {
       const body = m[3] ?? '';
       const time = Number(/time="([^"]*)"/.exec(m[1])?.[1] ?? 0);
       const flakes = [...body.matchAll(/<flaky(?:Failure|Error)\b([^>]*)>/g)];
-      const status = /<(failure|error)\b/.test(body) ? 'failed' : flakes.length ? 'flaky' : /<skipped\b/.test(body) ? 'skipped' : 'passed';
-      const message = xmlText(/<(?:failure|error)\b[^>]*message="([^"]*)"/.exec(body)?.[1] ?? (flakes[0] ? /message="([^"]*)"/.exec(flakes[0][1])?.[1] : '') ?? '');
+      const status = /<(failure|error)\b/.test(body)
+        ? 'failed'
+        : flakes.length
+          ? 'flaky'
+          : /<skipped\b/.test(body)
+            ? 'skipped'
+            : 'passed';
+      const message = xmlText(
+        /<(?:failure|error)\b[^>]*message="([^"]*)"/.exec(body)?.[1] ??
+          (flakes[0] ? /message="([^"]*)"/.exec(flakes[0][1])?.[1] : '') ??
+          '',
+      );
       // The scenario's own output is the last <system-out>; a rerun's failed attempts carry their own before it.
       const outs = [...body.matchAll(/<system-out><!\[CDATA\[([\s\S]*?)\]\]><\/system-out>/g)];
       const out = xmlText(noAnsi(outs.at(-1)?.[1] ?? ''));
@@ -88,7 +117,8 @@ function javaScenarios(dir) {
       for (const raw of out.split('\n')) {
         const line = raw.trim();
         const step = /^([✔✘↷?-])\s+(.*?)(?:\s+#\s.*)?$/.exec(line);
-        if (step && /^(Given|When|Then|And|But)\b/.test(step[2])) steps.push({ status: STEP[step[1]] ?? 'unknown', text: step[2] });
+        if (step && /^(Given|When|Then|And|But)\b/.test(step[2]))
+          steps.push({ status: STEP[step[1]] ?? 'unknown', text: step[2] });
         else if (line.startsWith('known defect: ')) notes.push(line);
       }
       // "Feature - Scenario", and for a Scenario Outline "Feature - Outline - Examples - Example #1.1: Scenario".
@@ -186,7 +216,10 @@ function landing(s, java) {
   const ts = s.lanes.ts;
   const jv = s.lanes.java;
   const badgeTotal = (ts.runs ? ts.runs.passed + ts.runs.flaky : 0) + (jv.runs ? jv.runs.passed + jv.runs.flaky : 0);
-  const failedText = s.verdict === 'failed' ? [...s.problems, ...(s.cause ? [`cause: ${s.cause}`] : [])].join('; ') || 'a job ended red' : v.text;
+  const failedText =
+    s.verdict === 'failed'
+      ? [...s.problems, ...(s.cause ? [`cause: ${s.cause}`] : [])].join('; ') || 'a job ended red'
+      : v.text;
 
   // The test runs with a plan ID, and the rest: the sign-in setup, which a shard runs before its browser tests.
   const tsTests = s.rows.reduce((n, r) => n + rowRuns(r.ts), 0);
@@ -227,7 +260,13 @@ ${s.flaky.map((f) => `<tr><td>⚠️ ${esc(f.id)}</td><td>${esc(f.project)}</td>
   }
 
   sections.push(`<h2>TypeScript vs Java by test ID</h2><div class="scroll"><table><tr><th>ID</th><th>TypeScript</th><th>Java</th><th>Coverage</th></tr>
-${[...s.rows].sort((a, b) => byPlanOrder(a.id, b.id)).map((r) => `<tr><td>${esc(withAlias(r.id))}${r.knownDefect ? ' 🟨' : ''}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`).join('\n')}
+${[...s.rows]
+  .sort((a, b) => byPlanOrder(a.id, b.id))
+  .map(
+    (r) =>
+      `<tr><td>${esc(withAlias(r.id))}${r.knownDefect ? ' 🟨' : ''}</td><td>${cell(r.ts)}</td><td>${cell(r.java)}</td><td>${esc(r.coverage)}</td></tr>`,
+  )
+  .join('\n')}
 </table></div>
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
 TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.${s.rows.some((r) => r.knownDefect) ? ' 🟨 = tracks a known product defect.' : ''}</p>`);
@@ -249,7 +288,9 @@ ${s.defects.map((d) => `<tr><td>${esc(d.id)}</td><td>${esc(d.summary)}</td><td>$
 <p class="muted">Green passed · gold flaky, passed on a rerun or unverified · red failed. Data: <a href="history.json">history.json</a>.</p>`);
   }
 
-  sections.push(`<p class="muted" style="margin-top:32px">Java scenarios on this run: ${java.length}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary.</p>`);
+  sections.push(
+    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${java.length}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary.</p>`,
+  );
   return page('Nightly results · Playwright E2E Showcase', sections.join('\n'));
 }
 
@@ -273,7 +314,9 @@ scenario that passed on a rerun shows as flaky.${s?.run?.url ? ` <a href="${esc(
     ([feature, list]) => `<h2>${esc(feature)}</h2>
 ${list
   .map(
-    (sc) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
+    (
+      sc,
+    ) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
 ${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${st.status === 'passed' ? '' : `[${st.status}] `}${esc(st.text)}</li>`).join('')}</ol>` : ''}
 ${sc.message ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}${sc.notes.map((n) => `<p>🟨 <code>${esc(n)}</code></p>`).join('')}</details>`,
   )

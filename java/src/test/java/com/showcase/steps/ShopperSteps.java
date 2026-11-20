@@ -1,20 +1,17 @@
 package com.showcase.steps;
 
-import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static com.showcase.steps.ScenarioContext.need;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.showcase.api.ApiClient;
 import com.showcase.api.ApiClient.Product;
 import com.showcase.data.Customers.Customer;
-import com.showcase.modules.HeaderModule;
 import com.showcase.pages.CheckoutPage;
 import com.showcase.pages.ComparisonPage;
 import com.showcase.pages.FavoritesPage;
 import com.showcase.pages.InvoiceDetailsPage;
 import com.showcase.pages.InvoiceDetailsPage.PdfFile;
 import com.showcase.pages.InvoicesPage;
-import com.showcase.pages.LoginPage;
 import com.showcase.pages.ProductPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -25,11 +22,10 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
- * Steps layer for features/journeys/shopper.feature (S5): what a signed-in customer does outside checkout. The checkout
- * part reuses CheckoutSteps. TypeScript twin: src/steps/shopper.steps.ts.
+ * Steps layer for features/journeys/shopper.feature (S5): what a signed-in customer does outside
+ * checkout. The checkout part reuses CheckoutSteps. TypeScript twin: src/steps/shopper.steps.ts.
  */
 public class ShopperSteps {
   private static final String PRODUCTS = "Given two different products that are in stock";
@@ -51,16 +47,7 @@ public class ShopperSteps {
     ctx.products = playwright.api().findInStockProducts(2);
   }
 
-  @Given("I am signed in as that customer")
-  public void iAmSignedInAsThatCustomer() {
-    Customer customer = ctx.customer();
-    LoginPage loginPage = new LoginPage(playwright.page());
-    loginPage.open();
-    loginPage.signIn(customer.email(), customer.password());
-    assertThat(playwright.page()).hasURL(Pattern.compile("/account$"));
-  }
-
-  @When("I add the first product to my favourites")
+  @When("I add the first product to my favourites on its product page")
   public void iAddTheFirstProductToMyFavourites() {
     ProductPage productPage = new ProductPage(playwright.page());
     productPage.open(products().get(0).id());
@@ -93,14 +80,10 @@ public class ShopperSteps {
     assertEquals(expected, need(ctx.comparison, "When I compare both products"));
   }
 
-  @When("I add the cheaper product to the cart")
-  public void iAddTheCheaperProductToTheCart() {
-    Product cheaper = products().stream().min(Comparator.comparingDouble(Product::price)).orElseThrow();
-    ctx.product = cheaper; // the product the checkout steps buy
-    ProductPage productPage = new ProductPage(playwright.page());
-    productPage.open(cheaper.id());
-    productPage.addToCart();
-    assertThat(new HeaderModule(playwright.page()).cartQuantity).hasText("1");
+  @When("I choose the cheaper of the two products")
+  public void iChooseTheCheaperOfTheTwoProducts() {
+    // the product the next steps open, add to the cart and buy
+    ctx.product = products().stream().min(Comparator.comparingDouble(Product::price)).orElseThrow();
   }
 
   @When("I continue as the signed-in customer")
@@ -130,8 +113,13 @@ public class ShopperSteps {
     String invoiceNumber = need(ctx.invoiceNumber, PAID);
     ApiClient api = playwright.api();
     String token = api.login(customer.email(), customer.password());
-    assertEquals(List.of(products().get(0).id()), api.favorites(token).stream().map(f -> f.productId()).toList());
-    assertEquals(need(ctx.cartTotal, "When I review the cart"), api.findInvoiceByNumber(token, invoiceNumber).total(), 0.01);
+    assertEquals(
+        List.of(products().get(0).id()),
+        api.favorites(token).stream().map(f -> f.productId()).toList());
+    assertEquals(
+        need(ctx.cartTotal, "When I review the cart"),
+        api.findInvoiceByNumber(token, invoiceNumber).total(),
+        0.01);
     assertEquals("COMPLETED", api.pdfStatus(token, invoiceNumber));
   }
 }

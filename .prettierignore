@@ -1,0 +1,16 @@
+# Generated or downloaded
+node_modules/
+package-lock.json
+playwright-report/
+blob-report/
+test-results/
+playwright/.auth/
+tests/features/
+toolshop/
+java/target/
+site/
+results/
+# Prose is wrapped by hand; Java is formatted by Spotless (java/pom.xml)
+*.md
+java/
+.claude/

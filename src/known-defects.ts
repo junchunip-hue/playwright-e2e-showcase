@@ -1,4 +1,4 @@
-import { expect, test, type APIResponse } from '@playwright/test';
+import { type APIResponse, expect, test } from '@playwright/test';
 
 /** A product defect the suite tracks: the rule it breaks, the status that rule requires, and what the API does today. */
 export interface KnownDefect {

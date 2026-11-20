@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+
 import type { ApiClient, NewCustomer } from '../api/ApiClient';
 
 /**

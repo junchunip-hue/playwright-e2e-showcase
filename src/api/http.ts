@@ -1,6 +1,7 @@
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 import { z } from 'zod';
-import { ValidationErrorsSchema, type ValidationErrors } from './schemas';
+
+import { type ValidationErrors, ValidationErrorsSchema } from './schemas';
 
 /**
  * Shared HTTP layer for the resource clients: status check first, then the response contract.

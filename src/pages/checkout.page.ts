@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+
 import type { Address, NewCustomer } from '../api/ApiClient';
 import type { Payment } from '../data/payments';
 import { CheckoutModule } from '../modules/checkout.module';

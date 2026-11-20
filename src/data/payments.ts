@@ -40,7 +40,11 @@ export const payments = {
 
 /** Invalid cards, each breaking one rule; `field` is the input the UI must flag. */
 export const invalidCards = [
-  { name: 'malformed card number', payment: payments.creditCard({ credit_card_number: '1234' }), field: 'credit_card_number' },
+  {
+    name: 'malformed card number',
+    payment: payments.creditCard({ credit_card_number: '1234' }),
+    field: 'credit_card_number',
+  },
   { name: 'expired card', payment: payments.creditCard({ expiration_date: '01/2020' }), field: 'expiration_date' },
 ] as const;
 

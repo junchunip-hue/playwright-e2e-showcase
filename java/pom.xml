@@ -21,6 +21,8 @@
     <cucumber.version>7.34.9</cucumber.version>
     <!-- Where Surefire writes its XML; the PR's step dry run points it elsewhere (-Dsurefire.reportsDirectory=...). -->
     <surefire.reportsDirectory>${project.build.directory}/surefire-reports</surefire.reportsDirectory>
+    <!-- Spotless: locally every build formats the code first; CI (profile below) only checks it. -->
+    <spotless.apply.skip>false</spotless.apply.skip>
   </properties>
 
   <dependencyManagement>
@@ -102,6 +104,42 @@
           </statelessTestsetReporter>
         </configuration>
       </plugin>
+      <!--
+        Code style (docs/coding-rules.md): google-java-format (2-space indent, 100 columns, imports sorted static
+        first and unused ones removed), no wildcard imports, LF and a final newline. Locally "./mvnw test" formats the
+        sources before compiling them (spotless:apply); in CI the apply step is skipped and spotless:check fails the
+        build on any unformatted file. Run it on its own with "./mvnw spotless:apply" or "npm run format".
+      -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <java>
+            <googleJavaFormat/>
+            <removeUnusedImports/>
+            <forbidWildcardImports/>
+            <trimTrailingWhitespace/>
+            <endWithNewline/>
+          </java>
+        </configuration>
+        <executions>
+          <execution>
+            <id>format</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>apply</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>check-format</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <!-- Runs Playwright's CLI, e.g. to install browsers: see docs/java.md "Run". -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -130,6 +168,8 @@
       </activation>
       <properties>
         <surefire.rerunFailingTestsCount>2</surefire.rerunFailingTestsCount>
+        <!-- CI never rewrites code: an unformatted file fails spotless:check instead. -->
+        <spotless.apply.skip>true</spotless.apply.skip>
       </properties>
     </profile>
   </profiles>

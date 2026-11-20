@@ -10,14 +10,7 @@ Given('two different products that are in stock', async ({ api, ctx }) => {
   ctx.products = await api.products.findInStockProducts(2);
 });
 
-Given('I am signed in as that customer', async ({ loginPage, page, ctx }) => {
-  const customer = need(ctx.customer, 'Given a newly registered customer');
-  await loginPage.open();
-  await loginPage.signIn(customer.email, customer.password);
-  await expect(page).toHaveURL(/\/account$/);
-});
-
-When('I add the first product to my favourites', async ({ productPage, ctx }) => {
+When('I add the first product to my favourites on its product page', async ({ productPage, ctx }) => {
   await productPage.open(need(ctx.products, PRODUCTS)[0].id);
   await productPage.addToFavorites();
 });
@@ -42,12 +35,9 @@ Then('the comparison shows both products at their catalogue prices', async ({ ct
   expect(need(ctx.comparison, 'When I compare both products')).toEqual(expected);
 });
 
-When('I add the cheaper product to the cart', async ({ productPage, header, ctx }) => {
+When('I choose the cheaper of the two products', async ({ ctx }) => {
   const [cheaper] = [...need(ctx.products, PRODUCTS)].sort((a, b) => a.price - b.price);
-  ctx.product = cheaper; // the product the checkout steps buy
-  await productPage.open(cheaper.id);
-  await productPage.addToCart();
-  await expect(header.cartQuantity).toHaveText('1');
+  ctx.product = cheaper; // the product the next steps open, add to the cart and buy
 });
 
 When('I continue as the signed-in customer', async ({ checkoutPage }) => {
@@ -72,6 +62,9 @@ Then('the backend has the favourite, the order at the cart total and a completed
   const invoiceNumber = need(ctx.invoiceNumber, 'When I pay with "..."');
   const token = await api.auth.login(customer.email, customer.password);
   expect((await api.favorites.list(token)).map((f) => f.product_id)).toEqual([need(ctx.products, PRODUCTS)[0].id]);
-  expect((await api.invoices.findByNumber(token, invoiceNumber)).total).toBeCloseTo(need(ctx.cartTotal, 'When I review the cart'), 2);
+  expect((await api.invoices.findByNumber(token, invoiceNumber)).total).toBeCloseTo(
+    need(ctx.cartTotal, 'When I review the cart'),
+    2,
+  );
   expect(await api.invoices.pdfStatus(token, invoiceNumber)).toBe('COMPLETED');
 });

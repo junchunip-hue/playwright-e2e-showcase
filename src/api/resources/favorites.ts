@@ -1,5 +1,5 @@
 import type { Http } from '../http';
-import { FavoriteCreatedSchema, FavoriteListSchema, type Favorite } from '../schemas';
+import { type Favorite, FavoriteCreatedSchema, FavoriteListSchema } from '../schemas';
 
 /** /favorites: a signed-in customer's favourite products. */
 export class FavoritesApi {
@@ -11,6 +11,10 @@ export class FavoritesApi {
 
   /** POST /favorites. A product that is already a favourite answers 409 "Duplicate Entry". */
   async add(token: string, productId: string): Promise<void> {
-    await this.http.parse(await this.http.post('/favorites', { product_id: productId }, token), 'POST /favorites', FavoriteCreatedSchema);
+    await this.http.parse(
+      await this.http.post('/favorites', { product_id: productId }, token),
+      'POST /favorites',
+      FavoriteCreatedSchema,
+    );
   }
 }

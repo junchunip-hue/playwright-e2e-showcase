@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+
 import { LoginModule } from '../modules/login.module';
 
 /**

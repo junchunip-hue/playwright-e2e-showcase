@@ -54,10 +54,16 @@ export async function expectNoNewViolations(
   const found = new Set(results.violations.map((v) => v.id));
 
   for (const v of results.violations.filter((v) => v.id in known)) {
-    testInfo.annotations.push({ type: 'known a11y issue', description: `${v.id} (${v.nodes.length} node(s)): ${known[v.id]}` });
+    testInfo.annotations.push({
+      type: 'known a11y issue',
+      description: `${v.id} (${v.nodes.length} node(s)): ${known[v.id]}`,
+    });
   }
   for (const rule of Object.keys(known).filter((rule) => !found.has(rule))) {
-    testInfo.annotations.push({ type: 'fixed a11y issue', description: `${rule} no longer occurs on ${pageName}: remove it from KNOWN_ISSUES` });
+    testInfo.annotations.push({
+      type: 'fixed a11y issue',
+      description: `${rule} no longer occurs on ${pageName}: remove it from KNOWN_ISSUES`,
+    });
   }
 
   const unexpected = results.violations

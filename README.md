@@ -39,9 +39,11 @@ one file that both the TypeScript and the Java suite run
 Scenario: U6: new customer buys an in-stock product with cash on delivery
   Given a newly registered customer                  # arrange via API: fresh data, no shared state
   And a product that is in stock
-  When I add that product to the cart                # act via UI
-  And I review the cart
-  And I sign in as that customer during checkout
+  When I open that product's page                    # act via UI; each sentence names the page it acts on
+  And I add it to the cart on the product page
+  Then the cart badge shows 1
+  When I review the cart
+  And I sign in as that customer at the checkout's sign-in step
   And I confirm my saved billing address             # the app fills in and looks up the saved address
   And I pay with "cash-on-delivery"
   Then that customer's invoice exists at the cart total   # assert via API
@@ -85,6 +87,11 @@ API scenarios read the same way; the API client stands in for the page
   title carries its test-plan ID, checked by `npm run check:tags` for both languages at once.
 - [Architecture tests](tests/architecture/) fail if a workflow could trigger itself, a dependency loops, a job could
   hang, a step creates a locator, or the test plan and the two languages disagree.
+- One code style for everyone, applied by tools, not by review: Spotless (Java) and Prettier with ESLint's import order
+  (TypeScript, Gherkin). `npm run format` fixes it all; a pre-push hook and the PR gate check it
+  ([coding rules](docs/coding-rules.md)).
+- One sentence per action: the [step catalogue](docs/steps.md) lists every step by the page it acts on, generated from
+  the code; the PR fails if it is stale, a step is unused or exists in one language only.
 - Every scenario runs in a TypeScript lane and a Java lane. A missing step fails the PR in either language: `bddgen` for
   TypeScript, a Cucumber dry run over every feature for Java. A summary on each CI run compares the lanes per test ID
   and lists the known defects (see "How it runs").
@@ -174,12 +181,14 @@ tests/
   features/     generated from features/ by `npx bddgen` (git-ignored)
 java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/; report/ScenarioLog
                 keeps each scenario's steps and known defects for the summary
-scripts/        suite runner, demo, bounded browser install, the CI pipeline summary, and the nightly's history and
-                results page on GitHub Pages
+scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
+                install, the CI pipeline summary, and the nightly's history and results page on GitHub Pages
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
-docs/           strategy, test plan, CI, Java, roadmap, decisions (ADRs)
+docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)
 .github/        workflows (PR, nightly, baselines) and shared actions
+.githooks/      pre-push: code style and step checks (installed by npm install)
+CONTRIBUTING.md how to add a scenario, step by step
 ```
 
 ## Run it
@@ -190,6 +199,8 @@ npm run test:pr             # what the PR gate runs (API + Chromium)
 npm run test:api            # the API features only, no browser
 npm run test:architecture   # pipeline/code rules, no browser
 npm run check:tags          # tag counts; fails on unknown tags, missing tier or ID
+npm run format              # code style for both languages (Spotless, Prettier, import order); format:check only checks
+npm run steps               # rebuild docs/steps.md; check:steps fails on a stale catalogue or an unused step
 npm test                    # everything (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
 npm run report              # open the HTML report
 npm run demo                # live demo: U6 in a visible, slowed-down Chromium, trace kept (`npm run demo -- S2` for another ID)
@@ -216,6 +227,7 @@ HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo o
 
 | Question | Document |
 |---|---|
+| How do I add a scenario? | [CONTRIBUTING.md](CONTRIBUTING.md): from test-plan ID to a green PR · rules: [docs/coding-rules.md](docs/coding-rules.md) · existing steps: [docs/steps.md](docs/steps.md) |
 | Why is it built this way? | [docs/test-strategy.md](docs/test-strategy.md) |
 | What runs, where, and which IDs exist? | [docs/test-plan.md](docs/test-plan.md) |
 | How does the pipeline work and protect itself? | [docs/ci.md](docs/ci.md) |

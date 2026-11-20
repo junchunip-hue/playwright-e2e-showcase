@@ -1,22 +1,30 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test as base } from 'playwright-bdd';
-import { WCAG_TAGS } from '../a11y/accessibility';
 import type { APIResponse } from '@playwright/test';
-import { ApiClient, type Address, type NewCustomer, type NewProduct, type Product, type ProductFilter } from '../api/ApiClient';
-import type { InvoiceStatus, ProductPage as ProductListPage, ProductSearchPage } from '../api/schemas';
+import { test as base } from 'playwright-bdd';
 import { createBdd } from 'playwright-bdd';
-import type { InvalidCard } from '../data/payments';
+
+import { WCAG_TAGS } from '../a11y/accessibility';
+import {
+  type Address,
+  ApiClient,
+  type NewCustomer,
+  type NewProduct,
+  type Product,
+  type ProductFilter,
+} from '../api/ApiClient';
+import type { InvoiceStatus, ProductPage as ProductListPage, ProductSearchPage } from '../api/schemas';
 import { env, isPublicDemo } from '../config/env';
-import { Tag } from '../tags';
-import { AccountPage, ComparisonPage, FavoritesPage, InvoiceDetailsPage, InvoicesPage } from '../pages/account.page';
-import { CheckoutPage } from '../pages/checkout.page';
+import type { InvalidCard } from '../data/payments';
 import { FooterModule } from '../modules/footer.module';
 import { HeaderModule } from '../modules/header.module';
+import { AccountPage, ComparisonPage, FavoritesPage, InvoiceDetailsPage, InvoicesPage } from '../pages/account.page';
+import { CheckoutPage } from '../pages/checkout.page';
 import { ContactPage } from '../pages/contact.page';
 import { HomePage } from '../pages/home.page';
-import { NetworkPage } from '../pages/network.page';
 import { LoginPage } from '../pages/login.page';
+import { NetworkPage } from '../pages/network.page';
 import { ProductPage } from '../pages/product.page';
+import { Tag } from '../tags';
 
 /**
  * What one scenario's steps hand to each other (e.g. the customer a Given step registered for a later When step).
@@ -146,8 +154,8 @@ export const test = base.extend<Fixtures>({
   },
 });
 
-export { expect } from '@playwright/test';
 export { Tag } from '../tags';
+export { expect } from '@playwright/test';
 
 /** Gherkin step functions bound to the fixtures above: steps get page objects injected, like tests do. */
 export const { Given, When, Then } = createBdd(test);

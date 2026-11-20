@@ -14,18 +14,11 @@ Given('guest details that were never registered', async ({ api, ctx }) => {
   ctx.guest = await newCustomerData(api);
 });
 
-When('I add that product to the cart', async ({ productPage, header, ctx }) => {
-  const product = need(ctx.product, PRODUCT);
-  await productPage.open(product.id);
-  await productPage.addToCart();
-  await expect(header.cartQuantity).toHaveText('1');
-});
-
 When('I review the cart', async ({ checkoutPage, ctx }) => {
   ctx.cartTotal = await checkoutPage.reviewCart([need(ctx.product, PRODUCT).name]);
 });
 
-When('I sign in as that customer during checkout', async ({ checkoutPage, ctx }) => {
+When("I sign in as that customer at the checkout's sign-in step", async ({ checkoutPage, ctx }) => {
   const customer = need(ctx.customer, CUSTOMER);
   await checkoutPage.signIn(customer.email, customer.password);
 });

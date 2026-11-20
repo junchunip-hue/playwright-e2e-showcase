@@ -29,13 +29,13 @@ public class CartSteps {
     productPage().open(ctx.product().id());
   }
 
-  @Then("the page shows that product")
+  @Then("the product page shows that product")
   public void thePageShowsThatProduct() {
     assertThat(productPage().ui.name).hasText(ctx.product().name());
   }
 
-  @When("I add it to the cart")
-  public void iAddItToTheCart() {
+  @When("I add it to the cart on the product page")
+  public void iAddItToTheCartOnTheProductPage() {
     productPage().addToCart();
   }
 

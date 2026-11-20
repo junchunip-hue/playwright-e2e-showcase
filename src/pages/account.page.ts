@@ -1,6 +1,14 @@
 import { readFile } from 'node:fs/promises';
+
 import { expect, type Page } from '@playwright/test';
-import { AccountModule, ComparisonModule, FavoritesModule, InvoiceDetailsModule, InvoicesModule } from '../modules/account.module';
+
+import {
+  AccountModule,
+  ComparisonModule,
+  FavoritesModule,
+  InvoiceDetailsModule,
+  InvoicesModule,
+} from '../modules/account.module';
 
 // Page layer: what a signed-in customer does on their account pages. Java twins: pages/FavoritesPage.java,
 // ComparisonPage.java, InvoicesPage.java, InvoiceDetailsPage.java.
@@ -85,7 +93,9 @@ export class InvoiceDetailsPage {
   /** Waits until the background job has written the PDF (the button turns enabled), then downloads it. */
   async downloadPdf(invoiceNumber: string): Promise<{ fileName: string; body: Buffer }> {
     await expect(this.ui.invoiceNumber).toHaveValue(invoiceNumber);
-    await expect(this.ui.downloadPdf, 'the PDF is written in the background').toBeEnabled({ timeout: PDF_READY_TIMEOUT });
+    await expect(this.ui.downloadPdf, 'the PDF is written in the background').toBeEnabled({
+      timeout: PDF_READY_TIMEOUT,
+    });
     const download = this.page.waitForEvent('download');
     await this.ui.downloadPdf.click();
     const file = await download;

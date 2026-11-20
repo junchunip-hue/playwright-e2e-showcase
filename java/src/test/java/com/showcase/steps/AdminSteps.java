@@ -10,17 +10,17 @@ import com.showcase.api.ApiClient.Invoice;
 import com.showcase.api.ApiClient.InvoiceDetail;
 import com.showcase.data.Customers.Customer;
 import com.showcase.data.Products;
-import com.showcase.pages.InvoicesPage;
 import com.showcase.pages.HomePage;
+import com.showcase.pages.InvoicesPage;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.util.Map;
 
 /**
- * Steps layer for the admin side of features/journeys/admin-to-customer.feature (S3) and guest-checkout.feature (S4).
- * The admin works through the API; @admin scenarios are skipped on the public demo (Hooks).
- * TypeScript twin: src/steps/admin.steps.ts.
+ * Steps layer for the admin side of features/journeys/admin-to-customer.feature (S3) and
+ * guest-checkout.feature (S4). The admin works through the API; @admin scenarios are skipped on the
+ * public demo (Hooks). TypeScript twin: src/steps/admin.steps.ts.
  */
 public class AdminSteps {
   private static final String PAID = "When I pay with \"...\"";
@@ -36,25 +36,28 @@ public class AdminSteps {
   @Given("the admin has published a new product")
   public void theAdminHasPublishedANewProduct() {
     ApiClient api = playwright.api();
-    CreatedProduct published = api.createProduct(playwright.adminToken(), Products.newProductData(api));
+    CreatedProduct published =
+        api.createProduct(playwright.adminToken(), Products.newProductData(api));
     ctx.product = api.getProduct(published.id());
   }
 
-  @When("I search the catalogue for that product")
-  public void iSearchTheCatalogueForThatProduct() {
-    HomePage homePage = new HomePage(playwright.page());
-    homePage.open();
-    homePage.search(ctx.product().name());
+  @When("I search the catalogue page for that product")
+  public void iSearchTheCataloguePageForThatProduct() {
+    new HomePage(playwright.page()).search(ctx.product().name());
   }
 
   @Then("the search shows only that product")
   public void theSearchShowsOnlyThatProduct() {
-    assertThat(new HomePage(playwright.page()).ui.productNames).hasText(new String[] {ctx.product().name()});
+    assertThat(new HomePage(playwright.page()).ui.productNames)
+        .hasText(new String[] {ctx.product().name()});
   }
 
   @Then("the admin finds the order at the cart total")
   public void theAdminFindsTheOrderAtTheCartTotal() {
-    InvoiceDetail invoice = playwright.api().findInvoiceByNumber(playwright.adminToken(), need(ctx.invoiceNumber, PAID));
+    InvoiceDetail invoice =
+        playwright
+            .api()
+            .findInvoiceByNumber(playwright.adminToken(), need(ctx.invoiceNumber, PAID));
     assertEquals(need(ctx.cartTotal, "When I review the cart"), invoice.total(), 0.01);
     ctx.invoiceId = invoice.id();
   }
@@ -62,7 +65,10 @@ public class AdminSteps {
   @When("the admin marks the order as shipped")
   public void theAdminMarksTheOrderAsShipped() {
     ctx.shippedMessage = "Shipped by the S3 journey";
-    playwright.api().updateInvoiceStatus(playwright.adminToken(), need(ctx.invoiceId, FOUND), "SHIPPED", ctx.shippedMessage);
+    playwright
+        .api()
+        .updateInvoiceStatus(
+            playwright.adminToken(), need(ctx.invoiceId, FOUND), "SHIPPED", ctx.shippedMessage);
   }
 
   @Then("my invoices list shows the order")
@@ -76,7 +82,8 @@ public class AdminSteps {
   public void myOwnViewOfTheOrderSaysItWasShipped() {
     Customer customer = ctx.customer();
     ApiClient api = playwright.api();
-    InvoiceDetail mine = api.invoice(api.login(customer.email(), customer.password()), need(ctx.invoiceId, FOUND));
+    InvoiceDetail mine =
+        api.invoice(api.login(customer.email(), customer.password()), need(ctx.invoiceId, FOUND));
     assertEquals(ctx.invoiceNumber, mine.invoiceNumber());
     assertEquals("SHIPPED", mine.status());
     assertEquals(ctx.shippedMessage, mine.statusMessage());
@@ -86,10 +93,11 @@ public class AdminSteps {
   public void theOrderIsBilledToTheGuestsAddress() {
     String invoiceNumber = need(ctx.invoiceNumber, PAID);
     Map<String, String> address = ctx.guestAddress();
-    Invoice invoice = playwright.api().searchInvoices(playwright.adminToken(), invoiceNumber).data().stream()
-        .filter(i -> i.invoiceNumber().equals(invoiceNumber))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("guest invoice " + invoiceNumber + " not found"));
+    Invoice invoice =
+        playwright.api().searchInvoices(playwright.adminToken(), invoiceNumber).data().stream()
+            .filter(i -> i.invoiceNumber().equals(invoiceNumber))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("guest invoice " + invoiceNumber + " not found"));
     assertEquals(address.get("street"), invoice.billingStreet());
     assertEquals(address.get("city"), invoice.billingCity());
     assertEquals(address.get("country"), invoice.billingCountry());

@@ -1,17 +1,9 @@
-import { expect, Given, Then, When } from '../fixtures';
+import { expect, Given, Then } from '../fixtures';
 
 // Steps layer for features/ui/search.feature. Java twin: java/src/test/java/com/showcase/steps/SearchSteps.java.
 
-Given('I am on the product catalogue', async ({ homePage }) => {
-  await homePage.open();
-});
-
 Given("the search API's results for {string}", async ({ api, ctx }, term: string) => {
   ctx.searchApiNames = (await api.products.search(term)).data.map((p) => p.name.trim());
-});
-
-When('I search for {string}', async ({ homePage }, term: string) => {
-  await homePage.search(term);
 });
 
 Then('every product shown has {string} in its name', async ({ homePage }, term: string) => {

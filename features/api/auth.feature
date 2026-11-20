@@ -8,7 +8,8 @@ Feature: Auth API
     Then an access token is returned
 
   # Throwaway account: failed logins count towards an account lock (HTTP 423) on the shared customer.
-  @regression @negative
+  @regression
+  @negative
   Scenario: A3: wrong password is rejected with 401
     Given a newly registered customer
     When that customer signs in through the API with a wrong password

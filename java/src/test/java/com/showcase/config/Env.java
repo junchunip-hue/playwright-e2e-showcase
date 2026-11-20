@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Java twin of src/config/env.ts: same variable names, same defaults.
- * Reads real environment variables first, then the repo-root .env shared with the TypeScript suite.
+ * Java twin of src/config/env.ts: same variable names, same defaults. Reads real environment
+ * variables first, then the repo-root .env shared with the TypeScript suite.
  */
 public final class Env {
   private static final Map<String, String> DOTENV = loadDotEnv();
@@ -17,15 +17,20 @@ public final class Env {
   public static final String BASE_URL = get("BASE_URL", "https://practicesoftwaretesting.com");
   public static final String API_URL = get("API_URL", "https://api.practicesoftwaretesting.com");
   // Publicly documented Toolshop demo account.
-  public static final String CUSTOMER_EMAIL = get("CUSTOMER_EMAIL", "customer@practicesoftwaretesting.com");
+  public static final String CUSTOMER_EMAIL =
+      get("CUSTOMER_EMAIL", "customer@practicesoftwaretesting.com");
   public static final String CUSTOMER_PASSWORD = get("CUSTOMER_PASSWORD", "welcome01");
-  // Seeded admin of Toolshop; only used against our own instance (@admin scenarios, see steps/Hooks).
+  // Seeded admin of Toolshop; only used against our own instance (@admin scenarios, see
+  // steps/Hooks).
   public static final String ADMIN_EMAIL = get("ADMIN_EMAIL", "admin@practicesoftwaretesting.com");
   public static final String ADMIN_PASSWORD = get("ADMIN_PASSWORD", "welcome01");
 
   private Env() {}
 
-  /** The shared public demo: other people use it, so tests must not change its catalogue or orders there. */
+  /**
+   * The shared public demo: other people use it, so tests must not change its catalogue or orders
+   * there.
+   */
   public static boolean isPublicDemo() {
     return BASE_URL.contains("practicesoftwaretesting.com");
   }
