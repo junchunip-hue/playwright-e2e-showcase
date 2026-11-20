@@ -606,7 +606,8 @@ if (process.env.GITHUB_OUTPUT) {
       ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}${planUnavailable ? ' · unverified (no planned list)' : ''}`
       : planUnavailable
         ? '⚠️ Unverified: passed what ran, but the planned test list is missing'
-        : `✅ Passed: no failed and no flaky tests${knownTotal ? ` · 🟨 ${plural(knownTotal, 'known defect')} (${knownIdList})` : ''}`;
+        : // No 🟨 here: commit status descriptions reject 4-byte Unicode (✅ and ⚠️ are 3-byte).
+          `✅ Passed: no failed and no flaky tests${knownTotal ? ` · ${plural(knownTotal, 'known defect')} failing on purpose (${knownIdList})` : ''}`;
   // A rerun says so first (GitHub cuts the description at 140 characters): "Passed on attempt 2 (attempt 1 failed: …)".
   const first = earlierFailed[0];
   const earlierShort = first
