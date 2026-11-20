@@ -14,7 +14,8 @@ Feature: Resilience
     And no "no results" message is shown
     And the catalogue answer went through the delay
 
-  @regression @negative
+  @regression
+  @negative
   Scenario: S6: a failed catalogue request shows no products and no error; a reload recovers
     Given the catalogue answers with a server error
     When I open the product catalogue
@@ -24,7 +25,8 @@ Feature: Resilience
     When the catalogue works again and I reload the page
     Then products are shown
 
-  @regression @negative
+  @regression
+  @negative
   Scenario: S6: a failed search is shown as "no results"; the next search works
     Given I am on the product catalogue
     And products are shown

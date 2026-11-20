@@ -1,14 +1,15 @@
 import type { APIResponse } from '@playwright/test';
+
 import type { Http } from '../http';
 import {
-  InvoiceDetailSchema,
-  InvoicePageSchema,
-  PdfStatusSchema,
-  StatusUpdatedSchema,
   type InvoiceDetail,
+  InvoiceDetailSchema,
   type InvoicePage,
+  InvoicePageSchema,
   type InvoiceStatus,
   type PdfStatus,
+  PdfStatusSchema,
+  StatusUpdatedSchema,
 } from '../schemas';
 
 /** /invoices: a customer sees their own invoices, an admin sees all of them. */

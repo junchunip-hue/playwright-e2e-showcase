@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join, sep } from 'node:path';
+
 import { expect, Tag, test } from '../../src/fixtures';
 import { filesUnder, rel, ROOT } from './repo';
 
@@ -12,7 +13,9 @@ const lines = (file: string) => readFileSync(file, 'utf8').split('\n');
 /** Offending lines as "file:line: text", comments ignored. */
 const offenders = (files: string[], pattern: RegExp) =>
   files.flatMap((f) =>
-    lines(f).flatMap((text, i) => (pattern.test(text) && !/^\s*(\/\/|\*|\/\*)/.test(text) ? [`${rel(f)}:${i + 1}: ${text.trim()}`] : [])),
+    lines(f).flatMap((text, i) =>
+      pattern.test(text) && !/^\s*(\/\/|\*|\/\*)/.test(text) ? [`${rel(f)}:${i + 1}: ${text.trim()}`] : [],
+    ),
   );
 
 test.describe('Gherkin layers', { tag: [Tag.smoke, Tag.architecture] }, () => {
@@ -23,7 +26,10 @@ test.describe('Gherkin layers', { tag: [Tag.smoke, Tag.architecture] }, () => {
     ];
 
     expect(modules.length, 'no module files found').toBeGreaterThan(0);
-    expect(offenders(modules, /\bawait\b|\.(click|fill|check|press|selectOption|navigate|goto|hover|type)\(/), 'actions in modules').toEqual([]);
+    expect(
+      offenders(modules, /\bawait\b|\.(click|fill|check|press|selectOption|navigate|goto|hover|type)\(/),
+      'actions in modules',
+    ).toEqual([]);
   });
 
   test('N3: steps create no locators (they call pages and assert on their modules)', () => {

@@ -3,7 +3,10 @@ package com.showcase.modules;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 
-/** Module layer: the side-by-side comparison (/comparison), one column per product. TypeScript twin: src/modules/account.module.ts. */
+/**
+ * Module layer: the side-by-side comparison (/comparison), one column per product. TypeScript twin:
+ * src/modules/account.module.ts.
+ */
 public class ComparisonModule {
   public final Locator table;
   public final Locator productNames;

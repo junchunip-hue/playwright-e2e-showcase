@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+
 import { ProductModule } from '../modules/product.module';
 
 /** Page layer: what a user does on a product's detail page. Java twin: pages/ProductPage.java. */

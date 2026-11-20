@@ -17,7 +17,10 @@ Then('an access token is returned', async ({ ctx }) => {
 });
 
 When('that customer signs in through the API with a wrong password', async ({ api, ctx }) => {
-  ctx.response = await api.auth.loginRequest(need(ctx.customer, 'Given a newly registered customer').email, 'definitely-wrong-password');
+  ctx.response = await api.auth.loginRequest(
+    need(ctx.customer, 'Given a newly registered customer').email,
+    'definitely-wrong-password',
+  );
 });
 
 Then('the API answers {int}', async ({ ctx }, status: number) => {
@@ -60,8 +63,11 @@ When('I look up the US postcode {string}', async ({ api, ctx }, postcode: string
   ctx.address = await api.addresses.lookup('US', postcode, '1');
 });
 
-Then('the address is in country {string} with postcode {string}', async ({ ctx }, country: string, postcode: string) => {
-  const address = need(ctx.address, 'When I look up the US postcode "..."');
-  expect(address.country).toBe(country);
-  expect(address.postal_code).toBe(postcode);
-});
+Then(
+  'the address is in country {string} with postcode {string}',
+  async ({ ctx }, country: string, postcode: string) => {
+    const address = need(ctx.address, 'When I look up the US postcode "..."');
+    expect(address.country).toBe(country);
+    expect(address.postal_code).toBe(postcode);
+  },
+);

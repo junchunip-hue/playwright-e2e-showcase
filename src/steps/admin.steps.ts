@@ -19,7 +19,9 @@ When('I search the catalogue for that product', async ({ homePage, ctx }) => {
 });
 
 Then('the search shows only that product', async ({ homePage, ctx }) => {
-  await expect(homePage.ui.productNames).toHaveText([need(ctx.product, 'Given the admin has published a new product').name]);
+  await expect(homePage.ui.productNames).toHaveText([
+    need(ctx.product, 'Given the admin has published a new product').name,
+  ]);
 });
 
 Then('the admin finds the order at the cart total', async ({ api, adminToken, ctx }) => {
@@ -30,7 +32,12 @@ Then('the admin finds the order at the cart total', async ({ api, adminToken, ct
 
 When('the admin marks the order as shipped', async ({ api, adminToken, ctx }) => {
   ctx.shippedMessage = 'Shipped by the S3 journey';
-  await api.invoices.updateStatus(adminToken, need(ctx.invoiceId, 'Then the admin finds the order at the cart total'), 'SHIPPED', ctx.shippedMessage);
+  await api.invoices.updateStatus(
+    adminToken,
+    need(ctx.invoiceId, 'Then the admin finds the order at the cart total'),
+    'SHIPPED',
+    ctx.shippedMessage,
+  );
 });
 
 Then('my invoices list shows the order', async ({ invoicesPage, ctx }) => {
@@ -42,7 +49,11 @@ Then('my own view of the order says it was shipped', async ({ api, ctx }) => {
   const customer = need(ctx.customer, 'Given a newly registered customer');
   const token = await api.auth.login(customer.email, customer.password);
   const mine = await api.invoices.get(token, need(ctx.invoiceId, 'Then the admin finds the order at the cart total'));
-  expect(mine).toMatchObject({ invoice_number: ctx.invoiceNumber, status: 'SHIPPED', status_message: ctx.shippedMessage });
+  expect(mine).toMatchObject({
+    invoice_number: ctx.invoiceNumber,
+    status: 'SHIPPED',
+    status_message: ctx.shippedMessage,
+  });
 });
 
 Then("the order is billed to the guest's address", async ({ api, adminToken, ctx }) => {

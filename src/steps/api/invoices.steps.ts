@@ -1,4 +1,5 @@
 import type { APIResponse } from '@playwright/test';
+
 import { INVOICE_STATUSES, type InvoiceStatus } from '../../api/schemas';
 import { newProductData } from '../../data/products';
 import { expect, Given, Then, When } from '../../fixtures';
@@ -55,7 +56,8 @@ When('that customer tries to publish a product through the API', async ({ api, c
 });
 
 Given('an order of someone else, in a status the API accepts', async ({ api, adminToken, ctx }) => {
-  const isAccepted = (status: string): status is InvoiceStatus => (INVOICE_STATUSES as readonly string[]).includes(status);
+  const isAccepted = (status: string): status is InvoiceStatus =>
+    (INVOICE_STATUSES as readonly string[]).includes(status);
   const order = (await api.invoices.list(adminToken)).data.find((i) => isAccepted(i.status));
   expect(order, 'a seeded invoice with a status the API accepts').toBeDefined();
   ctx.order = { id: order!.id, status: order!.status as InvoiceStatus };

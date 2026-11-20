@@ -5,7 +5,13 @@ import { expect, Then } from '../../fixtures';
 // Playwright step in the report. Java twin: java/src/test/java/com/showcase/steps/api/PaymentsApiSteps.java.
 
 Then('the payment check accepts every payment method with valid details', async ({ api, $test }) => {
-  const all = [payments.cashOnDelivery(), payments.bankTransfer(), payments.creditCard(), payments.buyNowPayLater(), payments.giftCard()];
+  const all = [
+    payments.cashOnDelivery(),
+    payments.bankTransfer(),
+    payments.creditCard(),
+    payments.buyNowPayLater(),
+    payments.giftCard(),
+  ];
   for (const payment of all) {
     // check() validates the body against PaymentCheckSchema ("Payment was successful") and throws otherwise.
     await $test.step(payment.method, () => expect(api.payments.check(payment)).resolves.toBeUndefined());

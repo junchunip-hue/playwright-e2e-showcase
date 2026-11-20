@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
 import { expect, Tag, test } from '../../src/fixtures';
 import { filesUnder, ROOT } from './repo';
 
@@ -13,7 +14,9 @@ import { filesUnder, ROOT } from './repo';
  */
 function featureIds(): Set<string> {
   const features = filesUnder(join(ROOT, 'features'), (n) => n.endsWith('.feature'));
-  const names = features.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/^\s*Scenario(?: Outline)?:\s*([ASUN]\d+):/gm)]);
+  const names = features.flatMap((f) => [
+    ...readFileSync(f, 'utf8').matchAll(/^\s*Scenario(?: Outline)?:\s*([ASUN]\d+):/gm),
+  ]);
   return new Set(names.map((m) => m[1]));
 }
 
@@ -58,7 +61,7 @@ test.describe('TypeScript/Java parity', { tag: [Tag.smoke, Tag.architecture] }, 
     expect(scenarios(java), 'scenario IDs in Java vs TypeScript').toEqual(scenarios(ts));
   });
 
-  test('N3: the test plan\'s Java column matches the Java suite', () => {
+  test("N3: the test plan's Java column matches the Java suite", () => {
     expect(sorted(planJavaIds()), 'IDs marked Java ✅ in docs/test-plan.md vs IDs in java/').toEqual(sorted(javaIds()));
   });
 

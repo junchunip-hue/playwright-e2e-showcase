@@ -72,6 +72,9 @@ Then('the backend has the favourite, the order at the cart total and a completed
   const invoiceNumber = need(ctx.invoiceNumber, 'When I pay with "..."');
   const token = await api.auth.login(customer.email, customer.password);
   expect((await api.favorites.list(token)).map((f) => f.product_id)).toEqual([need(ctx.products, PRODUCTS)[0].id]);
-  expect((await api.invoices.findByNumber(token, invoiceNumber)).total).toBeCloseTo(need(ctx.cartTotal, 'When I review the cart'), 2);
+  expect((await api.invoices.findByNumber(token, invoiceNumber)).total).toBeCloseTo(
+    need(ctx.cartTotal, 'When I review the cart'),
+    2,
+  );
   expect(await api.invoices.pdfStatus(token, invoiceNumber)).toBe('COMPLETED');
 });

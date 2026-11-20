@@ -58,7 +58,9 @@ Then('the catalogue answer went through the delay', async ({ network }) => {
 
 // Waits until the mocked 500 really reached the app, so "no products" is checked after the failure, not before.
 Then('the catalogue request got the server error', async ({ network }) => {
-  await expect.poll(() => network.catalogueFailures, { message: 'catalogue requests answered with 500' }).toBeGreaterThan(0);
+  await expect
+    .poll(() => network.catalogueFailures, { message: 'catalogue requests answered with 500' })
+    .toBeGreaterThan(0);
 });
 
 Then('the first product shown has {string} in its name', async ({ homePage }, term: string) => {

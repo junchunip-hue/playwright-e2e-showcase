@@ -23,12 +23,16 @@ import java.util.function.Function;
 import org.junit.jupiter.api.function.Executable;
 
 /**
- * Steps layer for features/api/invoices.feature (A6) and permissions.feature (A10, A11: known defects, ADR 0010).
- * TypeScript twin: src/steps/api/invoices.steps.ts.
+ * Steps layer for features/api/invoices.feature (A6) and permissions.feature (A10, A11: known
+ * defects, ADR 0010). TypeScript twin: src/steps/api/invoices.steps.ts.
  */
 public class InvoicesApiSteps {
-  /** Ids that do not exist: authentication is checked before the lookup, so any id shows where the 401 comes from. */
+  /**
+   * Ids that do not exist: authentication is checked before the lookup, so any id shows where the
+   * 401 comes from.
+   */
   private static final String UNKNOWN_ID = "01JAAAAAAAAAAAAAAAAAAAAAAA";
+
   private static final String UNKNOWN_NUMBER = "INV-2000000001";
   private final PlaywrightContext playwright;
   private final ScenarioContext ctx;
@@ -48,22 +52,35 @@ public class InvoicesApiSteps {
     return api().login(customer.email(), customer.password());
   }
 
-  @Then("every invoice route refuses an anonymous request with 401 and lets the signed-in one through")
+  @Then(
+      "every invoice route refuses an anonymous request with 401 and lets the signed-in one through")
   public void everyInvoiceRouteRefusesAnAnonymousRequest(DataTable table) {
     String token = customerToken();
-    Map<String, Function<String, APIResponse>> send = Map.of(
-        "GET /invoices", t -> api().invoicesRequest(t),
-        "GET /invoices/{id}", t -> api().invoiceRequest(UNKNOWN_ID, t),
-        "GET /invoices/{number}/download-pdf", t -> api().invoicePdfRequest(UNKNOWN_NUMBER, t),
-        "GET /invoices/{number}/download-pdf-status", t -> api().invoicePdfStatusRequest(UNKNOWN_NUMBER, t));
-    assertAll(table.asMaps().stream().map(row -> (Executable) () -> {
-      String label = row.get("route");
-      Function<String, APIResponse> route = need(send.get(label), "a request for \"" + label + "\" in InvoicesApiSteps");
-      APIResponse anonymous = route.apply(null);
-      assertEquals(401, anonymous.status(), label + " without a token");
-      assertUnauthorized(anonymous, label);
-      assertEquals(Integer.parseInt(row.get("signed in")), route.apply(token).status(), label + " with a token");
-    }));
+    Map<String, Function<String, APIResponse>> send =
+        Map.of(
+            "GET /invoices", t -> api().invoicesRequest(t),
+            "GET /invoices/{id}", t -> api().invoiceRequest(UNKNOWN_ID, t),
+            "GET /invoices/{number}/download-pdf", t -> api().invoicePdfRequest(UNKNOWN_NUMBER, t),
+            "GET /invoices/{number}/download-pdf-status",
+                t -> api().invoicePdfStatusRequest(UNKNOWN_NUMBER, t));
+    assertAll(
+        table.asMaps().stream()
+            .map(row ->
+                (Executable)
+                    () -> {
+                      String label = row.get("route");
+                      Function<String, APIResponse> route =
+                          need(
+                              send.get(label),
+                              "a request for \"" + label + "\" in InvoicesApiSteps");
+                      APIResponse anonymous = route.apply(null);
+                      assertEquals(401, anonymous.status(), label + " without a token");
+                      assertUnauthorized(anonymous, label);
+                      assertEquals(
+                          Integer.parseInt(row.get("signed in")),
+                          route.apply(token).status(),
+                          label + " with a token");
+                    }));
   }
 
   @When("I list invoices with the token {string}")
@@ -82,34 +99,42 @@ public class InvoicesApiSteps {
 
   @When("that customer tries to publish a product through the API")
   public void thatCustomerTriesToPublishAProduct() {
-    // Intended: 403. Today: 201, because StoreProduct::authorize() returns true and only DELETE requires the admin role.
+    // Intended: 403. Today: 201, because StoreProduct::authorize() returns true and only DELETE
+    // requires the admin role.
     ctx.response = api().createProductRequest(customerToken(), Products.newProductData(api()));
   }
 
   @Given("an order of someone else, in a status the API accepts")
   public void anOrderOfSomeoneElse() {
     String adminToken = playwright.adminToken();
-    order = api().invoices(adminToken).data().stream()
-        .map(i -> api().invoice(adminToken, i.id()))
-        .filter(i -> ApiClient.INVOICE_STATUSES.contains(i.status()))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("a seeded invoice with a status the API accepts"));
+    order =
+        api().invoices(adminToken).data().stream()
+            .map(i -> api().invoice(adminToken, i.id()))
+            .filter(i -> ApiClient.INVOICE_STATUSES.contains(i.status()))
+            .findFirst()
+            .orElseThrow(
+                () -> new AssertionError("a seeded invoice with a status the API accepts"));
   }
 
   @When("that customer sets that order to the status it already has")
   public void thatCustomerSetsThatOrderToItsStatus() {
-    // Intended: 403. Today: 200, because the route only requires a signed-in user and checks neither role nor owner.
+    // Intended: 403. Today: 200, because the route only requires a signed-in user and checks
+    // neither role nor owner.
     ctx.response = api().updateInvoiceStatusRequest(customerToken(), order.id(), order.status());
   }
 
   @Then("the API still answers {int} instead of {int}, known defect {string} for {string}")
   public void theApiStillAnswersKnownDefect(int today, int intended, String summary, String label) {
-    new KnownDefect(summary, intended, today).check(need(ctx.response, "a When step that sends the request"), label);
+    new KnownDefect(summary, intended, today)
+        .check(need(ctx.response, "a When step that sends the request"), label);
   }
 
   @Then("the order is unchanged")
   public void theOrderIsUnchanged() {
-    assertEquals(order.status(), api().invoice(playwright.adminToken(), order.id()).status(), "the order is unchanged");
+    assertEquals(
+        order.status(),
+        api().invoice(playwright.adminToken(), order.id()).status(),
+        "the order is unchanged");
   }
 
   private static void assertUnauthorized(APIResponse res, String label) {

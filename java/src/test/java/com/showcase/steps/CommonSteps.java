@@ -9,8 +9,8 @@ import io.cucumber.java.en.Given;
 import java.util.regex.Pattern;
 
 /**
- * Steps layer: Gherkin sentences bound to page methods. Steps used by more than one feature live here.
- * TypeScript twin: src/steps/common.steps.ts.
+ * Steps layer: Gherkin sentences bound to page methods. Steps used by more than one feature live
+ * here. TypeScript twin: src/steps/common.steps.ts.
  */
 public class CommonSteps {
   private final PlaywrightContext playwright;

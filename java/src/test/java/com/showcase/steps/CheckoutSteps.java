@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Steps layer for features/journeys/checkout.feature and guest-checkout.feature: the checkout journey, one wizard step
- * per sentence. The waits live in pages/CheckoutPage; the outcome is asserted here, in the UI and the API.
- * TypeScript twin: src/steps/checkout.steps.ts.
+ * Steps layer for features/journeys/checkout.feature and guest-checkout.feature: the checkout
+ * journey, one wizard step per sentence. The waits live in pages/CheckoutPage; the outcome is
+ * asserted here, in the UI and the API. TypeScript twin: src/steps/checkout.steps.ts.
  */
 public class CheckoutSteps {
   private static final String PAID = "When I pay with \"...\"";
@@ -69,7 +69,11 @@ public class CheckoutSteps {
   @When("I continue as that guest")
   public void iContinueAsThatGuest() {
     Map<String, Object> guest = need(ctx.guest, "Given guest details that were never registered");
-    checkoutPage().continueAsGuest((String) guest.get("email"), (String) guest.get("first_name"), (String) guest.get("last_name"));
+    checkoutPage()
+        .continueAsGuest(
+            (String) guest.get("email"),
+            (String) guest.get("first_name"),
+            (String) guest.get("last_name"));
   }
 
   @When("I confirm my saved billing address")
@@ -107,7 +111,8 @@ public class CheckoutSteps {
   @Then("the form flags that card's invalid field and cannot be submitted")
   public void theFormFlagsThatCardsInvalidField() {
     InvalidCard card = need(ctx.invalidCard, "When I enter the payment details of a \"...\"");
-    assertThat(checkoutPage().ui.paymentField(card.field())).hasClass(Pattern.compile("ng-invalid"));
+    assertThat(checkoutPage().ui.paymentField(card.field()))
+        .hasClass(Pattern.compile("ng-invalid"));
     assertThat(checkoutPage().ui.paymentFieldErrors.first()).isVisible();
     assertThat(checkoutPage().ui.finish).isDisabled();
   }
@@ -117,7 +122,9 @@ public class CheckoutSteps {
     InvalidCard card = need(ctx.invalidCard, "When I enter the payment details of a \"...\"");
     ApiClient api = playwright.api();
     assertEquals(422, api.paymentCheckRequest(card.payment()).status());
-    assertEquals(List.of("payment_details." + card.field()), api.paymentRejectedFields(api.paymentCheckRequest(card.payment())));
+    assertEquals(
+        List.of("payment_details." + card.field()),
+        api.paymentRejectedFields(api.paymentCheckRequest(card.payment())));
   }
 
   @Then("that customer has no invoices")
@@ -135,6 +142,8 @@ public class CheckoutSteps {
     return api.invoices(api.login(customer.email(), customer.password())).data().stream()
         .filter(i -> i.invoiceNumber().equals(invoiceNumber))
         .findFirst()
-        .orElseThrow(() -> new AssertionError("invoice " + invoiceNumber + " for " + customer.email() + " not found"));
+        .orElseThrow(() ->
+            new AssertionError(
+                "invoice " + invoiceNumber + " for " + customer.email() + " not found"));
   }
 }

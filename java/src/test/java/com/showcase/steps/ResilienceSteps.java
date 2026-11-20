@@ -13,8 +13,8 @@ import io.cucumber.java.en.When;
 import java.util.regex.Pattern;
 
 /**
- * Steps layer for features/journeys/resilience.feature (S6). The mocking itself lives in pages/NetworkPage.
- * TypeScript twin: src/steps/resilience.steps.ts.
+ * Steps layer for features/journeys/resilience.feature (S6). The mocking itself lives in
+ * pages/NetworkPage. TypeScript twin: src/steps/resilience.steps.ts.
  */
 public class ResilienceSteps {
   private final PlaywrightContext playwright;
@@ -73,10 +73,12 @@ public class ResilienceSteps {
     homePage().search(term);
   }
 
-  // Web-first assertions wait for a late answer: up to 10 s, enough for the 3 s delay; no fixed sleep.
+  // Web-first assertions wait for a late answer: up to 10 s, enough for the 3 s delay; no fixed
+  // sleep.
   @Then("products are shown")
   public void productsAreShown() {
-    assertThat(homePage().ui.productNames.first()).isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10_000));
+    assertThat(homePage().ui.productNames.first())
+        .isVisible(new LocatorAssertions.IsVisibleOptions().setTimeout(10_000));
   }
 
   @Then("no products are shown")
@@ -101,7 +103,10 @@ public class ResilienceSteps {
     assertTrue(network().delayed.get() > 0, "catalogue answers delivered late");
   }
 
-  /** Waits until the mocked 500 really reached the app, so "no products" is checked after the failure (TS: expect.poll). */
+  /**
+   * Waits until the mocked 500 really reached the app, so "no products" is checked after the
+   * failure (TS: expect.poll).
+   */
   @Then("the catalogue request got the server error")
   public void theCatalogueRequestGotTheServerError() {
     long deadline = System.currentTimeMillis() + 5_000;
@@ -113,6 +118,10 @@ public class ResilienceSteps {
 
   @Then("the first product shown has {string} in its name")
   public void theFirstProductShownHasInItsName(String term) {
-    assertThat(homePage().ui.productNames.first()).containsText(Pattern.compile(term, Pattern.CASE_INSENSITIVE)); // sent to the browser as a JS regex: no \Q...\E quoting
+    assertThat(homePage().ui.productNames.first())
+        .containsText(
+            Pattern.compile(
+                term,
+                Pattern.CASE_INSENSITIVE)); // sent to the browser as a JS regex: no \Q...\E quoting
   }
 }

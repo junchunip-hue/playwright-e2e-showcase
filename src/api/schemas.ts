@@ -112,7 +112,13 @@ export const LaravelValidationErrorSchema = z.object({
 export const PaymentCheckSchema = z.object({ message: z.literal('Payment was successful') });
 
 /** Order statuses an admin can set (pinned InvoiceController::updateStatus). */
-export const INVOICE_STATUSES = ['AWAITING_FULFILLMENT', 'ON_HOLD', 'AWAITING_SHIPMENT', 'SHIPPED', 'COMPLETED'] as const;
+export const INVOICE_STATUSES = [
+  'AWAITING_FULFILLMENT',
+  'ON_HOLD',
+  'AWAITING_SHIPMENT',
+  'SHIPPED',
+  'COMPLETED',
+] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
 /** GET /invoices/{id}: the list fields plus the message that comes with the status. */

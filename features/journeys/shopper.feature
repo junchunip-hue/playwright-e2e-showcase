@@ -2,12 +2,15 @@
 # The PDF is written by a background job after the order (Toolshop's scheduler; CI runs it, see
 # .github/actions/toolshop-ready), so this journey also waits on asynchronous work: @timeout:300000 (5 minutes).
 # The public demo started that job but did not finish a PDF in 4 minutes (2026-11-19): own Toolshop only.
-@logged-out @own-toolshop
+@logged-out
+@own-toolshop
 Feature: Returning customer
   A customer who signs in first and shops around before buying: a favourite, a side-by-side comparison, then the
   order and its invoice as a PDF download.
 
-  @regression @e2e @timeout:300000
+  @regression
+  @e2e
+  @timeout:300000
   Scenario: S5: a returning customer saves a favourite, compares two products, buys the cheaper one and downloads the invoice
     Given a newly registered customer
     And two different products that are in stock

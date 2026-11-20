@@ -1,4 +1,5 @@
 import { expect, test as setup } from '@playwright/test';
+
 import { env, STORAGE_STATE } from '../src/config/env';
 import { LoginPage } from '../src/pages/login.page';
 import { Tag } from '../src/tags';

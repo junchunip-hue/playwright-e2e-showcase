@@ -17,8 +17,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Java twin of src/api/ApiClient.ts. Every JSON response is checked against its contract in {@link Contracts}
- * (the twin of src/api/schemas.ts) before it is read, so any test that touches the API also checks the contract.
+ * Java twin of src/api/ApiClient.ts. Every JSON response is checked against its contract in {@link
+ * Contracts} (the twin of src/api/schemas.ts) before it is read, so any test that touches the API
+ * also checks the contract.
  */
 public final class ApiClient implements AutoCloseable {
   private static final Gson GSON = new Gson();
@@ -33,10 +34,17 @@ public final class ApiClient implements AutoCloseable {
       Ref category) {}
 
   /**
-   * Query of GET /products (TS: ProductFilter). Build it step by step:
-   * {@code ProductFilter.page(1).byBrand(id).price(10, 20).sort("price", "asc")}.
+   * Query of GET /products (TS: ProductFilter). Build it step by step: {@code
+   * ProductFilter.page(1).byBrand(id).price(10, 20).sort("price", "asc")}.
    */
-  public record ProductFilter(int page, String byCategory, String byBrand, Double min, Double max, String sortBy, String order) {
+  public record ProductFilter(
+      int page,
+      String byCategory,
+      String byBrand,
+      Double min,
+      Double max,
+      String sortBy,
+      String order) {
     public static ProductFilter page(int page) {
       return new ProductFilter(page, null, null, null, null, null, null);
     }
@@ -76,7 +84,6 @@ public final class ApiClient implements AutoCloseable {
   /** A favourite with its product (TS: Favorite). */
   public record Favorite(String id, @SerializedName("product_id") String productId, Ref product) {}
 
-
   public record Paginated<T>(
       @SerializedName("current_page") int currentPage,
       List<T> data,
@@ -111,7 +118,10 @@ public final class ApiClient implements AutoCloseable {
   }
 
   public static ApiClient create(Playwright playwright) {
-    return new ApiClient(playwright.request().newContext(new APIRequest.NewContextOptions().setBaseURL(Env.API_URL)));
+    return new ApiClient(
+        playwright
+            .request()
+            .newContext(new APIRequest.NewContextOptions().setBaseURL(Env.API_URL)));
   }
 
   // --- auth (TS: api.auth) ---
@@ -127,7 +137,10 @@ public final class ApiClient implements AutoCloseable {
 
   // --- customers and addresses (TS: api.customers, api.addresses) ---
 
-  /** POST /users/register, raw response for tests that expect a rejection; payload from {@link com.showcase.data.Customers}. */
+  /**
+   * POST /users/register, raw response for tests that expect a rejection; payload from {@link
+   * com.showcase.data.Customers}.
+   */
   public APIResponse registerRequest(Map<String, Object> customer) {
     return request.post("/users/register", json(customer));
   }
@@ -136,7 +149,9 @@ public final class ApiClient implements AutoCloseable {
     ensureOk(registerRequest(customer), "POST /users/register");
   }
 
-  /** Field → messages of a rejected request (422/409), checked against Contracts.validationErrors. */
+  /**
+   * Field → messages of a rejected request (422/409), checked against Contracts.validationErrors.
+   */
   public Map<String, List<String>> validationErrors(APIResponse res, String label) {
     JsonObject body = GSON.fromJson(res.text(), JsonObject.class);
     Contracts.require(label + " error body", Contracts.validationErrors(body));
@@ -144,14 +159,20 @@ public final class ApiClient implements AutoCloseable {
   }
 
   /**
-   * The postcode lookup the checkout form uses (Toolshop validates that city/state match the postcode),
-   * returned with the field names the register API expects.
+   * The postcode lookup the checkout form uses (Toolshop validates that city/state match the
+   * postcode), returned with the field names the register API expects.
    */
   public Map<String, String> lookupAddress(String country, String postcode, String houseNumber) {
-    JsonObject body = parse(request.get("/postcode-lookup", RequestOptions.create()
-        .setQueryParam("country", country)
-        .setQueryParam("postcode", postcode)
-        .setQueryParam("house_number", houseNumber)), "GET /postcode-lookup", Contracts::postcodeLookup);
+    JsonObject body =
+        parse(
+            request.get(
+                "/postcode-lookup",
+                RequestOptions.create()
+                    .setQueryParam("country", country)
+                    .setQueryParam("postcode", postcode)
+                    .setQueryParam("house_number", houseNumber)),
+            "GET /postcode-lookup",
+            Contracts::postcodeLookup);
     return Map.of(
         "street", body.get("street").getAsString(),
         "house_number", body.get("house_number").getAsString(),
@@ -164,37 +185,56 @@ public final class ApiClient implements AutoCloseable {
   // --- products (TS: api.products) ---
 
   public Paginated<Product> getProducts(int page) {
-    JsonObject body = parse(request.get("/products", RequestOptions.create().setQueryParam("page", page)),
-        "GET /products", b -> Contracts.paginator(b, Contracts.productItem(true)));
-    return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
+    JsonObject body =
+        parse(
+            request.get("/products", RequestOptions.create().setQueryParam("page", page)),
+            "GET /products",
+            b -> Contracts.paginator(b, Contracts.productItem(true)));
+    return GSON.fromJson(
+        body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
   }
 
   public Product getProduct(String id) {
     return GSON.fromJson(getProductJson(id), Product.class);
   }
 
-  /** The contract-checked body of GET /products/{id}, for tests that inspect or tamper with raw fields. */
+  /**
+   * The contract-checked body of GET /products/{id}, for tests that inspect or tamper with raw
+   * fields.
+   */
   public JsonObject getProductJson(String id) {
-    return parse(request.get("/products/" + id), "GET /products/{id}", b -> Contracts.product(b, true));
+    return parse(
+        request.get("/products/" + id), "GET /products/{id}", b -> Contracts.product(b, true));
   }
 
-  /** Search results use the search contract: same as Product but without category.slug (a known API quirk). */
+  /**
+   * Search results use the search contract: same as Product but without category.slug (a known API
+   * quirk).
+   */
   public Paginated<Product> searchProducts(String query) {
-    JsonObject body = parse(request.get("/products/search", RequestOptions.create().setQueryParam("q", query)),
-        "GET /products/search", b -> Contracts.paginator(b, Contracts.productItem(false)));
-    return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
+    JsonObject body =
+        parse(
+            request.get("/products/search", RequestOptions.create().setQueryParam("q", query)),
+            "GET /products/search",
+            b -> Contracts.paginator(b, Contracts.productItem(false)));
+    return GSON.fromJson(
+        body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
   }
 
   /** GET /products with filters and sorting (TS: api.products.filter). */
   public Paginated<Product> filterProducts(ProductFilter filter) {
-    JsonObject body = parse(request.get("/products", filter.query()), "GET /products (filtered)",
-        b -> Contracts.paginator(b, Contracts.productItem(true)));
-    return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
+    JsonObject body =
+        parse(
+            request.get("/products", filter.query()),
+            "GET /products (filtered)",
+            b -> Contracts.paginator(b, Contracts.productItem(true)));
+    return GSON.fromJson(
+        body, TypeToken.getParameterized(Paginated.class, Product.class).getType());
   }
 
   /**
-   * Returns a purchasable product. Stock changes over time, so UI tests ask the API
-   * for an in-stock item instead of hard-coding a product name.
+   * Returns a purchasable product. Stock changes over time, so UI tests ask the API for an in-stock
+   * item instead of hard-coding a product name.
    */
   public Product findInStockProduct() {
     return findInStockProducts(1).get(0);
@@ -202,8 +242,14 @@ public final class ApiClient implements AutoCloseable {
 
   /** {@code count} different purchasable products from page 1 (TS: findInStockProducts). */
   public List<Product> findInStockProducts(int count) {
-    List<Product> products = getProducts(1).data().stream().filter(p -> p.inStock() && !p.isRental()).limit(count).toList();
-    if (products.size() < count) throw new IllegalStateException("Fewer than " + count + " in-stock products on page 1 of /products");
+    List<Product> products =
+        getProducts(1).data().stream()
+            .filter(p -> p.inStock() && !p.isRental())
+            .limit(count)
+            .toList();
+    if (products.size() < count)
+      throw new IllegalStateException(
+          "Fewer than " + count + " in-stock products on page 1 of /products");
     return products;
   }
 
@@ -221,35 +267,52 @@ public final class ApiClient implements AutoCloseable {
 
   /** GET /invoices: the signed-in customer's own invoices. */
   public Paginated<Invoice> invoices(String token) {
-    JsonObject body = parse(request.get("/invoices", RequestOptions.create().setHeader("Authorization", "Bearer " + token)),
-        "GET /invoices", b -> Contracts.paginator(b, Contracts.invoiceItem()));
-    return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Invoice.class).getType());
+    JsonObject body =
+        parse(
+            request.get(
+                "/invoices", RequestOptions.create().setHeader("Authorization", "Bearer " + token)),
+            "GET /invoices",
+            b -> Contracts.paginator(b, Contracts.invoiceItem()));
+    return GSON.fromJson(
+        body, TypeToken.getParameterized(Paginated.class, Invoice.class).getType());
   }
 
   public InvoiceDetail invoice(String token, String id) {
-    JsonObject body = parse(request.get("/invoices/" + id, auth(token)), "GET /invoices/{id}", Contracts::invoiceDetail);
+    JsonObject body =
+        parse(
+            request.get("/invoices/" + id, auth(token)),
+            "GET /invoices/{id}",
+            Contracts::invoiceDetail);
     return GSON.fromJson(body, InvoiceDetail.class);
   }
 
-  /** Search on invoice number, billing street and status (an admin sees every customer's invoices). */
+  /**
+   * Search on invoice number, billing street and status (an admin sees every customer's invoices).
+   */
   public Paginated<Invoice> searchInvoices(String token, String query) {
-    JsonObject body = parse(request.get("/invoices/search", auth(token).setQueryParam("q", query)),
-        "GET /invoices/search", b -> Contracts.paginator(b, Contracts.invoiceItem()));
-    return GSON.fromJson(body, TypeToken.getParameterized(Paginated.class, Invoice.class).getType());
+    JsonObject body =
+        parse(
+            request.get("/invoices/search", auth(token).setQueryParam("q", query)),
+            "GET /invoices/search",
+            b -> Contracts.paginator(b, Contracts.invoiceItem()));
+    return GSON.fromJson(
+        body, TypeToken.getParameterized(Paginated.class, Invoice.class).getType());
   }
 
   /** The invoice with this number as the token's user sees it (TS: api.invoices.findByNumber). */
   public InvoiceDetail findInvoiceByNumber(String token, String invoiceNumber) {
-    Invoice match = searchInvoices(token, invoiceNumber).data().stream()
-        .filter(i -> i.invoiceNumber().equals(invoiceNumber))
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("invoice " + invoiceNumber + " not found"));
+    Invoice match =
+        searchInvoices(token, invoiceNumber).data().stream()
+            .filter(i -> i.invoiceNumber().equals(invoiceNumber))
+            .findFirst()
+            .orElseThrow(
+                () -> new IllegalStateException("invoice " + invoiceNumber + " not found"));
     return invoice(token, match.id());
   }
 
   /**
-   * GET /invoices/{number}/download-pdf-status (TS: pdfStatus). 400 with NOT_INITIATED is an answer, not an error:
-   * the background job has not picked the invoice up yet.
+   * GET /invoices/{number}/download-pdf-status (TS: pdfStatus). 400 with NOT_INITIATED is an
+   * answer, not an error: the background job has not picked the invoice up yet.
    */
   public String pdfStatus(String token, String invoiceNumber) {
     String label = "GET /invoices/" + invoiceNumber + "/download-pdf-status";
@@ -260,7 +323,8 @@ public final class ApiClient implements AutoCloseable {
     return body.get("status").getAsString();
   }
 
-  // Raw responses (any status), for A6: who may read invoices. A null token sends the request anonymously.
+  // Raw responses (any status), for A6: who may read invoices. A null token sends the request
+  // anonymously.
 
   public APIResponse invoicesRequest(String token) {
     return request.get("/invoices", optionalAuth(token));
@@ -278,19 +342,31 @@ public final class ApiClient implements AutoCloseable {
     return request.get("/invoices/" + invoiceNumber + "/download-pdf-status", optionalAuth(token));
   }
 
-  /** Order statuses an admin can set (TS: INVOICE_STATUSES; pinned InvoiceController::updateStatus). */
+  /**
+   * Order statuses an admin can set (TS: INVOICE_STATUSES; pinned InvoiceController::updateStatus).
+   */
   public static final List<String> INVOICE_STATUSES =
       List.of("AWAITING_FULFILLMENT", "ON_HOLD", "AWAITING_SHIPMENT", "SHIPPED", "COMPLETED");
 
-  /** PUT /invoices/{id}/status, raw response without a message: for tests that check who may change it (A11). */
+  /**
+   * PUT /invoices/{id}/status, raw response without a message: for tests that check who may change
+   * it (A11).
+   */
   public APIResponse updateInvoiceStatusRequest(String token, String id, String status) {
-    return request.put("/invoices/" + id + "/status", json(Map.of("status", status)).setHeader("Authorization", "Bearer " + token));
+    return request.put(
+        "/invoices/" + id + "/status",
+        json(Map.of("status", status)).setHeader("Authorization", "Bearer " + token));
   }
 
   /** PUT /invoices/{id}/status; status is one of {@link #INVOICE_STATUSES}. */
   public void updateInvoiceStatus(String token, String id, String status, String message) {
-    parse(request.put("/invoices/" + id + "/status", json(Map.of("status", status, "status_message", message))
-        .setHeader("Authorization", "Bearer " + token)), "PUT /invoices/{id}/status", Contracts::statusUpdated);
+    parse(
+        request.put(
+            "/invoices/" + id + "/status",
+            json(Map.of("status", status, "status_message", message))
+                .setHeader("Authorization", "Bearer " + token)),
+        "PUT /invoices/{id}/status",
+        Contracts::statusUpdated);
   }
 
   // --- admin: catalogue (TS: api.catalog, api.products.create) ---
@@ -307,9 +383,13 @@ public final class ApiClient implements AutoCloseable {
     return refs("/images", Contracts.imageItem());
   }
 
-  /** POST /products; payload from {@link com.showcase.data.Products}. The pinned API checks no role (A10). */
+  /**
+   * POST /products; payload from {@link com.showcase.data.Products}. The pinned API checks no role
+   * (A10).
+   */
   public CreatedProduct createProduct(String token, Map<String, Object> product) {
-    JsonObject body = parse(createProductRequest(token, product), "POST /products", Contracts::createdProduct);
+    JsonObject body =
+        parse(createProductRequest(token, product), "POST /products", Contracts::createdProduct);
     return GSON.fromJson(body, CreatedProduct.class);
   }
 
@@ -318,7 +398,8 @@ public final class ApiClient implements AutoCloseable {
     return request.post("/products", json(product).setHeader("Authorization", "Bearer " + token));
   }
 
-  private List<Ref> refs(String path, java.util.function.BiConsumer<Contracts.Check, JsonObject> item) {
+  private List<Ref> refs(
+      String path, java.util.function.BiConsumer<Contracts.Check, JsonObject> item) {
     APIResponse res = request.get(path);
     ensureOk(res, "GET " + path);
     JsonArray items = GSON.fromJson(res.text(), JsonArray.class);
@@ -337,7 +418,9 @@ public final class ApiClient implements AutoCloseable {
 
   /** POST /payment/check, raw response. No login needed. */
   public APIResponse paymentCheckRequest(Payments.Payment payment) {
-    return request.post("/payment/check", json(Map.of("payment_method", payment.method(), "payment_details", payment.details())));
+    return request.post(
+        "/payment/check",
+        json(Map.of("payment_method", payment.method(), "payment_details", payment.details())));
   }
 
   /** Succeeds only for "Payment was successful". */
@@ -350,7 +433,10 @@ public final class ApiClient implements AutoCloseable {
     }
   }
 
-  /** Field names of a rejected payment check, e.g. payment_details.credit_card_number (Laravel's 422 body). */
+  /**
+   * Field names of a rejected payment check, e.g. payment_details.credit_card_number (Laravel's 422
+   * body).
+   */
   public List<String> paymentRejectedFields(APIResponse res) {
     JsonObject errors = GSON.fromJson(res.text(), JsonObject.class).getAsJsonObject("errors");
     Contracts.require("POST /payment/check error body", Contracts.validationErrors(errors));
@@ -364,7 +450,8 @@ public final class ApiClient implements AutoCloseable {
   }
 
   /** Status first, then the contract; returns the parsed body. */
-  private static JsonObject parse(APIResponse res, String label, Function<JsonObject, List<String>> contract) {
+  private static JsonObject parse(
+      APIResponse res, String label, Function<JsonObject, List<String>> contract) {
     ensureOk(res, label);
     JsonObject body = GSON.fromJson(res.text(), JsonObject.class);
     Contracts.require(label, contract.apply(body));
@@ -375,7 +462,12 @@ public final class ApiClient implements AutoCloseable {
     if (res.ok()) return;
     // Include the start of the body: server errors are otherwise invisible in CI.
     String body = res.text();
-    throw new IllegalStateException(label + " failed: " + res.status() + "\n" + body.substring(0, Math.min(500, body.length())));
+    throw new IllegalStateException(
+        label
+            + " failed: "
+            + res.status()
+            + "\n"
+            + body.substring(0, Math.min(500, body.length())));
   }
 
   @Override

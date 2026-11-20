@@ -17,8 +17,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Steps layer for features/api/auth.feature, registration.feature and the postcode part of contracts.feature.
- * TypeScript twin: src/steps/api/customers.steps.ts.
+ * Steps layer for features/api/auth.feature, registration.feature and the postcode part of
+ * contracts.feature. TypeScript twin: src/steps/api/customers.steps.ts.
  */
 public class CustomersApiSteps {
   private static final String REGISTER = "POST /users/register";
@@ -68,7 +68,8 @@ public class CustomersApiSteps {
 
   @When("I register another customer with the same email")
   public void iRegisterAnotherCustomerWithTheSameEmail() {
-    ctx.response = api().registerRequest(Customers.data(api(), Map.of("email", ctx.customer().email())));
+    ctx.response =
+        api().registerRequest(Customers.data(api(), Map.of("email", ctx.customer().email())));
   }
 
   @Then("only the password is rejected, for every unmet rule")
@@ -76,7 +77,12 @@ public class CustomersApiSteps {
     Map<String, List<String>> errors = registrationErrors();
     assertEquals(Set.of("password"), errors.keySet());
     String messages = String.join(" | ", errors.get("password"));
-    for (String rule : List.of("at least 8 characters", "uppercase and one lowercase", "at least one symbol", "at least one number")) {
+    for (String rule :
+        List.of(
+            "at least 8 characters",
+            "uppercase and one lowercase",
+            "at least one symbol",
+            "at least one number")) {
       assertTrue(messages.contains(rule), "missing rule \"" + rule + "\" in: " + messages);
     }
   }
@@ -86,7 +92,9 @@ public class CustomersApiSteps {
     Map<String, List<String>> errors = registrationErrors();
     assertEquals(Set.of("password"), errors.keySet());
     assertEquals(1, errors.get("password").size());
-    assertTrue(errors.get("password").get(0).contains("appeared in a data leak"), errors.get("password").get(0));
+    assertTrue(
+        errors.get("password").get(0).contains("appeared in a data leak"),
+        errors.get("password").get(0));
   }
 
   @Then("only the email is rejected, as already existing")

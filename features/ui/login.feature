@@ -13,7 +13,8 @@ Feature: Login
 
   # Failed logins count towards an account lock (HTTP 423), so this uses a throwaway customer:
   # repeated runs must never lock the shared demo customer that other scenarios sign in with.
-  @smoke @negative
+  @smoke
+  @negative
   Scenario: U2: shows an error for a wrong password
     Given a newly registered customer
     And I am on the login page

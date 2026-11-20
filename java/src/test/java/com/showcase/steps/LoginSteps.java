@@ -11,8 +11,9 @@ import io.cucumber.java.en.When;
 import java.util.regex.Pattern;
 
 /**
- * Steps layer for features/ui/login.feature: each step calls one page method or asserts on the page's module
- * ({@code loginPage.ui}). No locators are created here. TypeScript twin: src/steps/login.steps.ts.
+ * Steps layer for features/ui/login.feature: each step calls one page method or asserts on the
+ * page's module ({@code loginPage.ui}). No locators are created here. TypeScript twin:
+ * src/steps/login.steps.ts.
  */
 public class LoginSteps {
   private final PlaywrightContext playwright;

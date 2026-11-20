@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Steps layer for features/journeys/shopper.feature (S5): what a signed-in customer does outside checkout. The checkout
- * part reuses CheckoutSteps. TypeScript twin: src/steps/shopper.steps.ts.
+ * Steps layer for features/journeys/shopper.feature (S5): what a signed-in customer does outside
+ * checkout. The checkout part reuses CheckoutSteps. TypeScript twin: src/steps/shopper.steps.ts.
  */
 public class ShopperSteps {
   private static final String PRODUCTS = "Given two different products that are in stock";
@@ -95,7 +95,8 @@ public class ShopperSteps {
 
   @When("I add the cheaper product to the cart")
   public void iAddTheCheaperProductToTheCart() {
-    Product cheaper = products().stream().min(Comparator.comparingDouble(Product::price)).orElseThrow();
+    Product cheaper =
+        products().stream().min(Comparator.comparingDouble(Product::price)).orElseThrow();
     ctx.product = cheaper; // the product the checkout steps buy
     ProductPage productPage = new ProductPage(playwright.page());
     productPage.open(cheaper.id());
@@ -130,8 +131,13 @@ public class ShopperSteps {
     String invoiceNumber = need(ctx.invoiceNumber, PAID);
     ApiClient api = playwright.api();
     String token = api.login(customer.email(), customer.password());
-    assertEquals(List.of(products().get(0).id()), api.favorites(token).stream().map(f -> f.productId()).toList());
-    assertEquals(need(ctx.cartTotal, "When I review the cart"), api.findInvoiceByNumber(token, invoiceNumber).total(), 0.01);
+    assertEquals(
+        List.of(products().get(0).id()),
+        api.favorites(token).stream().map(f -> f.productId()).toList());
+    assertEquals(
+        need(ctx.cartTotal, "When I review the cart"),
+        api.findInvoiceByNumber(token, invoiceNumber).total(),
+        0.01);
     assertEquals("COMPLETED", api.pdfStatus(token, invoiceNumber));
   }
 }

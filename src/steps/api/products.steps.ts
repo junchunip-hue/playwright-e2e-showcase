@@ -79,14 +79,17 @@ Then('filtering by its brand returns only products of that brand', async ({ api,
   expect(new Set(page.data.map((p) => p.brand.id))).toEqual(new Set([sample.brand.id]));
 });
 
-Then('filtering by prices from {int} to {int} returns only prices inside that range', async ({ api }, min: number, max: number) => {
-  const page = await api.products.filter({ price: { min, max } });
-  expect(page.total).toBeGreaterThan(0);
-  for (const price of page.data.map((p) => p.price)) {
-    expect(price).toBeGreaterThanOrEqual(min);
-    expect(price).toBeLessThanOrEqual(max);
-  }
-});
+Then(
+  'filtering by prices from {int} to {int} returns only prices inside that range',
+  async ({ api }, min: number, max: number) => {
+    const page = await api.products.filter({ price: { min, max } });
+    expect(page.total).toBeGreaterThan(0);
+    for (const price of page.data.map((p) => p.price)) {
+      expect(price).toBeGreaterThanOrEqual(min);
+      expect(price).toBeLessThanOrEqual(max);
+    }
+  },
+);
 
 Then('filtering by exactly its price finds it', async ({ api, ctx }) => {
   const sample = need(ctx.product, SAMPLE);
@@ -94,13 +97,16 @@ Then('filtering by exactly its price finds it', async ({ api, ctx }) => {
   expect(exact.data.map((p) => p.id)).toContain(sample.id);
 });
 
-When(/^I request two pages sorted by (price|name) (asc|desc)$/, async ({ api, ctx }, by: Sort['by'], order: Sort['order']) => {
-  ctx.sort = { by, order };
-  ctx.products = [
-    ...(await api.products.filter({ sort: ctx.sort, page: 1 })).data,
-    ...(await api.products.filter({ sort: ctx.sort, page: 2 })).data,
-  ];
-});
+When(
+  /^I request two pages sorted by (price|name) (asc|desc)$/,
+  async ({ api, ctx }, by: Sort['by'], order: Sort['order']) => {
+    ctx.sort = { by, order };
+    ctx.products = [
+      ...(await api.products.filter({ sort: ctx.sort, page: 1 })).data,
+      ...(await api.products.filter({ sort: ctx.sort, page: 2 })).data,
+    ];
+  },
+);
 
 Then('the products are in that order across both pages', async ({ ctx }) => {
   const sort = need(ctx.sort, 'When I request two pages sorted by ...');
@@ -109,17 +115,24 @@ Then('the products are in that order across both pages', async ({ ctx }) => {
   expect(products.map(sortKey(sort))).toEqual([...products].sort(compare(sort)).map(sortKey(sort)));
 });
 
-Then('filtering by its brand, prices up to its own and price descending finds it, matching every filter', async ({ api, ctx }) => {
-  const sample = need(ctx.product, SAMPLE);
-  const range = { min: 1, max: sample.price };
-  const page = await api.products.filter({ byBrand: [sample.brand.id], price: range, sort: { by: 'price', order: 'desc' } });
-  expect(page.data.map((p) => p.id)).toContain(sample.id);
-  for (const product of page.data) {
-    expect(product.brand.id).toBe(sample.brand.id);
-    expect(product.price).toBeLessThanOrEqual(range.max);
-  }
-  expect(page.data.map((p) => p.price)).toEqual(page.data.map((p) => p.price).sort((a, b) => b - a));
-});
+Then(
+  'filtering by its brand, prices up to its own and price descending finds it, matching every filter',
+  async ({ api, ctx }) => {
+    const sample = need(ctx.product, SAMPLE);
+    const range = { min: 1, max: sample.price };
+    const page = await api.products.filter({
+      byBrand: [sample.brand.id],
+      price: range,
+      sort: { by: 'price', order: 'desc' },
+    });
+    expect(page.data.map((p) => p.id)).toContain(sample.id);
+    for (const product of page.data) {
+      expect(product.brand.id).toBe(sample.brand.id);
+      expect(product.price).toBeLessThanOrEqual(range.max);
+    }
+    expect(page.data.map((p) => p.price)).toEqual(page.data.map((p) => p.price).sort((a, b) => b - a));
+  },
+);
 
 // --- A8: what the admin publishes ---
 
@@ -147,5 +160,6 @@ const sortKey = (sort: Sort) => (p: Product) => (sort.by === 'price' ? p.price :
 /** The order the API promises; names compare like the database's case-insensitive collation. */
 function compare(sort: Sort): (a: Product, b: Product) => number {
   const direction = sort.order === 'asc' ? 1 : -1;
-  return (a, b) => direction * (sort.by === 'price' ? a.price - b.price : a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
+  return (a, b) =>
+    direction * (sort.by === 'price' ? a.price - b.price : a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }));
 }

@@ -1,13 +1,14 @@
 import type { APIResponse } from '@playwright/test';
+
 import type { Http } from '../http';
 import {
   CreatedProductSchema,
-  ProductPageSchema,
-  ProductSchema,
-  ProductSearchPageSchema,
   type Product,
   type ProductPage,
+  ProductPageSchema,
+  ProductSchema,
   type ProductSearchPage,
+  ProductSearchPageSchema,
 } from '../schemas';
 
 /** Request body of POST /products (pinned StoreProduct rules, plus `stock` so the product can be bought). */

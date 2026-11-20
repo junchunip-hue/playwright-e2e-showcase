@@ -1,10 +1,12 @@
 # Shared by both suites: TypeScript (playwright-bdd, src/steps/) and Java (Cucumber-JVM, com.showcase.steps).
-@logged-out @admin
+@logged-out
+@admin
 Feature: Admin to customer
   Two roles in one journey: the admin works through the API, the customer through the UI (and checks their own
   order through their own token). Creates catalogue data, so it runs against our own Toolshop only.
 
-  @regression @e2e
+  @regression
+  @e2e
   Scenario: S3: admin publishes a product, a customer buys it, the admin ships it
     Given the admin has published a new product
     And a newly registered customer

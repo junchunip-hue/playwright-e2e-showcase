@@ -91,8 +91,7 @@ function typescriptResults(file) {
         else if (t.status === 'flaky') {
           r.flaky++;
           recordFlaky(id, spec, t);
-        }
-        else if (t.status === 'skipped') r.skipped++;
+        } else if (t.status === 'skipped') r.skipped++;
         else r.failed++;
         byId.set(id, r);
       }
@@ -123,7 +122,11 @@ function javaScenarioLog(dir) {
   return byName;
 }
 /** "Feature - Scenario" or "Feature - Outline - Examples - Example #1.1: Scenario" → the scenario's own name. */
-const javaScenarioName = (testcaseName) => testcaseName.split(' - ').at(-1).replace(/^Example #[\d.]+: /, '');
+const javaScenarioName = (testcaseName) =>
+  testcaseName
+    .split(' - ')
+    .at(-1)
+    .replace(/^Example #[\d.]+: /, '');
 
 function javaResults(dir) {
   const byId = new Map();
@@ -140,7 +143,13 @@ function javaResults(dir) {
       }
       countRun(
         'java',
-        /<(failure|error)\b/.test(body) ? 'failed' : /<flaky(Failure|Error)\b/.test(body) ? 'flaky' : /<skipped\b/.test(body) ? 'skipped' : 'passed',
+        /<(failure|error)\b/.test(body)
+          ? 'failed'
+          : /<flaky(Failure|Error)\b/.test(body)
+            ? 'flaky'
+            : /<skipped\b/.test(body)
+              ? 'skipped'
+              : 'passed',
       );
       const id = ID.exec(name)?.[1];
       if (!id) continue;
@@ -248,7 +257,12 @@ const jobState = (job) => (job === 'success' ? 'ok' : job === 'skipped' || job =
  * means a test silently did not run (e.g. a wrong BASE_URL made isPublicDemo true), so it counts like "not run".
  */
 const inCi = Boolean(process.env.CI);
-const state = (job, s) => (s.failed || s.notRun || (inCi && s.skipped) || jobState(job) === 'bad' ? 'bad' : s.flaky && jobState(job) === 'ok' ? 'flaky' : jobState(job));
+const state = (job, s) =>
+  s.failed || s.notRun || (inCi && s.skipped) || jobState(job) === 'bad'
+    ? 'bad'
+    : s.flaky && jobState(job) === 'ok'
+      ? 'flaky'
+      : jobState(job);
 const tsState = state(tsJob, tsSum);
 const javaState = state(javaJob, javaSum);
 const counts = (s) =>
@@ -256,7 +270,13 @@ const counts = (s) =>
     `${s.passed} passed`,
     s.failed ? `❌ ${s.failed} failed` : '0 failed',
     s.flaky ? `⚠️ ${s.flaky} flaky` : '0 flaky',
-    ...(s.notRun ? [s === javaSum && [...java.values()].some((r) => r.notRunCountUnknown) ? '⛔ not run' : `⛔ ${s.notRun} not run`] : []),
+    ...(s.notRun
+      ? [
+          s === javaSum && [...java.values()].some((r) => r.notRunCountUnknown)
+            ? '⛔ not run'
+            : `⛔ ${s.notRun} not run`,
+        ]
+      : []),
     ...(s.skipped ? [`⏭️ ${s.skipped} skipped`] : []),
   ].join(' · ');
 
@@ -285,7 +305,8 @@ const flow = nightly
 const defectState = (c) => {
   if (!c) return { icon: '–', text: '–' };
   if (c.answered === c.today) return { icon: '🟨', text: `🟨 still present (${c.answered})` };
-  if (c.answered === c.intended) return { icon: '🟥', text: `🟥 **fixed** (${c.answered}): replace the marker with a plain assertion` };
+  if (c.answered === c.intended)
+    return { icon: '🟥', text: `🟥 **fixed** (${c.answered}): replace the marker with a plain assertion` };
   return { icon: '❌', text: `❌ unexpected ${c.answered} (today ${c.today}, intended ${c.intended})` };
 };
 const defectRows = [...defects.values()].sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)));
@@ -317,24 +338,30 @@ function failedJobs(dir) {
   const file = dir && join(dir, 'jobs.json');
   if (!file || !existsSync(file)) return [];
   const GENERIC = /^Process completed with exit code \d+\.?$/;
-  return (JSON.parse(readFileSync(file, 'utf8')).jobs ?? [])
-    // A job past its timeout-minutes can report "cancelled"; a cancelled run never gets here (summary: !cancelled()).
-    .filter((j) => ['failure', 'timed_out', 'cancelled'].includes(j.conclusion))
-    .map((j) => {
-      const annotationsFile = join(dir, `annotations-${j.id}.json`);
-      const annotations = existsSync(annotationsFile) ? JSON.parse(readFileSync(annotationsFile, 'utf8')) : [];
-      const messages = (level) =>
-        annotations.filter((a) => a.annotation_level === level && !GENERIC.test(a.message.trim())).map((a) => firstLine(a.message));
-      const errors = messages('failure');
-      return {
-        name: j.name,
-        url: j.html_url,
-        timedOut: j.conclusion !== 'failure',
-        steps: (j.steps ?? []).filter((s) => s.conclusion === 'failure' || s.conclusion === 'timed_out').map((s) => s.name),
-        // Errors first; without one, the job's warnings usually say what went wrong (e.g. each install attempt).
-        why: errors.length ? errors : messages('warning').slice(0, 3),
-      };
-    });
+  return (
+    (JSON.parse(readFileSync(file, 'utf8')).jobs ?? [])
+      // A job past its timeout-minutes can report "cancelled"; a cancelled run never gets here (summary: !cancelled()).
+      .filter((j) => ['failure', 'timed_out', 'cancelled'].includes(j.conclusion))
+      .map((j) => {
+        const annotationsFile = join(dir, `annotations-${j.id}.json`);
+        const annotations = existsSync(annotationsFile) ? JSON.parse(readFileSync(annotationsFile, 'utf8')) : [];
+        const messages = (level) =>
+          annotations
+            .filter((a) => a.annotation_level === level && !GENERIC.test(a.message.trim()))
+            .map((a) => firstLine(a.message));
+        const errors = messages('failure');
+        return {
+          name: j.name,
+          url: j.html_url,
+          timedOut: j.conclusion !== 'failure',
+          steps: (j.steps ?? [])
+            .filter((s) => s.conclusion === 'failure' || s.conclusion === 'timed_out')
+            .map((s) => s.name),
+          // Errors first; without one, the job's warnings usually say what went wrong (e.g. each install attempt).
+          why: errors.length ? errors : messages('warning').slice(0, 3),
+        };
+      })
+  );
 }
 const failed = failedJobs(jobsDir);
 
@@ -379,15 +406,27 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 /** What made the run red, in order of what a reader needs first: failed tests, tests that never ran, a red job. */
 const skippedTotal = tsSum.skipped + javaSum.skipped;
 const problems = [
-  ...(failedTotal ? [`${plural(failedTotal, 'test')} failed (TypeScript ${tsSum.failed}, Java ${javaSum.failed})`] : []),
+  ...(failedTotal
+    ? [`${plural(failedTotal, 'test')} failed (TypeScript ${tsSum.failed}, Java ${javaSum.failed})`]
+    : []),
   ...(tsSum.notRun ? [`${plural(tsSum.notRun, 'TypeScript test')} did not run`] : []),
-  ...(javaSum.notRun ? [[...java.values()].some((r) => r.notRunCountUnknown) ? 'the Java suite did not run' : `${plural(javaSum.notRun, 'Java test')} did not run`] : []),
+  ...(javaSum.notRun
+    ? [
+        [...java.values()].some((r) => r.notRunCountUnknown)
+          ? 'the Java suite did not run'
+          : `${plural(javaSum.notRun, 'Java test')} did not run`,
+      ]
+    : []),
   ...(inCi && skippedTotal
-    ? [`${plural(skippedTotal, 'test')} skipped in CI, where nothing should skip (TypeScript ${tsSum.skipped}, Java ${javaSum.skipped})`]
+    ? [
+        `${plural(skippedTotal, 'test')} skipped in CI, where nothing should skip (TypeScript ${tsSum.skipped}, Java ${javaSum.skipped})`,
+      ]
     : []),
 ];
 const UNVERIFIED = 'the list of planned tests is missing, so tests that did not run cannot be detected';
-const cause = firstFailure ? `${firstFailure.name}${firstFailure.why[0] ? `: ${firstFailure.why[0]}` : firstFailure.steps[0] ? ` failed at ${firstFailure.steps[0]}` : ' failed'}` : '';
+const cause = firstFailure
+  ? `${firstFailure.name}${firstFailure.why[0] ? `: ${firstFailure.why[0]}` : firstFailure.steps[0] ? ` failed at ${firstFailure.steps[0]}` : ' failed'}`
+  : '';
 const verdict =
   tsState === 'bad' || javaState === 'bad'
     ? [
@@ -406,15 +445,21 @@ const verdict =
           ...(planUnavailable ? [`> Also unverified: ${UNVERIFIED}.`] : []),
         ]
       : planUnavailable && (tsState === 'ok' || javaState === 'ok')
-        ? ['> [!WARNING]', `> **Unverified:** every test that reported passed, but ${UNVERIFIED} (see the "List the planned TypeScript tests" step).`]
-      : tsState === 'ok' || javaState === 'ok'
-        ? ['> [!TIP]', '> **Passed:** no failed and no flaky tests.']
-        : ['> [!NOTE]', `> **No result:** TypeScript job ${tsJob}, Java job ${javaJob}.`];
+        ? [
+            '> [!WARNING]',
+            `> **Unverified:** every test that reported passed, but ${UNVERIFIED} (see the "List the planned TypeScript tests" step).`,
+          ]
+        : tsState === 'ok' || javaState === 'ok'
+          ? ['> [!TIP]', '> **Passed:** no failed and no flaky tests.']
+          : ['> [!NOTE]', `> **No result:** TypeScript job ${tsJob}, Java job ${javaJob}.`];
 /** Passed now, but an earlier attempt of this run failed: gold like flaky, never a plain green "Passed". */
 const passedOnRerun = !(tsState === 'bad' || javaState === 'bad') && earlierFailed.length > 0;
 const verdictLines =
   passedOnRerun && verdict[0] === '> [!TIP]'
-    ? ['> [!WARNING]', `> **Passed on a rerun:** every test passed on this attempt, but an earlier one did not. ${rerunNote}`]
+    ? [
+        '> [!WARNING]',
+        `> **Passed on a rerun:** every test passed on this attempt, but an earlier one did not. ${rerunNote}`,
+      ]
     : rerunNote
       ? [...verdict, `> ${rerunNote}`]
       : verdict;
@@ -483,12 +528,18 @@ const md = [
   '## TypeScript vs Java by test ID',
   '',
   ...(tsSum.notRun || javaSum.notRun
-    ? ['⛔ not run = planned for this run but never started, because its job failed first (see What failed). ✅ counts only tests that ran.', '']
+    ? [
+        '⛔ not run = planned for this run but never started, because its job failed first (see What failed). ✅ counts only tests that ran.',
+        '',
+      ]
     : []),
   '| ID | TypeScript | Java | Coverage |',
   '|---|---|---|---|',
   // U6 is also S1, the first journey (test-plan alias): one test, shown with both IDs.
-  ...ids.map((id) => `| ${id === 'U6' ? 'U6 (S1)' : id}${knownIds.has(id) ? ' 🟨' : ''} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`),
+  ...ids.map(
+    (id) =>
+      `| ${id === 'U6' ? 'U6 (S1)' : id}${knownIds.has(id) ? ' 🟨' : ''} | ${cell(ts.get(id))} | ${cell(java.get(id))} | ${coverage(id)} |`,
+  ),
   '',
   'Every A, U and S ID must show results in both columns (same tier, so same pipeline); N IDs are TypeScript-only (ADR 0009).',
   knownIds.size ? '🟨 = the ID tracks a known product defect (see below).' : '',
@@ -515,7 +566,9 @@ if (process.env.GITHUB_OUTPUT) {
         : '✅ Passed: no failed and no flaky tests';
   // A rerun says so first (GitHub cuts the description at 140 characters): "Passed on attempt 2 (attempt 1 failed: …)".
   const first = earlierFailed[0];
-  const earlierShort = first ? `attempt ${first.attempt} failed: ${first.failed[0].name}${first.failed[0].step ? ` at "${first.failed[0].step}"` : ''}` : '';
+  const earlierShort = first
+    ? `attempt ${first.attempt} failed: ${first.failed[0].name}${first.failed[0].step ? ` at "${first.failed[0].step}"` : ''}`
+    : '';
   const withRerun = !first
     ? description
     : failed
@@ -524,10 +577,21 @@ if (process.env.GITHUB_OUTPUT) {
   const ran = [tsState, javaState].some((s) => s === 'ok' || s === 'flaky');
   // GitHub cuts status descriptions at 140 characters. No state (both lanes skipped or cancelled) = no status.
   const short = withRerun.length > 140 ? `${withRerun.slice(0, 139)}…` : withRerun;
-  if (failed || ran) appendFileSync(process.env.GITHUB_OUTPUT, `state=${failed ? 'failure' : 'success'}\ndescription=${short}\n`);
+  if (failed || ran)
+    appendFileSync(process.env.GITHUB_OUTPUT, `state=${failed ? 'failure' : 'success'}\ndescription=${short}\n`);
   // For the nightly history (clean streak): one word per run.
   // A rerun after a failed attempt is not a clean nightly: 'rerun' breaks the streak like 'flaky' does.
-  const word = failed ? 'failed' : flakyTotal ? 'flaky' : passedOnRerun ? 'rerun' : planUnavailable ? 'unverified' : ran ? 'passed' : 'none';
+  const word = failed
+    ? 'failed'
+    : flakyTotal
+      ? 'flaky'
+      : passedOnRerun
+        ? 'rerun'
+        : planUnavailable
+          ? 'unverified'
+          : ran
+            ? 'passed'
+            : 'none';
   appendFileSync(process.env.GITHUB_OUTPUT, `verdict=${word}\n`);
 }
 
@@ -536,7 +600,9 @@ if (process.env.GITHUB_OUTPUT) {
 // failed).
 if (process.env.BADGE_FILE) {
   const total = (k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0);
-  const [passed, flaky, failedRuns, notRunRuns, skippedRuns] = ['passed', 'flaky', 'failed', 'notRun', 'skipped'].map(total);
+  const [passed, flaky, failedRuns, notRunRuns, skippedRuns] = ['passed', 'flaky', 'failed', 'notRun', 'skipped'].map(
+    total,
+  );
   const failed = tsState === 'bad' || javaState === 'bad';
   const javaNotRun = [...java.values()].some((r) => r.notRunCountUnknown);
   // The run's date, so a badge that stopped updating does not pass for today's result.
@@ -547,17 +613,27 @@ if (process.env.BADGE_FILE) {
         ...(notRunRuns ? [`${notRunRuns} not run`] : []),
         ...(javaNotRun ? ['Java not run'] : []),
         ...(skippedRuns ? [`${skippedRuns} skipped`] : []),
-        ...(failedRuns || notRunRuns || javaNotRun || skippedRuns ? [`${passed + flaky} passed`] : ['failed (a job ended red)']),
+        ...(failedRuns || notRunRuns || javaNotRun || skippedRuns
+          ? [`${passed + flaky} passed`]
+          : ['failed (a job ended red)']),
       ]
-    : [`${passed + flaky} passed`, `${flaky} flaky`, ...(passedOnRerun ? [`on attempt ${attempt}`] : []), ...(planUnavailable ? ['unverified'] : [])];
+    : [
+        `${passed + flaky} passed`,
+        `${flaky} flaky`,
+        ...(passedOnRerun ? [`on attempt ${attempt}`] : []),
+        ...(planUnavailable ? ['unverified'] : []),
+      ];
   const badge = {
     schemaVersion: 1,
     label: 'nightly',
     message: [...parts, date].join(' · '),
     color: failed ? 'red' : flaky || passedOnRerun || planUnavailable ? 'yellow' : 'brightgreen',
   };
-  writeFileSync(process.env.BADGE_FILE, `${JSON.stringify(badge)}
-`);
+  writeFileSync(
+    process.env.BADGE_FILE,
+    `${JSON.stringify(badge)}
+`,
+  );
 }
 
 // The same result as data, for the nightly's GitHub Pages landing page (scripts/pages-site.mjs).
@@ -573,7 +649,17 @@ if (process.env.SUMMARY_JSON) {
       url: GITHUB_RUN_ID ? `${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}` : null,
       sha: (GITHUB_SHA ?? '').slice(0, 7),
     },
-    verdict: failedRun ? 'failed' : flakyTotal ? 'flaky' : passedOnRerun ? 'rerun' : planUnavailable ? 'unverified' : ran ? 'passed' : 'none',
+    verdict: failedRun
+      ? 'failed'
+      : flakyTotal
+        ? 'flaky'
+        : passedOnRerun
+          ? 'rerun'
+          : planUnavailable
+            ? 'unverified'
+            : ran
+              ? 'passed'
+              : 'none',
     attempt,
     earlierAttempts: earlier,
     rerunNote,
@@ -583,7 +669,13 @@ if (process.env.SUMMARY_JSON) {
       ts: { job: tsJob, state: tsState, runs: totals.ts, byId: tsSum },
       java: { job: javaJob, state: javaState, runs: totals.java, byId: javaSum },
     },
-    rows: ids.map((id) => ({ id, ts: ts.get(id) ?? null, java: java.get(id) ?? null, coverage: coverage(id), knownDefect: knownIds.has(id) })),
+    rows: ids.map((id) => ({
+      id,
+      ts: ts.get(id) ?? null,
+      java: java.get(id) ?? null,
+      coverage: coverage(id),
+      knownDefect: knownIds.has(id),
+    })),
     flaky: flakyCases,
     defects: defectRows.map((d) => ({ ...d, tsState: defectState(d.ts).icon, javaState: defectState(d.java).icon })),
     failedJobs: failed,

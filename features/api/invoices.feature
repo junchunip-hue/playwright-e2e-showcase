@@ -4,7 +4,8 @@
 # (authentication is checked first), so no order is needed and nobody's data is read.
 Feature: Invoices API: authentication
 
-  @smoke @negative
+  @smoke
+  @negative
   Scenario: A6: invoices cannot be read without a token
     Given a newly registered customer
     Then every invoice route refuses an anonymous request with 401 and lets the signed-in one through
@@ -14,7 +15,8 @@ Feature: Invoices API: authentication
       | GET /invoices/{number}/download-pdf        | 404       |
       | GET /invoices/{number}/download-pdf-status | 400       |
 
-  @regression @negative
+  @regression
+  @negative
   Scenario: A6: a malformed token is refused like a missing one
     When I list invoices with the token "not-a-jwt"
     Then the API answers 401 Unauthorized

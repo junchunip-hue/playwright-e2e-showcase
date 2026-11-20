@@ -4,7 +4,10 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.options.AriaRole;
 
-/** Module layer: "My invoices" (/account/invoices); the table has no data-test ids. TypeScript twin: src/modules/account.module.ts. */
+/**
+ * Module layer: "My invoices" (/account/invoices); the table has no data-test ids. TypeScript twin:
+ * src/modules/account.module.ts.
+ */
 public class InvoicesModule {
   public final Locator rows;
 
