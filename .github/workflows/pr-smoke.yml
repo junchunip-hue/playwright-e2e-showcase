@@ -85,6 +85,13 @@ jobs:
       - name: Set up JDK, compiled tests and Chromium
         uses: ./.github/actions/setup-java-suite
 
+      # The PR runs only the smoke scenarios in Java, so a sentence with no Java step in a regression-only scenario
+      # would first fail at night. A dry run binds every step of every feature without a browser (seconds) and fails
+      # on an undefined one. Its reports go elsewhere, so they never stand in for the smoke results below.
+      - name: Check every feature has its Java steps (dry run)
+        working-directory: java
+        run: ./mvnw -B test -Dcucumber.execution.dry-run=true -Dsurefire.reportsDirectory=target/dry-run-reports
+
       - name: Wait for Toolshop and start its background jobs
         uses: ./.github/actions/toolshop-ready
 
