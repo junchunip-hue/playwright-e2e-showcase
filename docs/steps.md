@@ -111,7 +111,7 @@ sentence. If it is not, write it so it names the page or API it acts on. The rul
 | When the admin marks the order as shipped | journeys/admin-to-customer.feature | [admin.steps.ts:32](../src/steps/admin.steps.ts#L32) | [AdminSteps.java:65](../java/src/test/java/com/showcase/steps/AdminSteps.java#L65) |
 | When the admin publishes a new product through the API | api/admin.feature | [products.steps.ts:139](../src/steps/api/products.steps.ts#L139) | [ProductsApiSteps.java:208](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L208) |
 | Then the order is billed to the guest's address | journeys/guest-checkout.feature | [admin.steps.ts:58](../src/steps/admin.steps.ts#L58) | [AdminSteps.java:92](../java/src/test/java/com/showcase/steps/AdminSteps.java#L92) |
-| Then the order is unchanged | api/permissions.feature | [invoices.steps.ts:81](../src/steps/api/invoices.steps.ts#L81) | [InvoicesApiSteps.java:132](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L132) |
+| Then the order is unchanged | api/permissions.feature | [invoices.steps.ts:91](../src/steps/api/invoices.steps.ts#L91) | [InvoicesApiSteps.java:136](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L136) |
 
 ## API
 
@@ -151,7 +151,7 @@ sentence. If it is not, write it so it names the page or API it acts on. The rul
 | Then the address is in country {string} with postcode {string} | api/contracts.feature | [customers.steps.ts:66](../src/steps/api/customers.steps.ts#L66) | [CustomersApiSteps.java:113](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L113) |
 | Then the API answers {int} | api/auth.feature, api/registration.feature | [customers.steps.ts:26](../src/steps/api/customers.steps.ts#L26) | [CustomersApiSteps.java:59](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L59) |
 | Then the API answers 401 with the Unauthorized message | api/invoices.feature | [invoices.steps.ts:43](../src/steps/api/invoices.steps.ts#L43) | [InvoicesApiSteps.java:91](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L91) |
-| Then the API still answers {int} instead of {int}, known defect {string} for {string} | api/permissions.feature | [invoices.steps.ts:74](../src/steps/api/invoices.steps.ts#L74) | [InvoicesApiSteps.java:126](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L126) |
+| Then the API should answer {int} for {string}, but answers {int} because of known defect {string} | api/permissions.feature | [invoices.steps.ts:77](../src/steps/api/invoices.steps.ts#L77) | [InvoicesApiSteps.java:128](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L128) |
 | Then the backend has the favourite, the order at the cart total and a completed PDF | journeys/shopper.feature | [shopper.steps.ts:60](../src/steps/shopper.steps.ts#L60) | [ShopperSteps.java:110](../java/src/test/java/com/showcase/steps/ShopperSteps.java#L110) |
 | Then the contract check reports only the field {string} | api/contracts.feature | [products.steps.ts:48](../src/steps/api/products.steps.ts#L48) | [ProductsApiSteps.java:105](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L105) |
 | When the demo customer signs in through the API | api/auth.feature | [customers.steps.ts:11](../src/steps/api/customers.steps.ts#L11) | [CustomersApiSteps.java:44](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L44) |

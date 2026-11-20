@@ -11,24 +11,35 @@ const [tsFile, javaDir, jobsDir, plannedFile] = process.argv.slice(2);
 const ID = /\b([ASUN]\d+):/;
 const ORDER = 'SUAN';
 
-/** id → { passed, failed, flaky, skipped } */
-const tally = () => ({ passed: 0, failed: 0, flaky: 0, skipped: 0, notRun: 0 });
+/**
+ * id → { passed, failed, flaky, skipped, notRun, known }. `known` = failed on purpose at the step where a known product
+ * defect shows (ADR 0010): neither passed nor an unexpected failure, and the steps after it did not run.
+ */
+const tally = () => ({ passed: 0, failed: 0, flaky: 0, skipped: 0, notRun: 0, known: 0 });
 
 /**
  * Known defects (src/known-defects.ts, com.showcase.api.KnownDefect) report one line per check:
- * "<summary> | <label> | answered <status> (today <today>, intended <intended>)". TS: test annotation "known defect";
- * Java: "known defect: <line>" in the test's <system-out>.
+ * "<summary> | <label> | answered <status> (today <today>, intended <intended>) | fails at: <step> | not run: <n>".
+ * TS: test annotation "known defect"; Java: "known defect: <line>" in the scenario log or <system-out>.
  */
-const DEFECT_LINE = /^(.*?) \| (.*?) \| answered (\d+) \(today (\d+), intended (\d+)\)$/;
-/** "id|summary" → { id, summary, ts?: check, java?: check }, where check = { label, answered, today, intended } */
+const DEFECT_LINE =
+  /^(.*?) \| (.*?) \| answered (\d+) \(today (\d+), intended (\d+)\)(?: \| fails at: (.*?) \| not run: (\d+))?$/;
+/** "id|summary" → { id, summary, ts?: check, java?: check }, check = { label, answered, today, intended, step, notRun } */
 const defects = new Map();
 function recordDefect(id, lang, line) {
   const m = DEFECT_LINE.exec(line.trim());
   if (!m) return;
-  const [, summary, label, answered, today, intended] = m;
+  const [, summary, label, answered, today, intended, step, notRun] = m;
   const key = `${id}|${summary}`;
   const d = defects.get(key) ?? { id, summary };
-  d[lang] = { label, answered: Number(answered), today: Number(today), intended: Number(intended) };
+  d[lang] = {
+    label,
+    answered: Number(answered),
+    today: Number(today),
+    intended: Number(intended),
+    step: step ?? null,
+    notRun: notRun === undefined ? null : Number(notRun),
+  };
   defects.set(key, d);
 }
 
@@ -64,7 +75,7 @@ const xmlText = (s) =>
 /** All test runs per language, with an ID or not (e.g. the login setup); the per-ID tables count only tests with an ID. */
 const totals = { ts: null, java: null };
 const countRun = (lang, outcome) => {
-  totals[lang] ??= { passed: 0, flaky: 0, failed: 0, notRun: 0, skipped: 0 };
+  totals[lang] ??= { passed: 0, flaky: 0, failed: 0, notRun: 0, skipped: 0, known: 0 };
   totals[lang][outcome]++;
 };
 
@@ -76,10 +87,16 @@ function typescriptResults(file) {
   const byId = new Map();
   if (!file || !existsSync(file)) return byId;
   const OUTCOME = { expected: 'passed', flaky: 'flaky', skipped: 'skipped' };
+  // An expected failure counts as a known defect only when expectKnownDefect marked it: the test carries a "known
+  // defect" annotation and its last attempt failed. Any other test.fail() would still count as passed.
+  const knownFailure = (t) =>
+    t.status === 'expected' &&
+    (t.annotations ?? []).some((a) => a.type === 'known defect') &&
+    t.results?.at(-1)?.status === 'failed';
   const walk = (suite) => {
     for (const spec of suite.specs ?? []) {
       for (const t of spec.tests ?? []) {
-        countRun('ts', OUTCOME[t.status] ?? 'failed');
+        countRun('ts', knownFailure(t) ? 'known' : (OUTCOME[t.status] ?? 'failed'));
         reportedTs.add(testKey(spec, t));
       }
       const id = ID.exec(spec.title)?.[1];
@@ -87,7 +104,8 @@ function typescriptResults(file) {
       for (const t of spec.tests ?? []) {
         for (const a of t.annotations ?? []) if (a.type === 'known defect') recordDefect(id, 'ts', a.description ?? '');
         const r = byId.get(id) ?? tally();
-        if (t.status === 'expected') r.passed++;
+        if (knownFailure(t)) r.known++;
+        else if (t.status === 'expected') r.passed++;
         else if (t.status === 'flaky') {
           r.flaky++;
           recordFlaky(id, spec, t);
@@ -137,19 +155,25 @@ function javaResults(dir) {
     for (const m of xml.matchAll(/<testcase\b([^>]*?)(\/>|>([\s\S]*?)<\/testcase>)/g)) {
       const name = /name="([^"]*)"/.exec(m[1])?.[1] ?? '';
       const body = m[3] ?? '';
-      for (const note of log.get(javaScenarioName(xmlText(name)))?.notes ?? []) {
+      const logged = log.get(javaScenarioName(xmlText(name)));
+      for (const note of logged?.notes ?? []) {
         const id = ID.exec(name)?.[1];
         if (id && note.startsWith('known defect: ')) recordDefect(id, 'java', note.slice('known defect: '.length));
       }
+      // KnownDefect aborts the scenario at the defect step (JUnit has no expected failure), so Surefire records it as
+      // skipped; the scenario log says it failed there on purpose. Any other skip stays a skip.
+      const knownFailure = /<skipped\b/.test(body) && logged?.knownDefect === true;
       countRun(
         'java',
         /<(failure|error)\b/.test(body)
           ? 'failed'
           : /<flaky(Failure|Error)\b/.test(body)
             ? 'flaky'
-            : /<skipped\b/.test(body)
-              ? 'skipped'
-              : 'passed',
+            : knownFailure
+              ? 'known'
+              : /<skipped\b/.test(body)
+                ? 'skipped'
+                : 'passed',
       );
       const id = ID.exec(name)?.[1];
       if (!id) continue;
@@ -172,7 +196,8 @@ function javaResults(dir) {
           attempts: [...flakes.map(() => 'failed'), 'passed'],
           error: firstLine(xmlText(message ?? type)),
         });
-      } else if (/<skipped\b/.test(body)) r.skipped++;
+      } else if (knownFailure) r.known++;
+      else if (/<skipped\b/.test(body)) r.skipped++;
       else r.passed++;
       byId.set(id, r);
     }
@@ -226,7 +251,8 @@ const cell = (r) => {
   if (!r) return '–';
   const parts = [];
   // "0 ✅" only when nothing else is there to say (e.g. all skipped is said below).
-  if (r.passed || !(r.flaky || r.failed || r.skipped || r.notRun)) parts.push(`${r.passed} ✅`);
+  if (r.passed || !(r.flaky || r.failed || r.skipped || r.notRun || r.known)) parts.push(`${r.passed} ✅`);
+  if (r.known) parts.push(`${r.known} 🟨 known defect`);
   if (r.notRun) parts.push(r.notRunCountUnknown ? '⛔ not run' : `${r.notRun} ⛔ not run`);
   if (r.flaky) parts.push(`${r.flaky} ⚠️ flaky`);
   if (r.failed) parts.push(`${r.failed} ❌`);
@@ -242,8 +268,9 @@ const sum = (m) =>
       flaky: a.flaky + r.flaky,
       notRun: a.notRun + r.notRun,
       skipped: a.skipped + r.skipped,
+      known: a.known + r.known,
     }),
-    { passed: 0, failed: 0, flaky: 0, notRun: 0, skipped: 0 },
+    { passed: 0, failed: 0, flaky: 0, notRun: 0, skipped: 0, known: 0 },
   );
 
 const tsJob = process.env.TS_JOB ?? 'unknown';
@@ -268,6 +295,7 @@ const javaState = state(javaJob, javaSum);
 const counts = (s) =>
   [
     `${s.passed} passed`,
+    ...(s.known ? [`🟨 ${s.known} known defect${s.known === 1 ? '' : 's'}`] : []),
     s.failed ? `❌ ${s.failed} failed` : '0 failed',
     s.flaky ? `⚠️ ${s.flaky} flaky` : '0 flaky',
     ...(s.notRun
@@ -304,26 +332,35 @@ const flow = nightly
 /** State of one language's check: still present (green, tracked), fixed (red: replace the marker), or unexpected. */
 const defectState = (c) => {
   if (!c) return { icon: '–', text: '–' };
-  if (c.answered === c.today) return { icon: '🟨', text: `🟨 still present (${c.answered})` };
+  if (c.answered === c.today)
+    return { icon: '🟨', text: `🟨 still present: fails on purpose (${c.answered} instead of ${c.intended})` };
   if (c.answered === c.intended)
     return { icon: '🟥', text: `🟥 **fixed** (${c.answered}): replace the marker with a plain assertion` };
   return { icon: '❌', text: `❌ unexpected ${c.answered} (today ${c.today}, intended ${c.intended})` };
 };
 const defectRows = [...defects.values()].sort((a, b) => Number(a.id.slice(1)) - Number(b.id.slice(1)));
+/** The step where the defect fails, and how many steps after it did not run. */
+const failsAt = (d) => {
+  const c = d.ts?.step ? d.ts : d.java;
+  if (!c?.step) return '–';
+  return `"${c.step.replaceAll('|', '\\|')}"${c.notRun ? ` (${c.notRun} not run)` : ''}`;
+};
 const defectsOpen = defectRows.filter((d) => [d.ts, d.java].some((c) => c && c.answered === c.today)).length;
 const defectSection = defectRows.length
   ? [
       `## Known defects (${defectsOpen} still present)`,
       '',
-      '| ID | Defect | Request | TypeScript | Java |',
-      '|---|---|---|---|---|',
+      '| ID | Defect | Request | Fails at step (steps after it not run) | TypeScript | Java |',
+      '|---|---|---|---|---|---|',
       ...defectRows.map(
         (d) =>
-          `| ${d.id} | ${d.summary} | ${(d.ts ?? d.java).label} | ${defectState(d.ts).text} | ${defectState(d.java).text} |`,
+          `| ${d.id} | ${d.summary} | ${(d.ts ?? d.java).label} | ${failsAt(d)} | ${defectState(d.ts).text} | ${defectState(d.java).text} |`,
       ),
       '',
-      '🟨 the tests pass because the API still answers exactly as today: the defect is tracked, not fixed. 🟥 the API now',
-      'answers as intended and the test fails on purpose. ❌ anything else. See ADR 0010.',
+      'Each scenario: the steps before the defect step pass, the defect step fails on purpose, the steps after it do not',
+      'run. 🟨 the API still answers exactly as today: the failure is expected and the run stays green, the defect is',
+      'tracked, not fixed. 🟥 the API now answers as intended: the test fails, replace the marker with a plain',
+      'assertion. ❌ anything else. See ADR 0010.',
       '',
     ]
   : [];
@@ -424,6 +461,12 @@ const problems = [
     : []),
 ];
 const UNVERIFIED = 'the list of planned tests is missing, so tests that did not run cannot be detected';
+/** Known defects that failed on purpose: named in every verdict, so a green run never hides them. */
+const knownTotal = tsSum.known + javaSum.known;
+const knownIdList = [...knownIds].join(', ');
+const knownNote = knownTotal
+  ? `🟨 ${plural(knownTotal, 'test')} failed on purpose at a known defect (${knownIdList}); see [Known defects](#known-defects).`
+  : '';
 const cause = firstFailure
   ? `${firstFailure.name}${firstFailure.why[0] ? `: ${firstFailure.why[0]}` : firstFailure.steps[0] ? ` failed at ${firstFailure.steps[0]}` : ' failed'}`
   : '';
@@ -450,7 +493,7 @@ const verdict =
             `> **Unverified:** every test that reported passed, but ${UNVERIFIED} (see the "List the planned TypeScript tests" step).`,
           ]
         : tsState === 'ok' || javaState === 'ok'
-          ? ['> [!TIP]', '> **Passed:** no failed and no flaky tests.']
+          ? ['> [!TIP]', `> **Passed:** no failed and no flaky tests.${knownNote ? ` ${knownNote}` : ''}`]
           : ['> [!NOTE]', `> **No result:** TypeScript job ${tsJob}, Java job ${javaJob}.`];
 /** Passed now, but an earlier attempt of this run failed: gold like flaky, never a plain green "Passed". */
 const passedOnRerun = !(tsState === 'bad' || javaState === 'bad') && earlierFailed.length > 0;
@@ -563,7 +606,8 @@ if (process.env.GITHUB_OUTPUT) {
       ? `✅ Passed · ⚠️ ${flakyTotal} flaky: ${flakyNames}${planUnavailable ? ' · unverified (no planned list)' : ''}`
       : planUnavailable
         ? '⚠️ Unverified: passed what ran, but the planned test list is missing'
-        : '✅ Passed: no failed and no flaky tests';
+        : // No 🟨 here: commit status descriptions reject 4-byte Unicode (✅ and ⚠️ are 3-byte).
+          `✅ Passed: no failed and no flaky tests${knownTotal ? ` · ${plural(knownTotal, 'known defect')} failing on purpose (${knownIdList})` : ''}`;
   // A rerun says so first (GitHub cuts the description at 140 characters): "Passed on attempt 2 (attempt 1 failed: …)".
   const first = earlierFailed[0];
   const earlierShort = first
@@ -600,9 +644,14 @@ if (process.env.GITHUB_OUTPUT) {
 // failed).
 if (process.env.BADGE_FILE) {
   const total = (k) => (totals.ts?.[k] ?? 0) + (totals.java?.[k] ?? 0);
-  const [passed, flaky, failedRuns, notRunRuns, skippedRuns] = ['passed', 'flaky', 'failed', 'notRun', 'skipped'].map(
-    total,
-  );
+  const [passed, flaky, failedRuns, notRunRuns, skippedRuns, known] = [
+    'passed',
+    'flaky',
+    'failed',
+    'notRun',
+    'skipped',
+    'known',
+  ].map(total);
   const failed = tsState === 'bad' || javaState === 'bad';
   const javaNotRun = [...java.values()].some((r) => r.notRunCountUnknown);
   // The run's date, so a badge that stopped updating does not pass for today's result.
@@ -619,6 +668,7 @@ if (process.env.BADGE_FILE) {
       ]
     : [
         `${passed + flaky} passed`,
+        ...(known ? [`${known} known defect${known === 1 ? '' : 's'}`] : []),
         `${flaky} flaky`,
         ...(passedOnRerun ? [`on attempt ${attempt}`] : []),
         ...(planUnavailable ? ['unverified'] : []),

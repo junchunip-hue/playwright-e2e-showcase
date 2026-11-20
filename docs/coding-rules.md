@@ -113,6 +113,28 @@ Every scenario goes down the same layers in both languages ([ADR 0012](decisions
 - Test data is created fresh through the API (`src/data/`, `data/`), never taken from shared accounts other than the
   demo customer.
 
+## Known defects
+
+A product defect the tests found stays a test ([ADR 0010](decisions/0010-known-defects-as-tests.md)). In the feature:
+
+```gherkin
+@known-defect
+Scenario: A11: a customer cannot change the status of an order
+  Given an order of someone else, in a status the API accepts
+  And a newly registered customer
+  When that customer sets that order to the status it already has
+  Then the API should answer 403 for "PUT /invoices/{id}/status as another customer", but answers 200 because of known defect "PUT /invoices/{id}/status checks neither role nor ownership"
+  And the order is unchanged
+```
+
+- `@known-defect` on the scenario says up front that it breaks at a known defect. `npm run check:steps` requires the
+  tag exactly on the scenarios with a known-defect step.
+- The known-defect step sits where the defect shows and names the intended answer, today's answer and the defect.
+- In every report each step ends in one of three states: **pass** (the steps before), **fail** (this step, on purpose:
+  expected 403, received 200) and **skipped** (the steps after it, which do not run). The test counts as
+  🟨 known defect, not as passed, and the run stays green. When the API answers as intended, the test goes red: replace
+  the step with a plain assertion and remove the tag.
+
 ## IDs and tags
 
 - Every scenario has a test-plan ID (A, U, S, N) at the start of its title, given as described in

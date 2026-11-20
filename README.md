@@ -12,7 +12,7 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 74 TypeScript test cases including quality and architecture checks: 112 runs a night across Chromium, Firefox and
 WebKit (110 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
 The "nightly tests" badge above is the latest nightly's count of runs in both languages (112 TypeScript, including the
-sign-in setups, + 43 Java = 155), coloured like its verdict. Both badges open the nightly's results page: the verdict,
+sign-in setups, + 43 Java = 155: 151 passed + 4 known defects, A10 and A11 in each language), coloured like its verdict. Both badges open the nightly's results page: the verdict,
 the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
 history.
 
@@ -73,11 +73,18 @@ API scenarios read the same way; the API client stands in for the page
 
 **3. Quality beyond "it works"**
 - Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts), Java: [`Contracts.java`](java/src/test/java/com/showcase/api/Contracts.java)).
-- Defects the tests found are tracked as tests: green while the defect exists, red once it is fixed
+- Defects the tests found are tracked as tests, marked in the feature and in every report
   ([`permissions.feature`](features/api/permissions.feature), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)):
   ```gherkin
-  Then the API still answers 201 instead of 403, known defect "POST /products checks no role" for "POST /products as a customer"
+  @known-defect
+  Scenario: A10: a customer cannot publish a product
+    Given a newly registered customer
+    When that customer tries to publish a product through the API
+    Then the API should answer 403 for "POST /products as a customer", but answers 201 because of known defect "POST /products checks no role"
   ```
+  Per step: the steps before it pass, this step fails on purpose (red in the report, expected 403, received 201), and
+  any step after it is shown as not run. The run stays green and lists the defect as 🟨 known defect, not as passed;
+  once the API answers 403, the test goes red so the marker can become a plain assertion.
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
 - The full suite runs nightly on Chromium, Firefox and WebKit.

@@ -85,8 +85,8 @@ A new decision gets the next ADR number.
   - jobs without a timeout, unbounded `while`/`until` loops, and browser installs outside the bounded script
 - **Parity**: an A/U/S ID that exists in only one language, or a test-plan "Java" column that disagrees with `java/`,
   fails the architecture stage.
-- **Known defects** stay visible: A10/A11 pass only while the defect is exactly as today, and each run's summary lists
-  them ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
+- **Known defects** stay visible: A10/A11 are tagged `@known-defect`, fail on purpose at the defect step only while
+  the defect is exactly as today, and each run's summary and the results page list them with that step ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
 - **Contracts**: every API response is schema-validated, so new scenarios get contract coverage for free.
 - **Isolation**: each scenario creates its own customers; the shared demo account is only used for successful logins.
 

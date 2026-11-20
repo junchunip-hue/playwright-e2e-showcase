@@ -71,10 +71,20 @@ When('that customer sets that order to the status it already has', async ({ api,
   ctx.response = await api.invoices.updateStatusRequest(token, order.id, order.status);
 });
 
+// The step where a known defect shows (ADR 0010). The scenario carries @known-defect; this step fails on purpose and
+// the steps after it do not run (src/known-defects.ts). $bddContext lists the scenario's steps, so the report can name
+// the failing step and each step that was not run.
 Then(
-  'the API still answers {int} instead of {int}, known defect {string} for {string}',
-  async ({ ctx }, today: number, intended: number, summary: string, label: string) => {
-    expectKnownDefect(need(ctx.response, 'a When step that sends the request'), label, { summary, intended, today });
+  'the API should answer {int} for {string}, but answers {int} because of known defect {string}',
+  async ({ ctx, $bddContext }, intended: number, label: string, today: number, summary: string) => {
+    const steps = $bddContext.bddTestData.steps.map((s) => s.textWithKeyword);
+    const where = { failing: steps[$bddContext.stepIndex], notRun: steps.slice($bddContext.stepIndex + 1) };
+    await expectKnownDefect(
+      need(ctx.response, 'a When step that sends the request'),
+      label,
+      { summary, intended, today },
+      where,
+    );
   },
 );
 

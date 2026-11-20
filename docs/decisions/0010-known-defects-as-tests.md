@@ -16,10 +16,23 @@ ignore red.
 
 **Decision:** A10 and A11 assert the intended rule through `expectKnownDefect` (`src/known-defects.ts`) and its Java
 twin `KnownDefect` (`com.showcase.api`). Each defect states a summary, the intended status and today's status.
-- The API answers today's status: the test passes, and the report shows a `known defect` annotation.
+- The API answers today's status: the defect step **fails on purpose**. The steps before it passed, the steps after it
+  do not run, as after any failure. TypeScript marks the test as an expected failure (`test.fail`, called only after
+  the exact known answer is confirmed), shows the step red with "expected 403, received 201" and lists each later step
+  as "⏭ Not run"; Java aborts the scenario, and the scenario log records that step as failed by the known defect and
+  the later ones as skipped. Reports count the test as **known defect**, neither passed nor failed, and the run stays
+  green.
 - The API answers the intended status: the test fails with "known defect fixed", and the marker is then replaced by a
   plain assertion.
 - The API answers anything else: the test fails like any assertion.
+
+The feature says it up front: every scenario with a known-defect step carries `@known-defect`, and the step itself
+names the intended answer, today's answer and the defect ("Then the API should answer 403 for …, but answers 201
+because of known defect …"). `npm run check:steps` fails when the tag and the step do not go together.
+
+*Revised 2026-11-21:* the first version let the defect step pass, so the report was all green and did not show where
+the scenario breaks. A plain `test.fail()` was rejected because it accepts any failure; calling it only for the exact
+known answer keeps that guarantee.
 
 Requests that would change data while the defect exists are made harmless where possible: A11 sets an order to the
 status it already has. A10 creates a product, so both run against our own Toolshop only (`@admin`).
