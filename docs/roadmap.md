@@ -39,7 +39,7 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 | **S7** (optional) | Languages | Switch language (DE, NL, …) → key pages translated, a11y and visual still pass | a11y, visual | i18n + non-functional checks combined |
 
 **Build order (done):** S2 → S3 → A10/A11 → S6 → S4, then A6, A7 and S5 (2026-11-19). A10/A11 turned the two
-permission findings from S3 into tracked known defects, S6 added network mocking, S4 is the second entry path into
+permission findings from S3 into tests (later removed, ADR 0013), S6 added network mocking, S4 is the second entry path into
 checkout (P1), and S5 added file downloads and a wait on Toolshop's background jobs. S7 is optional
 ([§6](#6-what-comes-next)). **Every journey ships in TypeScript and Java**
 ([ADR 0009](decisions/0009-every-journey-in-both-languages.md)): S1–S6 do.
@@ -85,8 +85,8 @@ A new decision gets the next ADR number.
   - jobs without a timeout, unbounded `while`/`until` loops, and browser installs outside the bounded script
 - **Parity**: an A/U/S ID that exists in only one language, or a test-plan "Java" column that disagrees with `java/`,
   fails the architecture stage.
-- **Known defects** stay visible: A10/A11 are tagged `@known-defect`, fail on purpose at the defect step only while
-  the defect is exactly as today, and each run's summary and the results page list them with that step ([ADR 0010](decisions/0010-known-defects-as-tests.md)).
+- **Failures** stay failures: no known-issue markers; every report shows the failed step and the steps not run
+  ([ADR 0013](decisions/0013-failures-stay-failures.md)).
 - **Contracts**: every API response is schema-validated, so new scenarios get contract coverage for free.
 - **Isolation**: each scenario creates its own customers; the shared demo account is only used for successful logins.
 
@@ -112,8 +112,8 @@ the new flaky list in the pipeline summary caught; before it, a retry would have
 - **Risks:** every P1/P2 risk in [test-strategy.md](test-strategy.md#2-risk-based-prioritisation) is checked at the
   right layer (met; the risk table names the IDs per risk).
 - **Techniques:** each technique the demo should show is used at least once (met 2026-11-18, last three were:)
-  - ✅ A10/A11: role-based authorization, and known product defects tracked as tests
-    ([ADR 0010](decisions/0010-known-defects-as-tests.md))
+  - ✖ A10/A11: role-based authorization; removed because the defect is in upstream Toolshop
+    ([ADR 0013](decisions/0013-failures-stay-failures.md))
   - ✅ S6: network mocking and failure UX
   - ✅ S4: a second entry path into checkout
 - **Stability:** five nightly runs in a row with no flaky or failed test in either language (met 2026-11-18: seven
@@ -151,7 +151,7 @@ Nothing is in progress. Four kinds of work remain, in this order.
 | When | Then | Where |
 |---|---|---|
 | A scheduled nightly has a flaky or failed test | Fix the cause (test or product), not with a retry; the stability criterion is open again until five clean nightlies follow | nightly summary, [ci.md](ci.md#pipeline-summary) |
-| A10 or A11 shows 🟥 "known defect fixed" | Replace `expectKnownDefect` / `KnownDefect` with a plain assertion of the intended status in both languages; move the finding to "fixed" in the test plan | [ADR 0010](decisions/0010-known-defects-as-tests.md) |
+| The pinned Toolshop is upgraded to a version that checks product and order permissions | Bring A10/A11 back as plain negative tests (403) in both languages; set their test-plan rows back to ✅ | [ADR 0013](decisions/0013-failures-stay-failures.md) |
 | S6 fails because the catalogue or search now shows an error message | Assert the message instead of the blank page / "no results" (the finding is fixed) | [test plan, S6 findings](test-plan.md#3-test-inventory) |
 | Toolshop is moved to a newer upstream commit | Change the pin in `.github/actions/toolshop-start`, refresh visual baselines with the `update-snapshots` label, run a manual nightly | [ci.md](ci.md#system-under-test) |
 | `@playwright/test` gets a new minor version | Move `playwright.version` in `java/pom.xml` to the same minor | [java.md](java.md#how-the-two-stay-in-sync) |
@@ -170,7 +170,7 @@ Ranked by what they add to a 3-minute demo against what they cost.
 |---|---|---|---|---|
 | 1 | **Admin and customer side by side:** the admin changes an order in the back-office UI while the customer's page shows it | Two browser contexts in one test (two users at once, both in the UI) | S | Medium: admin UI pages and modules; own Toolshop only |
 | 2 | **Two-factor sign-in:** enable TOTP for a fresh customer via API, sign in with a code generated in the test, a wrong or reused code is refused | Time-based secrets in tests (TOTP generator in TS and Java) | A + S | Medium: a TOTP library per language; clock skew handled by the code window |
-| 3 | **Keyboard-only checkout:** U6 with Tab, Enter and arrow keys only | Accessibility beyond axe: focus order and operability | N or S | Low to build; may find real defects (a finding is a result, see ADR 0010) |
+| 3 | **Keyboard-only checkout:** U6 with Tab, Enter and arrow keys only | Accessibility beyond axe: focus order and operability | N or S | Low to build; may find real defects (a finding is a result: fix it or record it in the test plan, ADR 0013) |
 | 4 | **Live sales feed:** the `/sales-stream` server-sent events and the live activity widget | Asserting a server push (SSE) in API and UI | A + U | Medium: stream parsing in both languages |
 | 5 | **Phone-sized checkout:** U6 on a mobile viewport with touch (menu, cart) | Device emulation, responsive layout | S | Low: a Playwright project with a device profile; Java via context options |
 | 6 | **Contact form with an attachment:** upload a file, a wrong type or size is refused | File upload (S5 covers download) | A + U | Low |

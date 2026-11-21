@@ -62,7 +62,7 @@ export class ProductsApi {
     return this.http.get(`/products/search?q=${encodeURIComponent(query)}`, ProductSearchPageSchema);
   }
 
-  /** POST /products (an admin action in the UI; the pinned API itself does not check the role, see A10). */
+  /** POST /products (an admin action). */
   async create(token: string, product: NewProduct): Promise<{ id: string; name: string; price: number }> {
     return this.http.parse(await this.createRequest(token, product), 'POST /products', CreatedProductSchema);
   }

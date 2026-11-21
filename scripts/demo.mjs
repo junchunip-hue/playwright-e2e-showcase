@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 
 const id = process.argv[2] ?? 'U6';
 if (!/^[ASU]\d+$/.test(id)) {
-  console.error(`Usage: npm run demo [-- <scenario ID, e.g. U6, S2, A10>] (got "${id}")`);
+  console.error(`Usage: npm run demo [-- <scenario ID, e.g. U6, S2, A8>] (got "${id}")`);
   process.exit(2);
 }
 

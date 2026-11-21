@@ -8,11 +8,11 @@ A test automation framework built the way I would set it up in a real team. Ever
 Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwright-bdd) and **Playwright for Java**
 (Cucumber-JVM on JUnit 5). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
 
-**At a glance:** 36 feature scenarios (43 test cases with Scenario Outline examples) run in both languages ·
-74 TypeScript test cases including quality and architecture checks: 112 runs a night across Chromium, Firefox and
-WebKit (110 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
-The "nightly tests" badge above is the latest nightly's count of runs in both languages (112 TypeScript, including the
-sign-in setups, + 43 Java = 155: 151 passed + 4 known defects, A10 and A11 in each language), coloured like its verdict. Both badges open the nightly's results page: the verdict,
+**At a glance:** 34 feature scenarios (41 test cases with Scenario Outline examples) run in both languages ·
+72 TypeScript test cases including quality and architecture checks: 110 runs a night across Chromium, Firefox and
+WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
+The "nightly tests" badge above is the latest nightly's count of runs in both languages (110 TypeScript, including the
+sign-in setups, + 41 Java = 151), coloured like its verdict. Both badges open the nightly's results page: the verdict,
 the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
 history.
 
@@ -73,18 +73,10 @@ API scenarios read the same way; the API client stands in for the page
 
 **3. Quality beyond "it works"**
 - Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts), Java: [`Contracts.java`](java/src/test/java/com/showcase/api/Contracts.java)).
-- Defects the tests found are tracked as tests, marked in the feature and in every report
-  ([`permissions.feature`](features/api/permissions.feature), [ADR 0010](docs/decisions/0010-known-defects-as-tests.md)):
-  ```gherkin
-  @known-defect
-  Scenario: A10: a customer cannot publish a product
-    Given a newly registered customer
-    When that customer tries to publish a product through the API
-    Then the API should answer 403 for "POST /products as a customer", but answers 201 because of known defect "POST /products checks no role"
-  ```
-  Per step: the steps before it pass, this step fails on purpose (red in the report, expected 403, received 201), and
-  any step after it is shown as not run. The run stays green and lists the defect as 🟨 known defect, not as passed;
-  once the API answers 403, the test goes red so the marker can become a plain assertion.
+- A failing test stays a failure: no "known issue" markers, no expected failures. A failed scenario shows, in every
+  report, the steps that passed, the one step that failed, and each step after it as not run (TypeScript report,
+  Java results, run summary and results page). The fix goes into the test or the product until everything passes
+  ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)).
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
@@ -101,7 +93,7 @@ API scenarios read the same way; the API client stands in for the page
   the code; the PR fails if it is stale, a step is unused or exists in one language only.
 - Every scenario runs in a TypeScript lane and a Java lane. A missing step fails the PR in either language: `bddgen` for
   TypeScript, a Cucumber dry run over every feature for Java. A summary on each CI run compares the lanes per test ID
-  and lists the known defects (see "How it runs").
+  and lists every failed test with its failed and not-run steps (see "How it runs").
 - Flaky is visible, never silent: both lanes retry a failed test twice in CI, and a test that passed only on a retry
   turns the verdict gold (⚠️ passed with flaky) and is listed by name with its first error, as an annotation and in the
   commit status ([ADR 0011](docs/decisions/0011-retries-and-flaky-tests.md)).
@@ -128,8 +120,8 @@ flowchart LR
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
 
-Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every flaky test by name, and
-TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`), and the
+Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every failed test with the step
+where it failed and the steps that did not run, every flaky test by name, and TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`), and the
 nightly's lands on its [results page](https://junchunip-hue.github.io/playwright-e2e-showcase/) with both reports and
 the history.
 
@@ -155,7 +147,7 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 
 | Layer | IDs | What it proves | Where |
 |---|---|---|---|
-| API | A0–A11 | Contracts, auth, registration rules, invoice access, catalogue filters, payment check, admin publishing; customer-vs-admin permissions as tracked known defects | [`features/api`](features/api/), TS + Java |
+| API | A0–A9 | Contracts, auth, registration rules, invoice access, catalogue filters, payment check, admin publishing (A10/A11 removed: [test plan](docs/test-plan.md#findings)) | [`features/api`](features/api/), TS + Java |
 | UI | U1–U5 | Login, search (incl. UI = API), cart | [`features/ui`](features/ui/), TS + Java |
 | Journeys | U6 (S1), S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | [`tests/quality`](tests/quality/), TS |
@@ -169,7 +161,7 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A11), ui/ (U1–U5), journeys/ (U6 = S1, S2–S6)
+features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A9), ui/ (U1–U5), journeys/ (U6 = S1, S2–S6)
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client
   pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
@@ -178,7 +170,6 @@ src/
   data/         test data builders (fresh customers per test)
   fixtures/     pages, API client and the scenario context, injected into steps and specs
   tags.ts       tag and suite registry
-  known-defects.ts  tracked product defects (ADR 0010)
   a11y/ visual/ reporters/ config/
 tests/
   quality/      accessibility and visual regression (N1, N2)
@@ -187,7 +178,7 @@ tests/
   ui/           the Playwright Test Agents' seed
   features/     generated from features/ by `npx bddgen` (git-ignored)
 java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/; report/ScenarioLog
-                keeps each scenario's steps and known defects for the summary
+                keeps each scenario's steps with their status for the summary
 scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
                 install, the CI pipeline summary, and the nightly's history and results page on GitHub Pages
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in

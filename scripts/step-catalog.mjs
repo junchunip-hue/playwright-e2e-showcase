@@ -157,38 +157,7 @@ for (const area of AREA_ORDER) {
 }
 const catalogue = out.join('\n');
 
-// A scenario with a known-defect step (ADR 0010) fails there on purpose and skips the rest, so it must say so up
-// front: @known-defect on exactly those scenarios (on the scenario or its feature).
-const defectSteps = all.filter((s) => /known defect/.test(s.text)).map(toRegex);
-const tagProblems = [];
-for (const f of files('features', '.feature')) {
-  let featureTags = [];
-  let pending = [];
-  let scenario = null;
-  const close = () => {
-    if (!scenario) return;
-    const hasStep = scenario.steps.some((t) => defectSteps.some((re) => re.test(t)));
-    const tagged = [...featureTags, ...scenario.tags].includes('@known-defect');
-    if (hasStep && !tagged)
-      tagProblems.push(`${rel(f)}: "${scenario.name}" has a known-defect step but no @known-defect tag`);
-    if (tagged && !hasStep)
-      tagProblems.push(`${rel(f)}: "${scenario.name}" is tagged @known-defect but has no known-defect step`);
-  };
-  for (const line of readFileSync(f, 'utf8').split('\n')) {
-    const t = line.trim();
-    if (t.startsWith('@')) pending.push(...t.split(/\s+/));
-    else if (t.startsWith('Feature:')) [featureTags, pending] = [pending, []];
-    else if (/^Scenario( Outline)?:/.test(t)) {
-      close();
-      scenario = { name: t.replace(/^Scenario( Outline)?:\s*/, ''), tags: pending, steps: [] };
-      pending = [];
-    } else if (scenario && STEP_LINE.test(line)) scenario.steps.push(line.match(STEP_LINE)[1]);
-  }
-  close();
-}
-
 const problems = [
-  ...tagProblems,
   ...all.filter((s) => !s.features.length).map((s) => `unused step: "${s.text}" (${s.ts})`),
   ...all.filter((s) => !s.java).map((s) => `no Java twin: "${s.text}" (${s.ts})`),
   ...javaOnly.map((s) => `no TypeScript twin: ${s}`),

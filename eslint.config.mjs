@@ -25,8 +25,6 @@ export default tseslint.config(
     files: ['tests/**/*.ts'],
     rules: {
       ...playwright.configs['flat/recommended'].rules,
-      // Custom assertions count as expect() (src/known-defects.ts).
-      'playwright/expect-expect': ['warn', { assertFunctionNames: ['expectKnownDefect'] }],
       // Environment gates such as test.skip(isPublicDemo, ...) are allowed; unconditional skips are not.
       'playwright/no-skipped-test': ['warn', { allowConditional: true }],
     },

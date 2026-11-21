@@ -297,7 +297,7 @@ jobs:
           curl -fsSL "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/history.json" -o previous-history.json             || echo "No published history yet: starting from the seed"
           node scripts/nightly-history.mjs previous-history.json scripts/nightly-history-seed.json site
 
-      # index.html (verdict, both lanes, TS vs Java per ID, flaky, known defects, history) and java/index.html.
+      # index.html (verdict, both lanes, TS vs Java per ID, flaky, failed tests with their steps, history) and java/index.html.
       - name: Build the landing page
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         continue-on-error: true # without it the reports and badges still publish

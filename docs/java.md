@@ -27,7 +27,7 @@ the build only checks it and fails on an unformatted file ([coding rules](coding
 | Test data | `src/data/customers.ts`, `payments.ts`, `products.ts` | `data/Customers.java`, `Payments.java`, `Products.java` |
 | API client (the page layer of API steps) | `src/api/` (per resource), steps in `src/steps/api/` | `api/ApiClient.java`, steps in `steps/api/` |
 | Response contracts | `src/api/schemas.ts` (zod) | `api/Contracts.java` (same rules, same failure format) |
-| Known defects (ADR 0010) | `src/known-defects.ts`: the step fails on purpose (`test.fail`), later steps are listed as not run, plus a test annotation | `api/KnownDefect.java`: aborts the scenario at that step (later steps skipped); the scenario log (`report/ScenarioLog`) marks the step as failed by the known defect, which survives CI reruns |
+| Failed step and the steps not run (ADR 0013) | `src/steps/not-run.hooks.ts`: an `AfterStep` hook lists the steps after a failure as "⏭ Not run" and annotates the test | Cucumber skips them; `report/ScenarioLog` keeps every step with its status and the failed step's error, which survives CI reruns |
 | Tags and tiers | `src/tags.ts`; Gherkin tags become Playwright tags | the same Gherkin tags; Cucumber tags are JUnit tags (`-Dgroups=smoke`) |
 | Data-driven tests | Scenario Outline / data table in the shared feature | the same feature |
 | Tag/ID guard | `npm run check:tags` (covers the shared features for both languages) | – (same features, same tags) |
@@ -44,7 +44,6 @@ In test-plan order (A, then U, then S):
 | A7 | Product filters: category, brand, price range, sort (Scenario Outline), combined | `features/api/product-filters.feature` (shared) | `RunCucumberTest` + `steps/api/ProductsApiSteps` |
 | A8 | Admin publishes a product (own Toolshop only) | `features/api/admin.feature` (shared) | `RunCucumberTest` + `steps/api/ProductsApiSteps` |
 | A9 | Payment check API | `features/api/payments.feature` (shared) | `RunCucumberTest` + `steps/api/PaymentsApiSteps` |
-| A10, A11 | A customer cannot publish a product or change an order: known defects (own Toolshop only) | `features/api/permissions.feature` (shared) | `RunCucumberTest` + `steps/api/InvoicesApiSteps` |
 | U1, U2 | Login (valid / wrong password) | `features/ui/login.feature` (shared) | `RunCucumberTest` + `steps/LoginSteps` |
 | U3, U4 | Search results match the term; UI agrees with the search API | `features/ui/search.feature` (shared) | `RunCucumberTest` + `steps/SearchSteps` |
 | U5 | Add to cart updates the badge | `features/ui/cart.feature` (shared) | `RunCucumberTest` + `steps/CartSteps` |

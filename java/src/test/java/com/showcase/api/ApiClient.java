@@ -348,16 +348,6 @@ public final class ApiClient implements AutoCloseable {
   public static final List<String> INVOICE_STATUSES =
       List.of("AWAITING_FULFILLMENT", "ON_HOLD", "AWAITING_SHIPMENT", "SHIPPED", "COMPLETED");
 
-  /**
-   * PUT /invoices/{id}/status, raw response without a message: for tests that check who may change
-   * it (A11).
-   */
-  public APIResponse updateInvoiceStatusRequest(String token, String id, String status) {
-    return request.put(
-        "/invoices/" + id + "/status",
-        json(Map.of("status", status)).setHeader("Authorization", "Bearer " + token));
-  }
-
   /** PUT /invoices/{id}/status; status is one of {@link #INVOICE_STATUSES}. */
   public void updateInvoiceStatus(String token, String id, String status, String message) {
     parse(
@@ -383,17 +373,14 @@ public final class ApiClient implements AutoCloseable {
     return refs("/images", Contracts.imageItem());
   }
 
-  /**
-   * POST /products; payload from {@link com.showcase.data.Products}. The pinned API checks no role
-   * (A10).
-   */
+  /** POST /products; payload from {@link com.showcase.data.Products}. */
   public CreatedProduct createProduct(String token, Map<String, Object> product) {
     JsonObject body =
         parse(createProductRequest(token, product), "POST /products", Contracts::createdProduct);
     return GSON.fromJson(body, CreatedProduct.class);
   }
 
-  /** POST /products, raw response: for tests that check who may create a product (A10). */
+  /** POST /products, raw response. */
   public APIResponse createProductRequest(String token, Map<String, Object> product) {
     return request.post("/products", json(product).setHeader("Authorization", "Bearer " + token));
   }

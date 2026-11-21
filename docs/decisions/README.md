@@ -14,6 +14,7 @@ New decisions get the next number; a reversed decision is marked "Superseded" an
 | [0007](0007-throwaway-accounts-for-negative-logins.md) | Negative logins use throwaway accounts |
 | [0008](0008-architecture-tests.md) | Architecture tests guard the pipeline against loops |
 | [0009](0009-every-journey-in-both-languages.md) | Every scenario (A, U, S) ships in TypeScript and Java with the same tier; parity is checked |
-| [0010](0010-known-defects-as-tests.md) | Known product defects are tracked as tests that pin today's exact behaviour |
+| [0010](0010-known-defects-as-tests.md) | ~~Known product defects are tracked as tests that pin today's exact behaviour~~ Superseded by 0013 |
 | [0011](0011-retries-and-flaky-tests.md) | CI retries failed tests in both languages, and a test that passed only on a retry is reported as flaky, never hidden |
 | [0012](0012-gherkin-features-with-layered-steps.md) | Scenarios are shared Gherkin features, run in both languages through steps → pages → modules |
+| [0013](0013-failures-stay-failures.md) | A failing test stays a failure (no known-issue markers), and every report shows the failed step and the steps not run |

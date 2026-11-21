@@ -7,7 +7,7 @@ Before you write a new step, look in the section of the page you work on. If the
 sentence. If it is not, write it so it names the page or API it acts on. The rules are in
 [coding-rules.md](coding-rules.md#gherkin-steps).
 
-105 steps, each defined once in TypeScript and once in Java.
+100 steps, each defined once in TypeScript and once in Java.
 
 ## Login page
 
@@ -105,30 +105,28 @@ sentence. If it is not, write it so it names the page or API it acts on. The rul
 
 | Step | Used in | TypeScript | Java |
 |---|---|---|---|
-| Given an order of someone else, in a status the API accepts | api/permissions.feature | [invoices.steps.ts:58](../src/steps/api/invoices.steps.ts#L58) | [InvoicesApiSteps.java:107](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L107) |
 | Then the admin finds the order at the cart total | journeys/admin-to-customer.feature, journeys/guest-checkout.feature | [admin.steps.ts:26](../src/steps/admin.steps.ts#L26) | [AdminSteps.java:55](../java/src/test/java/com/showcase/steps/AdminSteps.java#L55) |
 | Given the admin has published a new product | journeys/admin-to-customer.feature | [admin.steps.ts:11](../src/steps/admin.steps.ts#L11) | [AdminSteps.java:36](../java/src/test/java/com/showcase/steps/AdminSteps.java#L36) |
 | When the admin marks the order as shipped | journeys/admin-to-customer.feature | [admin.steps.ts:32](../src/steps/admin.steps.ts#L32) | [AdminSteps.java:65](../java/src/test/java/com/showcase/steps/AdminSteps.java#L65) |
 | When the admin publishes a new product through the API | api/admin.feature | [products.steps.ts:139](../src/steps/api/products.steps.ts#L139) | [ProductsApiSteps.java:208](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L208) |
 | Then the order is billed to the guest's address | journeys/guest-checkout.feature | [admin.steps.ts:58](../src/steps/admin.steps.ts#L58) | [AdminSteps.java:92](../java/src/test/java/com/showcase/steps/AdminSteps.java#L92) |
-| Then the order is unchanged | api/permissions.feature | [invoices.steps.ts:91](../src/steps/api/invoices.steps.ts#L91) | [InvoicesApiSteps.java:136](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L136) |
 
 ## API
 
 | Step | Used in | TypeScript | Java |
 |---|---|---|---|
 | When `^I request two pages sorted by (price\|name) (asc\|desc)$` | api/product-filters.feature | [products.steps.ts:100](../src/steps/api/products.steps.ts#L100) | [ProductsApiSteps.java:166](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L166) |
-| Given a newly registered customer | api/auth.feature, api/contracts.feature, api/invoices.feature, api/permissions.feature, api/registration.feature, journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/shopper.feature, ui/login.feature | [common.steps.ts:10](../src/steps/common.steps.ts#L10) | [CommonSteps.java:28](../java/src/test/java/com/showcase/steps/CommonSteps.java#L28) |
+| Given a newly registered customer | api/auth.feature, api/contracts.feature, api/invoices.feature, api/registration.feature, journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/shopper.feature, ui/login.feature | [common.steps.ts:10](../src/steps/common.steps.ts#L10) | [CommonSteps.java:28](../java/src/test/java/com/showcase/steps/CommonSteps.java#L28) |
 | Given a product that is in stock | journeys/checkout.feature, journeys/guest-checkout.feature, ui/cart.feature | [common.steps.ts:14](../src/steps/common.steps.ts#L14) | [CommonSteps.java:33](../java/src/test/java/com/showcase/steps/CommonSteps.java#L33) |
 | Then an access token is returned | api/auth.feature | [customers.steps.ts:15](../src/steps/api/customers.steps.ts#L15) | [CustomersApiSteps.java:49](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L49) |
-| Then every invoice route refuses an anonymous request with 401 and lets the signed-in one through | api/invoices.feature | [invoices.steps.ts:18](../src/steps/api/invoices.steps.ts#L18) | [InvoicesApiSteps.java:55](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L55) |
+| Then every invoice route refuses an anonymous request with 401 and lets the signed-in one through | api/invoices.feature | [invoices.steps.ts:15](../src/steps/api/invoices.steps.ts#L15) | [InvoicesApiSteps.java:50](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L50) |
 | Then filtering by exactly its price finds it | api/product-filters.feature | [products.steps.ts:94](../src/steps/api/products.steps.ts#L94) | [ProductsApiSteps.java:157](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L157) |
 | Then filtering by its brand returns only products of that brand | api/product-filters.feature | [products.steps.ts:75](../src/steps/api/products.steps.ts#L75) | [ProductsApiSteps.java:139](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L139) |
 | Then filtering by its brand, prices up to its own and price descending finds it, matching every filter | api/product-filters.feature | [products.steps.ts:118](../src/steps/api/products.steps.ts#L118) | [ProductsApiSteps.java:185](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L185) |
 | Then filtering by its category returns only products of that category | api/product-filters.feature | [products.steps.ts:68](../src/steps/api/products.steps.ts#L68) | [ProductsApiSteps.java:129](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L129) |
 | Then filtering by prices from {int} to {int} returns only prices inside that range | api/product-filters.feature | [products.steps.ts:82](../src/steps/api/products.steps.ts#L82) | [ProductsApiSteps.java:149](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L149) |
 | Given guest details that were never registered | journeys/guest-checkout.feature | [checkout.steps.ts:13](../src/steps/checkout.steps.ts#L13) | [CheckoutSteps.java:43](../java/src/test/java/com/showcase/steps/CheckoutSteps.java#L43) |
-| When I list invoices with the token {string} | api/invoices.feature | [invoices.steps.ts:39](../src/steps/api/invoices.steps.ts#L39) | [InvoicesApiSteps.java:86](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L86) |
+| When I list invoices with the token {string} | api/invoices.feature | [invoices.steps.ts:36](../src/steps/api/invoices.steps.ts#L36) | [InvoicesApiSteps.java:81](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L81) |
 | When I look up the US postcode {string} | api/contracts.feature | [customers.steps.ts:62](../src/steps/api/customers.steps.ts#L62) | [CustomersApiSteps.java:108](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L108) |
 | When I register a new customer with the password {string} | api/registration.feature | [customers.steps.ts:30](../src/steps/api/customers.steps.ts#L30) | [CustomersApiSteps.java:64](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L64) |
 | When I register another customer with the same email | api/registration.feature | [customers.steps.ts:34](../src/steps/api/customers.steps.ts#L34) | [CustomersApiSteps.java:69](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L69) |
@@ -144,14 +142,11 @@ sentence. If it is not, write it so it names the page or API it acts on. The rul
 | Then searching for its name finds it | api/contracts.feature | [products.steps.ts:25](../src/steps/api/products.steps.ts#L25) | [ProductsApiSteps.java:76](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L76) |
 | Then searching for its name finds only that product | api/admin.feature | [products.steps.ts:153](../src/steps/api/products.steps.ts#L153) | [ProductsApiSteps.java:226](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L226) |
 | Then that customer has no invoices | api/contracts.feature, journeys/checkout.feature | [checkout.steps.ts:77](../src/steps/checkout.steps.ts#L77) | [CheckoutSteps.java:120](../java/src/test/java/com/showcase/steps/CheckoutSteps.java#L120) |
-| When that customer sets that order to the status it already has | api/permissions.feature | [invoices.steps.ts:66](../src/steps/api/invoices.steps.ts#L66) | [InvoicesApiSteps.java:119](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L119) |
 | When that customer signs in through the API with a wrong password | api/auth.feature | [customers.steps.ts:19](../src/steps/api/customers.steps.ts#L19) | [CustomersApiSteps.java:54](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L54) |
-| When that customer tries to publish a product through the API | api/permissions.feature | [invoices.steps.ts:51](../src/steps/api/invoices.steps.ts#L51) | [InvoicesApiSteps.java:100](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L100) |
 | Then that customer's invoice exists at the cart total | journeys/checkout.feature | [checkout.steps.ts:47](../src/steps/checkout.steps.ts#L47) | [CheckoutSteps.java:90](../java/src/test/java/com/showcase/steps/CheckoutSteps.java#L90) |
 | Then the address is in country {string} with postcode {string} | api/contracts.feature | [customers.steps.ts:66](../src/steps/api/customers.steps.ts#L66) | [CustomersApiSteps.java:113](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L113) |
 | Then the API answers {int} | api/auth.feature, api/registration.feature | [customers.steps.ts:26](../src/steps/api/customers.steps.ts#L26) | [CustomersApiSteps.java:59](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L59) |
-| Then the API answers 401 with the Unauthorized message | api/invoices.feature | [invoices.steps.ts:43](../src/steps/api/invoices.steps.ts#L43) | [InvoicesApiSteps.java:91](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L91) |
-| Then the API should answer {int} for {string}, but answers {int} because of known defect {string} | api/permissions.feature | [invoices.steps.ts:77](../src/steps/api/invoices.steps.ts#L77) | [InvoicesApiSteps.java:128](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L128) |
+| Then the API answers 401 with the Unauthorized message | api/invoices.feature | [invoices.steps.ts:40](../src/steps/api/invoices.steps.ts#L40) | [InvoicesApiSteps.java:86](../java/src/test/java/com/showcase/steps/api/InvoicesApiSteps.java#L86) |
 | Then the backend has the favourite, the order at the cart total and a completed PDF | journeys/shopper.feature | [shopper.steps.ts:60](../src/steps/shopper.steps.ts#L60) | [ShopperSteps.java:110](../java/src/test/java/com/showcase/steps/ShopperSteps.java#L110) |
 | Then the contract check reports only the field {string} | api/contracts.feature | [products.steps.ts:48](../src/steps/api/products.steps.ts#L48) | [ProductsApiSteps.java:105](../java/src/test/java/com/showcase/steps/api/ProductsApiSteps.java#L105) |
 | When the demo customer signs in through the API | api/auth.feature | [customers.steps.ts:11](../src/steps/api/customers.steps.ts#L11) | [CustomersApiSteps.java:44](../java/src/test/java/com/showcase/steps/api/CustomersApiSteps.java#L44) |
