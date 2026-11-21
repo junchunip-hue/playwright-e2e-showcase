@@ -19,7 +19,7 @@ itself and would race S3.
 | Workflow | Trigger | What runs | Browsers |
 |---|---|---|---|
 | `pr-smoke.yml` | Every PR and push to `master` | **Static:** lint, format (Prettier), typecheck, `check:tags`, `check:steps`, `test:architecture` ([coding rules](coding-rules.md))<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and in parallel the Java lane: Spotless format check, a dry run that binds every feature's steps (seconds, no browser), then the Java smoke suite | Chromium |
-| `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed) in 3 shards, plus the full Java suite | Chromium, Firefox, WebKit |
+| `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed and the failure control) in 3 shards, plus the full Java suite; then the failure control C1 in both languages, separately (fails on purpose, not counted) | Chromium, Firefox, WebKit |
 | `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR, and comments how to get PR checks on that commit (GitHub runs no workflow for a push made by Actions) | Chromium |
 
 **Dependency updates:** Dependabot (`.github/dependabot.yml`) opens one grouped PR per week for npm, Maven and GitHub
@@ -35,8 +35,8 @@ flowchart LR
   end
   subgraph NW["nightly-regression.yml"]
     direction LR
-    R["regression × 3 shards<br/>Chromium · Firefox · WebKit"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
-    RJ["regression-java<br/>full suite"] --> S
+    R["regression × 3 shards<br/>Chromium · Firefox · WebKit<br/>(+ failure control C1 in shard 1)"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
+    RJ["regression-java<br/>full suite (+ failure control C1)"] --> S
     S --> D["deploy-report<br/>landing page · TS report · Java results ·<br/>badges, master only"]
   end
 ```
@@ -152,7 +152,8 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
 - `src/tags.ts` defines every tag and suite. Specs use `Tag.*` (a typo is a compile error). CI and npm scripts pass
   only a suite name (`SUITE=pr`), and `playwright.config.ts` turns it into `grep`/`grepInvert`, adding `@setup`
   where a login is needed.
-- **Tiers:** every test has exactly one of `@smoke` (PR gate), `@regression` (nightly), `@setup`, `@seed`.
+- **Tiers:** every test has exactly one of `@smoke` (PR gate), `@regression` (nightly), `@setup`, `@seed`, `@control`
+  (the failure control: a separate nightly step only).
   **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, and `@admin`. An `@admin` test signs in as
   the seeded admin or can change catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
   fixture or `test.skip(isPublicDemo, ...)`, Java: `Hooks` `@Before("@admin")`) and runs against our own Toolshop only.
@@ -161,8 +162,8 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   as not run.
 - **Failure control (C1):** `features/control/failure-control.feature`, tier `@control`, fails on purpose every night
   so the reports show a real failure. Shard 1 runs it after the regression run (`SUITE=control`, own blob report,
-  merged into the HTML report; project `api`, tag `@control`) and the Java job runs it after the full suite (`-Dgroups=control -DexcludedGroups=`, own
-  reports); both steps are `continue-on-error`. Every other suite and Maven run excludes it (`src/tags.ts`, `pom.xml`
+  merged into the HTML report; project `api`, tag `@control`) and the Java job runs it after the full suite
+  (`-Dgroups=control -DexcludedGroups=`, own reports); both steps are `continue-on-error`. Every other suite and Maven run excludes it (`src/tags.ts`, `pom.xml`
   `excludedGroups`), and the summary shows it in its own "Failure control (not counted)" section, outside the verdict,
   the counts, the badge and the streak.
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
@@ -184,6 +185,6 @@ afterwards to re-run the PR gate. The PNG diff in the PR is the review step
 - a job has no `timeout-minutes` ≤ 60, or a shell step uses `while`/`until` instead of a bounded `for … in $(seq …)`
 - a step installs browsers with `playwright install` (npx or the Java CLI) instead of the bounded, cached
   `install-browsers` action
-- an A/U/S ID exists in only one language, or the test plan's "Java" column disagrees with `java/` (parity)
+- an A/U/S/C ID exists in only one language, or the test plan's "Java" column disagrees with `java/` (parity)
 
 See [ADR 0008](decisions/0008-architecture-tests.md) for what they found on their first run.

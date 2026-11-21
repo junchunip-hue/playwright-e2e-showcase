@@ -53,7 +53,7 @@ const sorted = (ids: Iterable<string>): string[] => [...ids].sort();
 const scenarios = (ids: Set<string>): string[] => sorted([...ids].filter((id) => /^[ASUC]/.test(id)));
 
 test.describe('TypeScript/Java parity', { tag: [Tag.smoke, Tag.architecture] }, () => {
-  test('N3: every scenario (A, U, S) exists in both languages', () => {
+  test('N3: every scenario (A, U, S, C) exists in both languages', () => {
     const ts = typescriptIds();
     const java = javaIds();
 

@@ -15,7 +15,7 @@ can merge.
 | Every step is in the catalogue, used by a feature and defined in both languages | `npm run check:steps` | pre-push hook · PR gate |
 | Every feature step has a TypeScript and a Java definition | `bddgen` (TS) · Cucumber dry run (Java) | PR gate |
 | Steps call pages and create no locators; modules only declare locators | `npm run test:architecture` (N3) | PR gate |
-| Every scenario (A, U, S) exists in both languages and matches the test plan's Java column | `npm run test:architecture` (N3) | PR gate |
+| Every scenario (A, U, S, C) exists in both languages and matches the test plan's Java column | `npm run test:architecture` (N3) | PR gate |
 | Every test has exactly one tier tag, only known tags, and a title that starts with its ID | `npm run check:tags` | PR gate |
 | Lint and types | `npm run lint`, `npm run typecheck` | PR gate |
 
@@ -136,9 +136,10 @@ only test allowed to fail; the tier tag `@control` keeps it out of every other r
 
 ## IDs and tags
 
-- Every scenario has a test-plan ID (A, U, S, N) at the start of its title, given as described in
+- Every scenario has a test-plan ID (A, U, S, N, C) at the start of its title, given as described in
   [test-plan.md](test-plan.md#how-ids-work). An ID is never renumbered or reused.
-- Every scenario has exactly one tier tag: `@smoke` (gates every PR) or `@regression` (nightly). Other tags come from
+- Every scenario has exactly one tier tag: `@smoke` (gates every PR) or `@regression` (nightly); the failure control
+  C1 alone has `@control`. Other tags come from
   the registry in `src/tags.ts`.
 
 ## What review still checks

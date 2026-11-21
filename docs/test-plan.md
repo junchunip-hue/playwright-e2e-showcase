@@ -211,12 +211,14 @@ If a control ever passes, the way failures are reported needs a look.
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 20 | smoke, architecture | static stage | ✅ | none | TypeScript only |
+| C1 | 1 | control | – | ✅ | API (project `api`), nightly control step only | `features/control/failure-control.feature`: fails on purpose, not counted |
 
-"Tests" counts TypeScript test cases per ID (72 in total; data-driven cases count once each). Gherkin features run
+"Tests" counts TypeScript test cases per ID (72 in total, plus the failure control C1; data-driven cases count once
+each). Gherkin features run
 in both languages with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
-`tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite
-selects it.
+`tests/ui/seed.spec.ts` (`@seed`) is the starting state for Playwright Test Agents, not a test case: no suite that
+runs tests selects it (only `all`, which `check:tags` uses to list every test).
 
 Tags and suites are defined in `src/tags.ts` (Java reads the same Gherkin tags); see [ci.md](ci.md#tags-and-suites).
 Every test has exactly one tier tag, enforced by `npm run check:tags`.
@@ -233,6 +235,7 @@ Every test has exactly one tier tag, enforced by `npm run check:tags`.
 | Accessibility | ✅ (`npm run test:a11y`) | ✅ | ✅ |
 | Visual regression | own OS baselines, git-ignored | ✅ (Linux baselines) | ✅ |
 | Java suite | ✅ (`./mvnw test`) | `smoke` | all |
+| Failure control C1 | on demand (`npm run demo -- C1`) | – | separate step, both languages, not counted |
 | Report | local HTML | artifact (14 days) | GitHub Pages |
 
 \* Locally against the public demo, U6 registers a new demo account per run; prefer a local Docker instance.
