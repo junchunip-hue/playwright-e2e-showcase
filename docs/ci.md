@@ -161,7 +161,7 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   as not run.
 - **Failure control (C1):** `features/control/failure-control.feature`, tier `@control`, fails on purpose every night
   so the reports show a real failure. Shard 1 runs it after the regression run (`SUITE=control`, own blob report,
-  merged into the HTML report) and the Java job runs it after the full suite (`-Dgroups=control -DexcludedGroups=`, own
+  merged into the HTML report, project `control`) and the Java job runs it after the full suite (`-Dgroups=control -DexcludedGroups=`, own
   reports); both steps are `continue-on-error`. Every other suite and Maven run excludes it (`src/tags.ts`, `pom.xml`
   `excludedGroups`), and the summary shows it in its own "Failure control (not counted)" section, outside the verdict,
   the counts, the badge and the streak.

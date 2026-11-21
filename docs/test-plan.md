@@ -176,7 +176,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
 | N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, page/module file naming, bddgen before every Playwright run) | PR static stage | ✅ |
 
-### Control (`features/control`, project `api`; nightly, outside the verdict)
+### Control (`features/control`, project `control`; nightly, outside the verdict)
 A control is not a product test. It fails on purpose, at the same step, every night, so the reports always show what a
 failure looks like: the steps before it passed, the failing step with its error, and the steps after it as not run.
 The nightly runs it in a separate step (suite `control`) after the regression run, in both languages, and leaves it

@@ -3,7 +3,7 @@
 # steps after it reported as not run. It is not a product test: the nightly runs it in a separate step and leaves it
 # out of the verdict, the badge and the clean streak. If it ever passes, the reporting of failures needs a look.
 @control
-Feature: Failure control
+Feature: Failure control (fails on purpose, not counted)
   Searches the catalogue for a term that has results and wrongly expects none (step 2 fails), so the two steps after
   it, which would list the first page of products, are reported as not run.
 

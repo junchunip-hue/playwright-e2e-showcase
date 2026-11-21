@@ -25,6 +25,7 @@ import { LoginPage } from '../pages/login.page';
 import { NetworkPage } from '../pages/network.page';
 import { ProductPage } from '../pages/product.page';
 import { Tag } from '../tags';
+import { listNotRunStepsAfterFailures } from './not-run';
 
 /**
  * What one scenario's steps hand to each other (e.g. the customer a Given step registered for a later When step).
@@ -155,5 +156,8 @@ export const test = base.extend<Fixtures>({
 export { Tag } from '../tags';
 export { expect } from '@playwright/test';
 
+// After a failed Gherkin step, the steps that did not run are listed next to it, at the same level (./not-run.ts).
+listNotRunStepsAfterFailures(test);
+
 /** Gherkin step functions bound to the fixtures above: steps get page objects injected, like tests do. */
-export const { Given, When, Then, AfterStep } = createBdd(test);
+export const { Given, When, Then, Before, AfterStep } = createBdd(test);
