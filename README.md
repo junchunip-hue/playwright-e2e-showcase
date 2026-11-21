@@ -78,7 +78,7 @@ API scenarios read the same way; the API client stands in for the page
   Java results, run summary and results page). The fix goes into the test or the product until everything passes
   ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)). To show what that looks like, the nightly also runs
   one failure control, C1 ([`failure-control.feature`](features/control/failure-control.feature)): it fails on purpose
-  at step 3 of 4 in both languages, appears in the reports as a real failure, and is left out of the verdict, the
+  at step 2 of 4 in both languages, steps 3 and 4 not run, appears in the reports as a real failure, and is left out of the verdict, the
   counts and the badge ([results page, "Failure control"](https://junchunip-hue.github.io/playwright-e2e-showcase/#control)).
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).

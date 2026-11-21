@@ -4,10 +4,11 @@
 # out of the verdict, the badge and the clean streak. If it ever passes, the reporting of failures needs a look.
 @control
 Feature: Failure control
-  Searches the catalogue for a term that has results, then wrongly expects none.
+  Searches the catalogue for a term that has results and wrongly expects none (step 2 fails), so the two steps after
+  it, which would list the first page of products, are reported as not run.
 
   Scenario: C1: a failing step stops the scenario, and the steps after it are reported as not run
-    Given the first product of the catalogue list
     When I search the API for "pliers"
     Then the result is an empty paginator
-    And searching for its name finds it
+    When I request the first page of products
+    Then it is page 1 with at least one and at most a page of products

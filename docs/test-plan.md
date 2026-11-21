@@ -185,7 +185,7 @@ If a control ever passes, the way failures are reported needs a look.
 
 | ID | Test | Tag | Java | Status |
 |---|---|---|---|---|
-| C1 | Searches the API for "pliers" (it has results), then wrongly expects an empty result: fails at step 3 of 4, and step 4 is reported as not run | `@control` | ✅ | ✅ |
+| C1 | Searches the API for "pliers" (it has results), then wrongly expects an empty result: fails at step 2 of 4, and steps 3 and 4 (listing the first page of products) are reported as not run | `@control` | ✅ | ✅ |
 
 ### Where each ID runs (today)
 | ID | Tests | Tier | PR gate | Nightly | Browsers | Where (both languages unless noted) |
