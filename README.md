@@ -10,13 +10,15 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 
 **At a glance:** 34 feature scenarios (41 test cases with Scenario Outline examples) run in both languages ·
 72 TypeScript test cases including quality and architecture checks: 110 runs a night across Chromium, Firefox and
-WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
+WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed,
+⚠️ passed with flaky (or only on a rerun), ❌ failed.
+
 The "nightly tests" badge above is the latest nightly's count of runs in both languages (110 TypeScript, including the
-sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that runs the failure control C1, which
-fails on purpose and is never counted: the TypeScript report lists it as its one failed test (111 in all), the Java
-results in a section of its own, and the results page right below the two lanes. Both badges open the nightly's results page: the verdict,
-the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
-history.
+sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that runs the failure control C1, which fails on
+purpose and is never counted: the TypeScript report lists it as its one failed test (111 in all), the Java results in a
+section of their own, and the results page right below the two lanes. Both badges open the nightly's results page: the
+verdict, the count split by language with the TypeScript report and the Java results, the failure control, TypeScript
+vs Java per test ID, and the history.
 
 <p align="center">
   <img src="docs/images/checkout-journey.gif" width="720"
@@ -30,7 +32,7 @@ technique shown, five clean nightlies in a row in both languages. A flaky S2 on 
 met; it was earned again with nightlies #40–#53. Since then every scenario moved to shared Gherkin features
 ([ADR 0012](docs/decisions/0012-gherkin-features-with-layered-steps.md)), with a clean nightly after each step. The
 "clean nightlies" badge above keeps counting after every nightly (the runs are in its `history.json`). Next steps are
-in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional) and
+in the [roadmap](docs/roadmap.md#6-what-comes-next). Test IDs (A = API, U = UI, S = journey, N = non-functional, C = control) and
 why some numbers are missing are explained in the [test plan](docs/test-plan.md#how-ids-work).
 
 ## The 3-minute tour
@@ -80,8 +82,9 @@ API scenarios read the same way; the API client stands in for the page
   Java results, run summary and results page). The fix goes into the test or the product until everything passes
   ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)). To show what that looks like, the nightly also runs
   one failure control, C1 ([`failure-control.feature`](features/control/failure-control.feature)): it fails on purpose
-  at step 2 of 4 in both languages, steps 3 and 4 not run, appears in the reports as a real failure, and is left out of the verdict, the
-  counts and the badge ([results page, "Failure control"](https://junchunip-hue.github.io/playwright-e2e-showcase/#control)).
+  at step 2 of 4 in both languages, with steps 3 and 4 listed as not run, appears in the reports as a real failure, and
+  is left out of the verdict, the counts and the badge
+  ([results page, "Failure control"](https://junchunip-hue.github.io/playwright-e2e-showcase/#control)).
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
@@ -113,13 +116,14 @@ flowchart LR
     direction LR
     S["Static: lint · types ·<br/>tag check · architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
     J["Java: step dry run of every feature ·<br/>Cucumber-JVM smoke (same features)"]
-    TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>flaky tests · TS vs Java per ID<br/>+ commit status"]
+    TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>failed and flaky tests · TS vs Java per ID<br/>+ commit status"]
     J --> SUM
   end
   subgraph N["Nightly 02:00 UTC"]
     direction LR
     SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> NS["Summary: verdict<br/>+ commit status"]
     NJ["Java: every feature"] --> NS
+    C["Failure control C1, both languages<br/>(fails on purpose, not counted)"] -.-> NS
     NS --> P["GitHub Pages: results page,<br/>TS report, Java results, badges"]
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
@@ -158,6 +162,7 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 | Journeys | U6 (S1), S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | [`tests/quality`](tests/quality/), TS |
 | Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, TS/Java parity, equal CI retries | [`tests/architecture`](tests/architecture/), TS |
+| Control | C1 | Not a product test: fails on purpose every night to show how a failure is reported; never counted | [`features/control`](features/control/), TS + Java |
 
 Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).
 
@@ -170,12 +175,14 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A9), ui/ (U1–U5), journeys/ (U6 = S1, S2–S6),
                 control/ (C1: fails on purpose, outside the verdict)
 src/
-  steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client
+  steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client;
+                hooks that list not-run steps after a failure and label the failure control
   pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
   modules/      locators only (*.module.ts)
   api/          API client per resource + zod schemas (types derived from them)
   data/         test data builders (fresh customers per test)
-  fixtures/     pages, API client and the scenario context, injected into steps and specs
+  fixtures/     pages, API client and the scenario context, injected into steps and specs; not-run.ts lists the
+                steps after a failed one at the same level
   tags.ts       tag and suite registry
   a11y/ visual/ reporters/ config/
 tests/
@@ -206,7 +213,7 @@ npm run test:architecture   # pipeline/code rules, no browser
 npm run check:tags          # tag counts; fails on unknown tags, missing tier or ID
 npm run format              # code style for both languages (Spotless, Prettier, import order); format:check only checks
 npm run steps               # rebuild docs/steps.md; check:steps fails on a stale catalogue or an unused step
-npm test                    # everything (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
+npm test                    # everything but the failure control (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
 npm run report              # open the HTML report
 npm run demo                # live demo: U6 in a visible, slowed-down Chromium, trace kept (`npm run demo -- S2` for another ID, `-- C1` for a failure)
 ```
@@ -224,7 +231,8 @@ Java (JDK 21+, the same `.env`), see [docs/java.md](docs/java.md):
 ```bash
 cd java
 ./mvnw test -Dgroups=smoke   # the smoke scenarios (the PR gate)
-./mvnw test                  # every feature (nightly)
+./mvnw test                  # every feature (nightly), without the failure control
+./mvnw test -Dgroups=control -DexcludedGroups=   # only the failure control C1: fails on purpose
 HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo of one scenario
 ```
 
@@ -237,7 +245,7 @@ HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo o
 | What runs, where, and which IDs exist? | [docs/test-plan.md](docs/test-plan.md) |
 | How does the pipeline work and protect itself? | [docs/ci.md](docs/ci.md) |
 | Which decisions were made, and why? | [docs/decisions/](docs/decisions/) |
-| Where do I see the latest results? | [Nightly results page](https://junchunip-hue.github.io/playwright-e2e-showcase/): verdict, [TypeScript report](https://junchunip-hue.github.io/playwright-e2e-showcase/typescript/) (3 browsers), [Java results](https://junchunip-hue.github.io/playwright-e2e-showcase/java/), history · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram + TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
+| Where do I see the latest results? | [Nightly results page](https://junchunip-hue.github.io/playwright-e2e-showcase/): verdict, [TypeScript report](https://junchunip-hue.github.io/playwright-e2e-showcase/typescript/) (3 browsers), [Java results](https://junchunip-hue.github.io/playwright-e2e-showcase/java/), history · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram, failed tests with their steps, TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
 | What comes next? | [docs/roadmap.md §6](docs/roadmap.md#6-what-comes-next): keep it green, optional S7, ranked candidates, backlog |
 | How do the TypeScript and Java lanes stay in sync? | [docs/java.md](docs/java.md) |
 

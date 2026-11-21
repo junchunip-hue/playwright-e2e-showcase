@@ -300,19 +300,19 @@ ${[...s.rows]
   .join('\n')}
 </table></div>
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
-TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.</p>`);
+TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.${control.length ? ` The failure control (${esc(controlIds)}) is not in this table: it is shown above, not counted.` : ''}</p>`);
 
   if (history.length) {
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };
     const recent = history.slice(-30).reverse();
     sections.push(`<h2 id="history">Nightly history</h2>
-<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun). ` : ''}Latest first; each links to its run.</p>
+<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun; the failure control does not count). ` : ''}Latest first; each links to its run.</p>
 <div class="dots">${recent.map((r) => `<a class="dot ${cls[r.verdict] ?? 'skip'}" href="${REPO}/actions/runs/${esc(r.id)}" title="${esc(`#${r.run} · ${r.date} · ${r.verdict}${r.note ? ` · ${r.note}` : ''}`)}">#${esc(r.run)}</a>`).join('')}</div>
 <p class="muted">Green passed · gold flaky, passed on a rerun or unverified · red failed. Data: <a href="history.json">history.json</a>.</p>`);
   }
 
   sections.push(
-    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${java.length}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary.</p>`,
+    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${java.length}${control.some((f) => f.project === 'Java (chromium)') ? ', plus the failure control' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary.</p>`,
   );
   return page('Nightly results · Playwright E2E Showcase', sections.join('\n'));
 }
@@ -340,7 +340,7 @@ function javaPage(scenarios, s, control = []) {
   const head = `<p><a href="../">← Nightly results</a></p><h1>Java results</h1>
 <p class="muted">Cucumber-JVM on JUnit 5, Chromium, the same feature files as TypeScript. Read from the Surefire XML, so a
 scenario that passed on a rerun shows as flaky.${s?.run?.url ? ` <a href="${esc(s.run.url)}">Run #${esc(s.run.number)}</a>` : ''}</p>
-<p><strong>${scenarios.length} scenarios</strong>: ${count('passed')} passed · ${count('flaky')} flaky · ${count('failed')} failed${count('skipped') ? ` · ${count('skipped')} skipped` : ''}</p>`;
+<p><strong>${scenarios.length} scenarios</strong>: ${count('passed')} passed · ${count('flaky')} flaky · ${count('failed')} failed${count('skipped') ? ` · ${count('skipped')} skipped` : ''}${control.length ? ` · plus the <a href="#control">failure control</a> at the end (fails on purpose, not counted)` : ''}</p>`;
   const empty = scenarios.length ? '' : '<p>No Java results in this run.</p>';
   const scenarioHtml = (
     sc,
