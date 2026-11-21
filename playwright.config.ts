@@ -23,8 +23,11 @@ defineBddConfig({
 });
 
 // tests/ is split by intent: api/ and architecture/ need no browser; ui/ (the agents' seed) and quality/ do, and so
-// do the generated UI and journey features.
-const BROWSER_TESTS = /[\\/]tests[\\/]((ui|quality)[\\/].*\.spec\.ts|features[\\/](ui|journeys)[\\/].*\.spec\.js)$/;
+// do the generated UI and journey features and the UI failure control (C2, features/control/ui-*: it fails on a page,
+// so the report shows the failure screenshot). The API failure control (C1, features/control/api-*) runs in the api
+// project. Only the nightly's control step runs the controls (suite `control`).
+const BROWSER_TESTS =
+  /[\\/]tests[\\/]((ui|quality)[\\/].*\.spec\.ts|features[\\/]((ui|journeys)[\\/].*|control[\\/]ui-.*)\.spec\.js)$/;
 
 // Which tests run is decided by name only (SUITE=pr, SUITE=nightly, ...); the tag lists live in src/tags.ts.
 const suite = resolveSuite(process.env.SUITE);
@@ -57,7 +60,7 @@ export default defineConfig({
     baseURL: env.baseURL,
     testIdAttribute: 'data-test', // Toolshop exposes data-test attributes -> getByTestId()
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    screenshot: 'off', // failure screenshots are taken at the failed step instead (src/fixtures/evidence.ts)
     video: 'retain-on-failure',
     // SLOW_MO=<ms> slows every action down, for a live demo (`npm run demo`); 0 otherwise.
     launchOptions: { slowMo: Number(process.env.SLOW_MO) || 0 },
@@ -67,11 +70,10 @@ export default defineConfig({
     // Logs in once via UI and saves the session for all UI projects.
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
 
-    // Pure API tests: no browser needed. The generated API features (testDir stays tests/: playwright-bdd needs it to
-    // be its output folder), and the failure control (C1, features/control), which calls the API only: in the report
-    // it carries the project chip "api" (the kind of test) and the tag chip "control" (fails on purpose, not counted).
-    // Only the nightly's control step runs it (suite `control`); every other suite leaves it out.
-    { name: 'api', testMatch: /[\\/]tests[\\/]features[\\/](api|control)[\\/].*\.spec\.js$/ },
+    // Pure API tests: no browser needed.
+    // The generated API features (testDir stays tests/: playwright-bdd needs it to be its output folder).
+    // Also the API failure control (C1, features/control/api-*): no page, so no screenshot.
+    { name: 'api', testMatch: /[\\/]tests[\\/]features[\\/](api[\\/].*|control[\\/]api-.*)\.spec\.js$/ },
 
     // Static rules about the pipeline and code (cycles, self-triggering workflows): no browser, no Toolshop.
     { name: 'architecture', testDir: './tests/architecture' },

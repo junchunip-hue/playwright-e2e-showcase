@@ -64,16 +64,16 @@ jobs:
           path: blob-report/
           retention-days: 1
 
-      # The failure control (C1, features/control, ADR 0013) fails on purpose, so the merged report always shows what a
-      # failure looks like. Shard 1 runs it once, after the regression run and with its own blob report (picked up by
+      # The failure controls (features/control, ADR 0013) fail on purpose, so the merged report always shows what a
+      # failure looks like: C1 an API failure (api project), C2 a UI failure with its screenshot (chromium). Shard 1 runs it once, after the regression run and with its own blob report (picked up by
       # merge-reports like the shards'); continue-on-error keeps the shard green, and the summary counts it nowhere.
-      - name: Run the failure control C1 (fails on purpose, not counted)
+      - name: Run the failure controls C1, C2 (fail on purpose, not counted)
         if: ${{ matrix.shard == 1 && !cancelled() }}
         continue-on-error: true
         env:
           SUITE: control
           PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report-control
-        run: npx bddgen && npx playwright test --project=api --retries=0 --reporter=blob
+        run: npx bddgen && npx playwright test --project=api --project=chromium --retries=0 --reporter=blob
 
       - name: Upload the failure control's blob report
         if: ${{ matrix.shard == 1 && !cancelled() }}
@@ -126,6 +126,10 @@ jobs:
           PLAYWRIGHT_HTML_TITLE: 'TypeScript (Playwright Test) · nightly run #${{ github.run_number }}'
         run: npx playwright merge-reports --reporter html,json ./all-blob-reports
 
+      # A click on a screenshot (e.g. a failed step's) opens it enlarged, with a download button (scripts/report-lightbox.mjs).
+      - name: Add the screenshot viewer to the report
+        run: node scripts/report-lightbox.mjs playwright-report
+
       - name: Upload results for the summary
         uses: actions/upload-artifact@v7
         with:
@@ -177,7 +181,7 @@ jobs:
       - name: Wait for Toolshop and start its background jobs
         uses: ./.github/actions/toolshop-ready
 
-      # Every feature except the failure control C1 (pom.xml excludedGroups), which runs in its own step below.
+      # Every feature except the failure controls C1, C2 (pom.xml excludedGroups), which run in their own step below.
       - name: Run all Java tests
         working-directory: java
         run: ./mvnw -B test
@@ -195,9 +199,9 @@ jobs:
           path: java/target/surefire-reports/
           retention-days: 30
 
-      # The failure control C1 (see the TypeScript shard): excluded from every ordinary Maven run (pom.xml
+      # The failure controls C1, C2 (see the TypeScript shard): excluded from every ordinary Maven run (pom.xml
       # excludedGroups), run here on its own, without reruns, into its own reports and scenario log.
-      - name: Run the failure control C1 (fails on purpose, not counted)
+      - name: Run the failure controls C1, C2 (fail on purpose, not counted)
         if: ${{ !cancelled() }}
         continue-on-error: true
         working-directory: java
@@ -310,7 +314,7 @@ jobs:
           # shard's tests are simply absent from the merged report (nightly 2026-11-19, apt mirrors unreachable).
           TS_JOB: ${{ needs.regression.result != 'success' && needs.regression.result || needs.merge-reports.result }}
           JAVA_JOB: ${{ needs.regression-java.result }}
-          CONTROL_JAVA_DIR: results/java-control # the failure control C1: shown apart, never counted
+          CONTROL_JAVA_DIR: results/java-control # the failure controls C1, C2: shown apart, never counted
         run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java results/jobs results/ts-planned.json
 
       # Green check for Passed and for Passed with flaky (the description names the flaky tests), red cross for Failed.
@@ -374,6 +378,7 @@ jobs:
         run: |
           node scripts/java-report.mjs java-blob results/java results/java-control --traces results/java-traces
           npx playwright merge-reports --reporter html java-blob
+          node scripts/report-lightbox.mjs java-report
 
       - name: Upload the Java report
         if: ${{ steps.java-report.outcome == 'success' }}

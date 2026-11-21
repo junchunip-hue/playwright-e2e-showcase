@@ -14,7 +14,8 @@ cd java
 On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser and `SLOW_MO=400` to slow it down. One scenario:
 `-Dcucumber.filter.name="U6: .*"` (a regex for the whole scenario name; the Java side of `npm run demo`).
 
-The failure control C1 (`features/control`, tag `@control`) fails on purpose, so every run leaves it out (`pom.xml`
+The failure controls C1 (API) and C2 (UI) (`features/control`, tag `@control`) fail on purpose, so every run leaves
+them out (`pom.xml`
 `excludedGroups`). To see a failure reported step by step: `./mvnw test -Dgroups=control -DexcludedGroups=` (the build
 then fails, as intended).
 
@@ -58,7 +59,8 @@ In test-plan order (A, then U, then S, then the failure control C):
 | S4 | Guest checkout, order checked as admin (own Toolshop only) | `features/journeys/guest-checkout.feature` (shared) | `RunCucumberTest` + `steps/CheckoutSteps`, `AdminSteps` |
 | S5 | Returning customer: favourite, comparison, invoice PDF download (own Toolshop only) | `features/journeys/shopper.feature` (shared) | `RunCucumberTest` + `steps/ShopperSteps` |
 | S6 | Resilience: slow or failing catalogue and search, then recovery (`page.route` in the network page) | `features/journeys/resilience.feature` (shared) | `RunCucumberTest` + `steps/ResilienceSteps` |
-| C1 | Failure control: fails on purpose at step 2 of 4, steps 3 and 4 not run; a separate nightly step, never counted | `features/control/failure-control.feature` (shared, project `api`) | `RunCucumberTest` + `steps/api/ProductsApiSteps`; only with `-Dgroups=control -DexcludedGroups=` |
+| C1 | API failure control: fails on purpose at step 2 of 4, steps 3 and 4 not run; a separate nightly step, never counted | `features/control/api-failure.feature` (shared, project `api`) | `RunCucumberTest` + `steps/api/ProductsApiSteps`; only with `-Dgroups=control -DexcludedGroups=` |
+| C2 | UI failure control: the same, with the screenshot taken at the failed step | `features/control/ui-failure.feature` (shared, project `chromium`) | `RunCucumberTest` + `steps/CommonSteps`, `ResilienceSteps`; `Hooks` takes the screenshot |
 
 TypeScript only, by design: accessibility (N2), visual (N1) and architecture (N3). They check rendering or the
 repository, not a scenario.

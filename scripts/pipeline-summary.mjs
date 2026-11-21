@@ -39,8 +39,8 @@ const controlCases = [];
  */
 const flakyCases = [];
 /**
- * The first line of an error, plus Playwright's "Expected:" / "Received:" lines when the first line alone says
- * nothing ("expect(received).toBe(expected)").
+ * An error in one line: Playwright's "Expected …" / "Received …" lines when it has them (they say what went wrong, in
+ * TypeScript and in Playwright for Java), else the first line.
  */
 const firstLine = (s) => {
   const lines = (s ?? '')
@@ -48,10 +48,8 @@ const firstLine = (s) => {
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean);
-  const first = lines[0] ?? '';
-  if (!/expect\(received\)/.test(first)) return first;
-  const detail = lines.filter((l) => /^(Expected|Received)( \w+)?:/.test(l)).slice(0, 2);
-  return detail.length ? detail.join(' · ') : first;
+  const detail = lines.filter((l) => /^(Expected|Received)( [\w ]+)?:/.test(l)).slice(0, 2);
+  return detail.length === 2 ? detail.join(' · ') : (lines[0] ?? '');
 };
 function recordFlaky(id, spec, t) {
   const failure = t.results.find((r) => r.status !== 'passed');
@@ -538,8 +536,9 @@ const controlSection = controlCases.length
   ? [
       '## Failure control (not counted)',
       '',
-      'C1 fails on purpose every night, outside the verdict, to show how a failure is reported: the steps before it',
-      'passed, the failing step with its error, and the steps after it not run (test plan, "Control").',
+      `${[...new Set(controlCases.map((f) => f.id))].join(', ')} fail on purpose every night, outside the verdict, to show how a failure is`,
+      'reported: the steps before it passed, the failing step with its error (a UI failure also with a screenshot of the',
+      'page at that step), and the steps after it not run (test plan, "Control").',
       '',
       '| ID | Where | Result | Failed at step | Not run after it |',
       '|---|---|---|---|---|',

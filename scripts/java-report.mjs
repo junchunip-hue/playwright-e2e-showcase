@@ -6,10 +6,11 @@
 // renders it with the standard HTML reporter, so the Java report has the same list, filters, search, step tree,
 // errors and trace viewer as the TypeScript one:
 //   - one test per scenario (Scenario Outline examples separately), grouped by feature file and Feature, with its
-//     Gherkin tags as chips and project "api" (features/api, features/control) or "chromium" (everything else);
+//     Gherkin tags as chips and project "api" (features/api, the API failure control C1) or "chromium" (everything else);
 //   - every attempt as a result, so a scenario that passed on a CI rerun shows as flaky, as in TypeScript;
 //   - "Before Hooks", each Gherkin step and "After Hooks" as top-level steps, with durations; the failed step carries
 //     its error, and the steps after it are listed as skipped (not run);
+//   - the screenshot taken at the failed step (steps/Hooks.java, @AfterStep) attached to that step, like TypeScript;
 //   - the Playwright trace of a failed scenario (java/target/playwright/<scenario>/trace.zip) as its trace attachment.
 //
 // Usage: node scripts/java-report.mjs <blob-out-dir> <surefire-dir>... [--traces <dir>]
@@ -48,7 +49,7 @@ function attempts(dir) {
     .filter((l) => l.trim())
     .flatMap((l) => {
       try {
-        return [JSON.parse(l)];
+        return [{ ...JSON.parse(l), dir }];
       } catch {
         return []; // a line cut off by a crashed JVM
       }
@@ -70,7 +71,8 @@ function feature(uri) {
   return features.get(uri);
 }
 
-const projectOf = (uri) => (/^features\/(api|control)\//.test(uri) ? 'api' : 'chromium');
+// The same split as playwright.config.ts: API features and the API failure control (C1) in "api", the rest in chromium.
+const projectOf = (uri) => (/^features\/(api\/|control\/api-)/.test(uri) ? 'api' : 'chromium');
 const STATUS = { passed: 'passed', failed: 'failed', skipped: 'skipped' };
 const statusOf = (s) => STATUS[s] ?? 'failed'; // pending, undefined, ambiguous: a failure
 
@@ -171,6 +173,7 @@ for (const sc of scenarios.values()) {
   const annotations = CONTROL.test(sc.name) ? [{ type: 'failure control', description: CONTROL_NOTE }] : [];
   sc.attempts.forEach((a, retry) => {
     const resultId = id(sc.testId, String(retry));
+    let attachmentCount = 0; // a step refers to the result's attachments by index, in the order they were added
     const at = { testId: sc.testId, resultId };
     const start = a.start || Date.now();
     firstStart = Math.min(firstStart, start);
@@ -191,6 +194,17 @@ for (const sc of scenarios.values()) {
       const end = { id: stepId, duration: s.duration ?? 0 };
       if (s.error) end.error = error(s.error);
       if (s.status === 'skipped') end.annotations = [{ type: 'skip', description: 'not run' }];
+      // The failure screenshot (Hooks @AfterStep, saved by ScenarioLog): attached to this step, as in TypeScript.
+      const files = (s.attachments ?? []).filter((x) => existsSync(join(a.dir, x.path)));
+      if (files.length) {
+        const attachments = files.map((x) => {
+          const name = `resources/${id(a.dir, x.path)}${x.path.slice(x.path.lastIndexOf('.'))}`;
+          resources.push([join(a.dir, x.path), name]);
+          return { name: `${x.name}: ${title}`, path: name, contentType: x.contentType };
+        });
+        emit('onAttach', { ...at, attachments });
+        end.attachments = attachments.map(() => attachmentCount++);
+      }
       emit('onStepEnd', { ...at, step: end });
       clock = startTime + (s.duration ?? 0);
       return stepId;
@@ -220,11 +234,13 @@ for (const sc of scenarios.values()) {
     if (last && status === 'failed') {
       anyFailed = true;
       const slug = sc.name.replace(/[^A-Za-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      const trace = tracesDir && join(tracesDir, slug, 'trace.zip');
+      // API scenarios use no page (TypeScript keeps no trace for them either): only browser scenarios get one.
+      const trace = tracesDir && projectOf(sc.uri) === 'chromium' && join(tracesDir, slug, 'trace.zip');
       if (trace && existsSync(trace)) {
         const name = `resources/${id(trace)}.zip`;
         resources.push([trace, name]);
         emit('onAttach', { ...at, attachments: [{ name: 'trace', path: name, contentType: 'application/zip' }] });
+        attachmentCount++;
       }
     }
     emit('onTestEnd', {

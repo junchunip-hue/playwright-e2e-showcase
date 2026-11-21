@@ -1,16 +1,20 @@
 package com.showcase.steps;
 
+import com.microsoft.playwright.Page;
 import com.showcase.config.Env;
 import io.cucumber.java.After;
+import io.cucumber.java.AfterStep;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
 import org.junit.jupiter.api.Assumptions;
 
 /**
- * Opens a fresh browser context before each scenario and closes it after (trace kept on failure).
+ * Opens a fresh browser context before each scenario and closes it after (trace kept on failure),
+ * and takes the failure screenshot at the step that failed.
  */
 public class Hooks {
   private final PlaywrightContext playwright;
+  private boolean screenshotTaken;
 
   public Hooks(PlaywrightContext playwright) {
     this.playwright = playwright;
@@ -40,6 +44,27 @@ public class Hooks {
   @Before(order = 1)
   public void openBrowser() {
     playwright.open();
+  }
+
+  /**
+   * Failure evidence (TypeScript twin: src/fixtures/evidence.ts): right after the step that failed,
+   * a full-page screenshot as it was, attached to that step. Cucumber runs this hook after every
+   * step; only the first failure takes one, and a scenario without a page (API only, about:blank)
+   * has nothing to show. report/ScenarioLog stores it with the failed step for the Java report.
+   */
+  @AfterStep
+  public void screenshotFailedStep(Scenario scenario) {
+    if (!scenario.isFailed() || screenshotTaken) return;
+    screenshotTaken = true;
+    Page page = playwright.page();
+    if (page == null || page.isClosed() || "about:blank".equals(page.url())) return;
+    try {
+      byte[] png =
+          page.screenshot(new Page.ScreenshotOptions().setFullPage(true).setTimeout(5_000));
+      scenario.attach(png, "image/png", "screenshot at failure");
+    } catch (RuntimeException e) {
+      // The page may be gone (crashed, navigated mid-shot): the step's error is the evidence then.
+    }
   }
 
   @After

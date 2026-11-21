@@ -1,4 +1,5 @@
 import { AfterStep } from '../fixtures';
+import { screenshotFailedStep } from '../fixtures/evidence';
 import { rememberNotRun } from '../fixtures/not-run';
 
 /**
@@ -16,6 +17,8 @@ AfterStep(async ({ $step, $bddContext, $testInfo }) => {
   if ($step.error === undefined) return;
   const steps = $bddContext.bddTestData.steps;
   const failed = steps[$bddContext.stepIndex];
+  // Evidence first, while the page still shows the failure: attached to this (the failed) step.
+  await screenshotFailedStep($testInfo, failed.textWithKeyword);
   const notRun = steps.slice($bddContext.stepIndex + 1);
   $testInfo.annotations.push({ type: 'failed step', description: failed.textWithKeyword });
   if (notRun.length)

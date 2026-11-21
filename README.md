@@ -8,15 +8,15 @@ A test automation framework built the way I would set it up in a real team. Ever
 Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwright-bdd) and **Playwright for Java**
 (Cucumber-JVM on JUnit 5). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
 
-**At a glance:** 34 feature scenarios (41 test cases with Scenario Outline examples, plus the failure control C1)
+**At a glance:** 34 feature scenarios (41 test cases with Scenario Outline examples, plus the failure controls C1 and C2)
 run in both languages · 72 TypeScript test cases including quality and architecture checks: 110 runs a night across
 Chromium, Firefox and WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per
 run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
 
 The "nightly tests" badge above is the latest nightly's count of runs in both languages (110 TypeScript, including the
-sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that runs the failure control C1, which fails on
-purpose and is never counted: the TypeScript and the Java report each list it as their one failed test, and the results
-page shows it right below the two lanes. Both badges open the nightly's results page: the verdict, the count split by
+sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that run the failure controls C1 (API) and C2 (UI),
+which fail on purpose and are never counted: the TypeScript and the Java report each list them as their failed tests,
+and the results page shows them right below the two lanes. Both badges open the nightly's results page: the verdict, the count split by
 language with the TypeScript report and the Java report (both Playwright HTML reports, in the same format), the
 failure control, TypeScript vs Java per test ID, and the history.
 
@@ -80,10 +80,15 @@ API scenarios read the same way; the API client stands in for the page
 - A failing test stays a failure: no "known issue" markers, no expected failures. A failed scenario shows, in every
   report, the steps that passed, the one step that failed, and each step after it as not run (TypeScript report,
   Java report, run summary and results page). The fix goes into the test or the product until everything passes
-  ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)). To show what that looks like, the nightly also runs
-  one failure control, C1 ([`failure-control.feature`](features/control/failure-control.feature)): it fails on purpose
-  at step 2 of 4 in both languages, with steps 3 and 4 listed as not run, appears in the reports as a real failure, and
-  is left out of the verdict, the counts and the badge
+  ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)).
+- A UI step that fails carries its evidence: a full-page screenshot taken at that step and attached to it, in both
+  languages ([`evidence.ts`](src/fixtures/evidence.ts), Java [`Hooks.java`](java/src/test/java/com/showcase/steps/Hooks.java)).
+  In the report a click on it opens it enlarged, with a download button. An API step has no page, so no screenshot:
+  its error shows the expected and received values.
+- To show both every night, two failure controls fail on purpose at step 2 of 4, in both languages, with steps 3 and 4
+  listed as not run: C1 an API test ([`api-failure.feature`](features/control/api-failure.feature)), C2 a UI test with
+  its screenshot ([`ui-failure.feature`](features/control/ui-failure.feature)). They appear in the reports as real
+  failures and are left out of the verdict, the counts and the badge
   ([results page, "Failure control"](https://junchunip-hue.github.io/playwright-e2e-showcase/#control)).
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
@@ -123,7 +128,7 @@ flowchart LR
     direction LR
     SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> NS["Summary: verdict<br/>+ commit status"]
     NJ["Java: every feature"] --> NS
-    C["Failure control C1, both languages<br/>(fails on purpose, not counted)"] -.-> NS
+    C["Failure controls C1 (API), C2 (UI),<br/>both languages (fail on purpose,<br/>not counted)"] -.-> NS
     NS --> P["GitHub Pages: results page,<br/>TS report, Java report, badges"]
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
@@ -131,7 +136,7 @@ flowchart LR
 
 Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every failed test with the step
 where it failed and the steps that did not run, every flaky test by name, TypeScript vs Java per test ID, and the failure
-control C1 (not counted). The verdict is also posted as a commit status (`test verdict / nightly`), and the
+controls C1 and C2 (not counted). The verdict is also posted as a commit status (`test verdict / nightly`), and the
 nightly's lands on its [results page](https://junchunip-hue.github.io/playwright-e2e-showcase/) with both reports and
 the history.
 
@@ -162,7 +167,7 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 | Journeys | U6 (S1), S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | [`tests/quality`](tests/quality/), TS |
 | Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, TS/Java parity, equal CI retries | [`tests/architecture`](tests/architecture/), TS |
-| Control | C1 | Not a product test: fails on purpose every night to show how a failure is reported; never counted | [`features/control`](features/control/), TS + Java |
+| Control | C1, C2 | Not product tests: fail on purpose every night to show how an API failure (C1) and a UI failure with its screenshot (C2) are reported; never counted | [`features/control`](features/control/), TS + Java |
 
 Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).
 
@@ -173,16 +178,17 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 
 ```
 features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A9), ui/ (U1–U5), journeys/ (U6 = S1, S2–S6),
-                control/ (C1: fails on purpose, outside the verdict)
+                control/ (C1 API, C2 UI: fail on purpose, outside the verdict)
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client;
-                hooks that list not-run steps after a failure and label the failure control
+                hooks that take the failure screenshot, list not-run steps after a failure and label the failure
+                controls
   pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
   modules/      locators only (*.module.ts)
   api/          API client per resource + zod schemas (types derived from them)
   data/         test data builders (fresh customers per test)
   fixtures/     pages, API client and the scenario context, injected into steps and specs; not-run.ts lists the
-                steps after a failed one at the same level
+                steps after a failed one at the same level; evidence.ts takes the failure screenshot
   tags.ts       tag and suite registry
   a11y/ visual/ reporters/ config/
 tests/
@@ -194,8 +200,8 @@ tests/
 java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/; report/ScenarioLog
                 logs every scenario attempt with its steps, hooks and errors for the summary and the Java report
 scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
-                install, the CI pipeline summary, the Java report (java-report.mjs), and the nightly's history and
-                results page on GitHub Pages
+                install, the CI pipeline summary, the Java report (java-report.mjs), the screenshot viewer for both
+                reports (report-lightbox.mjs), and the nightly's history and results page on GitHub Pages
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)
@@ -214,9 +220,9 @@ npm run test:architecture   # pipeline/code rules, no browser
 npm run check:tags          # tag counts; fails on unknown tags, missing tier or ID
 npm run format              # code style for both languages (Spotless, Prettier, import order); format:check only checks
 npm run steps               # rebuild docs/steps.md; check:steps fails on a stale catalogue or an unused step
-npm test                    # everything but the failure control (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
+npm test                    # everything but the failure controls (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
 npm run report              # open the HTML report
-npm run demo                # live demo: U6 in a visible, slowed-down Chromium, trace kept (`npm run demo -- S2` for another ID, `-- C1` for a failure)
+npm run demo                # live demo: U6 in a visible, slowed-down Chromium, trace kept (`npm run demo -- S2` for another ID, `-- C1` / `-- C2` for an API / UI failure)
 ```
 Every npm test script runs `bddgen` first, which turns the features into Playwright tests; after editing a feature or
 a step outside these scripts, run `npx bddgen` before `npx playwright test`.
@@ -232,8 +238,8 @@ Java (JDK 21+, the same `.env`), see [docs/java.md](docs/java.md):
 ```bash
 cd java
 ./mvnw test -Dgroups=smoke   # the smoke scenarios (the PR gate)
-./mvnw test                  # every feature (nightly), without the failure control
-./mvnw test -Dgroups=control -DexcludedGroups=   # only the failure control C1: fails on purpose
+./mvnw test                  # every feature (nightly), without the failure controls
+./mvnw test -Dgroups=control -DexcludedGroups=   # only the failure controls C1, C2: fail on purpose
 HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo of one scenario
 ```
 

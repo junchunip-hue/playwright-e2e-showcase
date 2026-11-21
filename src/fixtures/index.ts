@@ -25,6 +25,7 @@ import { LoginPage } from '../pages/login.page';
 import { NetworkPage } from '../pages/network.page';
 import { ProductPage } from '../pages/product.page';
 import { Tag } from '../tags';
+import { rememberPage, screenshotIfFailedWithout } from './evidence';
 import { listNotRunStepsAfterFailures } from './not-run';
 
 /**
@@ -112,6 +113,12 @@ type Fixtures = {
  */
 export const test = base.extend<Fixtures>({
   ctx: async ({}, use) => use({}),
+  // The page is registered for failure screenshots (./evidence.ts); a test that asks for no page gets none.
+  page: async ({ page }, use, testInfo) => {
+    rememberPage(testInfo, page);
+    await use(page);
+    await screenshotIfFailedWithout(testInfo);
+  },
   // A feature or scenario tagged @logged-out starts without the signed-in session that the UI projects load.
   storageState: async ({ storageState }, use, testInfo) =>
     use(testInfo.tags.includes(Tag.loggedOut) ? { cookies: [], origins: [] } : storageState),

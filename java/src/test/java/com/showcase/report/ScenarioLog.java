@@ -2,6 +2,7 @@ package com.showcase.report;
 
 import com.google.gson.Gson;
 import io.cucumber.plugin.ConcurrentEventListener;
+import io.cucumber.plugin.event.EmbedEvent;
 import io.cucumber.plugin.event.EventPublisher;
 import io.cucumber.plugin.event.HookTestStep;
 import io.cucumber.plugin.event.HookType;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -30,7 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * turns it into a Playwright HTML report): the scenario's feature, line, tags, start and duration,
  * and every step in order, the hooks included, each with its status, duration, line and, if it
  * failed, its error. A step is "passed", "failed" or "skipped": Cucumber does not run the steps
- * after a failed one, and they are listed as skipped.
+ * after a failed one, and they are listed as skipped. A screenshot taken at a failure (Hooks,
+ * {@code @AfterStep}) is written next to the log, under attachments/, and listed with the step that
+ * failed.
  *
  * <p>Why not the XML alone: in CI a failed scenario is rerun (pom.xml, profile ci-retries), and
  * with reruns on, Surefire leaves the output of passed tests out of the XML, steps included. Reruns
@@ -70,6 +74,7 @@ public class ScenarioLog implements ConcurrentEventListener {
           started.set(e.getInstant().toEpochMilli());
         });
     publisher.registerHandlerFor(TestStepFinished.class, this::step);
+    publisher.registerHandlerFor(EmbedEvent.class, this::attach);
     publisher.registerHandlerFor(TestCaseFinished.class, this::finished);
   }
 
@@ -89,6 +94,11 @@ public class ScenarioLog implements ConcurrentEventListener {
       entry.put("text", step.getStep().getKeyword() + step.getStep().getText());
       entry.put("line", step.getStep().getLine());
     } else if (event.getTestStep() instanceof HookTestStep hook) {
+      // Step hooks (@AfterStep: the failure screenshot) run around every step: left out unless one
+      // fails, whose attachment goes to the step it follows anyway (attach()).
+      boolean stepHook =
+          hook.getHookType() == HookType.BEFORE_STEP || hook.getHookType() == HookType.AFTER_STEP;
+      if (stepHook && event.getResult().getStatus() != Status.FAILED) return;
       // Hooks show as "Before Hooks" / "After Hooks" in the report, like Playwright's own.
       entry.put("hook", hook.getHookType() == HookType.BEFORE ? "before" : "after");
       entry.put("text", hook.getCodeLocation().replaceFirst("^com\\.showcase\\.", ""));
@@ -103,6 +113,29 @@ public class ScenarioLog implements ConcurrentEventListener {
     if (event.getResult().getStatus() == Status.FAILED && error != null)
       entry.put("error", message(error));
     steps.get().add(entry);
+  }
+
+  /**
+   * An attachment (the failure screenshot) belongs to the last Gherkin step that finished: the
+   * {@code @AfterStep} hook that takes it runs right after the step that failed.
+   */
+  @SuppressWarnings("unchecked")
+  private void attach(EmbedEvent event) {
+    Map<String, Object> owner = null;
+    for (Map<String, Object> s : steps.get()) if (!s.containsKey("hook")) owner = s;
+    if (owner == null) return;
+    String extension = event.getMediaType().endsWith("png") ? ".png" : ".bin";
+    String name = "attachments/" + UUID.randomUUID() + extension;
+    try {
+      Path target = file.toAbsolutePath().getParent().resolve(name);
+      Files.createDirectories(target.getParent());
+      Files.write(target, event.getData());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    List<Map<String, String>> list =
+        (List<Map<String, String>>) owner.computeIfAbsent("attachments", k -> new ArrayList<>());
+    list.add(Map.of("name", event.getName(), "path", name, "contentType", event.getMediaType()));
   }
 
   private void finished(TestCaseFinished event) {
