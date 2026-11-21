@@ -181,7 +181,8 @@ function javaResults(dir) {
       // The failure control: shown on its own, never counted (its own reports dir: CONTROL_JAVA_DIR).
       const scenario = javaScenarioName(xmlText(name));
       if (isControl(scenario)) {
-        controlCases.push({ id: CONTROL.exec(scenario)[1], failed: failedHere, ...entry() });
+        // The control calls the API only: no browser, so the label is just "Java".
+        controlCases.push({ id: CONTROL.exec(scenario)[1], failed: failedHere, ...entry(), project: 'Java' });
         continue;
       }
       if (failedHere) failedCases.push({ id: ID.exec(name)?.[1] ?? '–', ...entry() });
