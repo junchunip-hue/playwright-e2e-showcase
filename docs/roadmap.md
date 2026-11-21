@@ -83,7 +83,7 @@ A new decision gets the next ADR number.
   - `workflow_run` cycles, workflows that start other workflows
   - composite-action, npm-script, Playwright-project and import cycles
   - jobs without a timeout, unbounded `while`/`until` loops, and browser installs outside the bounded script
-- **Parity**: an A/U/S ID that exists in only one language, or a test-plan "Java" column that disagrees with `java/`,
+- **Parity**: an A/U/S/C ID that exists in only one language, or a test-plan "Java" column that disagrees with `java/`,
   fails the architecture stage.
 - **Failures** stay failures: no known-issue markers; every report shows the failed step and the steps not run
   ([ADR 0013](decisions/0013-failures-stay-failures.md)).

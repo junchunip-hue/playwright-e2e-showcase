@@ -43,7 +43,7 @@ jobs:
       - name: Wait for Toolshop and start its background jobs
         uses: ./.github/actions/toolshop-ready
 
-      # Suite "nightly" (src/tags.ts): everything except the Test Agents' seed.
+      # Suite "nightly" (src/tags.ts): everything except the Test Agents' seed and the failure control (step below).
       # blob output is merged into one HTML report by merge-reports.
       - name: Run regression shard
         env:
@@ -176,6 +176,7 @@ jobs:
       - name: Wait for Toolshop and start its background jobs
         uses: ./.github/actions/toolshop-ready
 
+      # Every feature except the failure control C1 (pom.xml excludedGroups), which runs in its own step below.
       - name: Run all Java tests
         working-directory: java
         run: ./mvnw -B test

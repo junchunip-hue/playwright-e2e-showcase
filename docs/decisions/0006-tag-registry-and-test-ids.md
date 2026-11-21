@@ -10,7 +10,7 @@ listed IDs that nothing linked to the code.
 
 **Decision:**
 - `src/tags.ts` defines every tag and suite; specs use `Tag.*`, and CI selects suites by name (`SUITE=pr`).
-- Every test has exactly one tier (`@smoke`, `@regression`, `@setup`, `@seed`) and, except setup/seed, a title that
+- Every test has exactly one tier (`@smoke`, `@regression`, `@setup`, `@seed`; since ADR 0013 also `@control`) and, except setup/seed, a title that
   starts with its test-plan ID (`U6: ...`).
 - `npm run check:tags` and the Java `TagGuardTest` enforce both. Java uses composed annotations (`@SmokeTest`,
   `@RegressionTest`, `@Negative`, `@ToolshopTest`) instead of raw `@Test` / `@Tag`.

@@ -65,7 +65,8 @@ Every API response is also contract-checked (A0); rendering and accessibility ar
 See [ADR 0011](decisions/0011-retries-and-flaky-tests.md) and the verdicts in [ci.md](ci.md#pipeline-summary).
 
 ## 6. Tags, suites and IDs
-Every test has one tier (`@smoke` for the PR gate, `@regression` nightly) and a test-plan ID in its title (`U6: ...`).
+Every test has one tier (`@smoke` for the PR gate, `@regression` nightly; the failure control C1 alone has `@control`)
+and a test-plan ID in its title (`U6: ...`).
 Suites are selected by name (`SUITE=pr`), and a tag check keeps both honest
 ([ADR 0006](decisions/0006-tag-registry-and-test-ids.md), details in [ci.md](ci.md#tags-and-suites)).
 

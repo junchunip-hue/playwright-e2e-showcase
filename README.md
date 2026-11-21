@@ -114,7 +114,7 @@ API scenarios read the same way; the API client stands in for the page
 flowchart LR
   subgraph PR["Every pull request: two lanes in parallel, each with its own Toolshop"]
     direction LR
-    S["Static: lint · types ·<br/>tag check · architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
+    S["Static: lint · format · types ·<br/>tags · step catalogue ·<br/>architecture + parity"] --> TS["TypeScript: API + Chromium<br/>smoke · a11y · visual"]
     J["Java: step dry run of every feature ·<br/>Cucumber-JVM smoke (same features)"]
     TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>failed and flaky tests · TS vs Java per ID<br/>+ commit status"]
     J --> SUM

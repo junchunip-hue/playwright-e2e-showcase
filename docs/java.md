@@ -37,7 +37,7 @@ the build only checks it and fails on an unformatted file ([coding rules](coding
 | Tag/ID guard | `npm run check:tags` (covers the shared features for both languages) | – (same features, same tags) |
 
 ## What runs in both
-In test-plan order (A, then U, then S):
+In test-plan order (A, then U, then S, then the failure control C):
 
 | ID | Scenario | TypeScript | Java |
 |---|---|---|---|
@@ -57,12 +57,13 @@ In test-plan order (A, then U, then S):
 | S4 | Guest checkout, order checked as admin (own Toolshop only) | `features/journeys/guest-checkout.feature` (shared) | `RunCucumberTest` + `steps/CheckoutSteps`, `AdminSteps` |
 | S5 | Returning customer: favourite, comparison, invoice PDF download (own Toolshop only) | `features/journeys/shopper.feature` (shared) | `RunCucumberTest` + `steps/ShopperSteps` |
 | S6 | Resilience: slow or failing catalogue and search, then recovery (`page.route` in the network page) | `features/journeys/resilience.feature` (shared) | `RunCucumberTest` + `steps/ResilienceSteps` |
+| C1 | Failure control: fails on purpose at step 2 of 4, steps 3 and 4 not run; a separate nightly step, never counted | `features/control/failure-control.feature` (shared, project `api`) | `RunCucumberTest` + `steps/api/ProductsApiSteps`; only with `-Dgroups=control -DexcludedGroups=` |
 
 TypeScript only, by design: accessibility (N2), visual (N1) and architecture (N3). They check rendering or the
 repository, not a scenario.
 
 ## How the two stay in sync
-- **Parity is a CI rule.** `tests/architecture/parity.arch.spec.ts` fails when an A/U/S ID exists in only one
+- **Parity is a CI rule.** `tests/architecture/parity.arch.spec.ts` fails when an A/U/S/C ID exists in only one
   language, or when the test plan's "Java" column disagrees with the Java suite. Both languages run the same feature
   files, so an ID has the same tier in both by construction (both lanes of a pipeline run the same scenarios).
 - **The pipeline shows both.** The summary job draws the run and lists every test ID with its TypeScript and Java
