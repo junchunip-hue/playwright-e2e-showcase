@@ -18,9 +18,9 @@ const bddCli = join(dirname(bddPackage), require(bddPackage).bin.bddgen);
 const bddgen = spawnSync(process.execPath, [bddCli], { stdio: 'inherit' });
 if (bddgen.status !== 0) process.exit(bddgen.status ?? 1);
 
-// API scenarios and the failure control (C1) have no browser: they run in the api and control projects, with their
-// steps in the report. The control is left out of every suite but `control`, so a C ID selects that suite.
-const project = id.startsWith('A') ? 'api' : id.startsWith('C') ? 'control' : 'chromium';
+// API scenarios and the failure control (C1) have no browser: they run in the api project, with their steps in the
+// report. The control is left out of every suite but `control`, so a C ID selects that suite.
+const project = /^[AC]/.test(id) ? 'api' : 'chromium';
 const suite = id.startsWith('C') ? { SUITE: 'control' } : {};
 const cli = require.resolve('@playwright/test/cli');
 const { status } = spawnSync(

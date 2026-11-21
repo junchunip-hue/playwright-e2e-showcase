@@ -67,13 +67,11 @@ export default defineConfig({
     // Logs in once via UI and saves the session for all UI projects.
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
 
-    // Pure API tests: no browser needed.
-    // The generated API features (testDir stays tests/: playwright-bdd needs it to be its output folder).
-    { name: 'api', testMatch: /[\\/]tests[\\/]features[\\/]api[\\/].*\.spec\.js$/ },
-
-    // The failure control (C1, features/control): API only, fails on purpose, never counted. A project of its own, so
-    // the report labels it "control" instead of "api"; only the nightly's control step runs it (suite `control`).
-    { name: 'control', testMatch: /[\\/]tests[\\/]features[\\/]control[\\/].*\.spec\.js$/ },
+    // Pure API tests: no browser needed. The generated API features (testDir stays tests/: playwright-bdd needs it to
+    // be its output folder), and the failure control (C1, features/control), which calls the API only: in the report
+    // it carries the project chip "api" (the kind of test) and the tag chip "control" (fails on purpose, not counted).
+    // Only the nightly's control step runs it (suite `control`); every other suite leaves it out.
+    { name: 'api', testMatch: /[\\/]tests[\\/]features[\\/](api|control)[\\/].*\.spec\.js$/ },
 
     // Static rules about the pipeline and code (cycles, self-triggering workflows): no browser, no Toolshop.
     { name: 'architecture', testDir: './tests/architecture' },
