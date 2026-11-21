@@ -127,7 +127,7 @@ error), and every step after it was not run.
 
 | Report | Failed step | Steps after it |
 |---|---|---|
-| TypeScript HTML report | ✗ red, with the error | "⏭ Not run: …" skipped sub-steps of the failed step; test annotations `failed step`, `not run` |
+| TypeScript HTML report | ✗ red, with the error | listed right after it, at the same level, as skipped (⊘) Gherkin steps; test annotations `failed step`, `not run` |
 | Java results page | `[failed]` with the error | `[not run]` (Cucumber skips them) |
 | Run summary and results page | "Failed tests": ID, where, failed step and error | listed one per line |
 

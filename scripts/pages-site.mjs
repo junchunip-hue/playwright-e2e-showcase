@@ -222,23 +222,48 @@ function landing(s, java) {
   // The test runs with a plan ID, and the rest: the sign-in setup, which a shard runs before its browser tests.
   const tsTests = s.rows.reduce((n, r) => n + rowRuns(r.ts), 0);
   const tsSetup = Math.max(total(ts.runs) - tsTests, 0);
+  // The failure control (C IDs): fails on purpose, never counted; shows on a known example how a failure is reported.
+  // Named in the verdict box and on both lane cards (the TypeScript report counts it as 1 failed), and shown right
+  // below the cards, so it is seen before the long tables.
+  const control = s.control ?? [];
+  const controlFailed = control.filter((f) => f.failed);
+  const controlIds = [...new Set(control.map((f) => f.id))].join(', ');
+  const controlNote = control.length
+    ? `<br>Failure control ${esc(controlIds)}: ${controlFailed.length === control.length ? 'failed on purpose, as intended' : '⚠️ did not fail: check the failure reporting'}, not counted. <a href="#control">See where it failed ↓</a>`
+    : '';
+  const tsControl = control.filter((f) => f.project !== 'Java (chromium)').length;
+  const javaControl = control.length - tsControl;
+  const controlHtml = control.length
+    ? `<h2 id="control">Failure control (not counted)</h2>
+<p>${esc(controlIds)} fails on purpose every night, in both languages, so this page always shows what a failure looks
+like: the steps before it passed, the failing step with its error, and the steps after it not run. It is left out of
+the verdict, the counts above, the badge and the clean streak. Open it in the <a href="typescript/#?q=C1">TypeScript
+report</a> (it is the one failed test there) or the <a href="java/#control">Java results</a> (its own section at the end).</p>
+<div class="scroll"><table><tr><th>ID</th><th>Where</th><th>Result</th><th>Failed at step</th><th>Not run after it</th></tr>
+${control.map((f) => `<tr><td>${esc(f.id)}</td><td>${esc(f.project)}</td><td>${esc(f.failed ? 'failed, as intended' : '⚠️ did not fail: check the failure reporting')}</td><td>${f.step ? `❌ ${esc(f.step)}` : '–'}${f.error ? `<br><code>${esc(f.error.slice(0, 200))}</code>` : ''}</td><td>${f.notRun.length ? f.notRun.map((st) => `⏭️ ${esc(st)}`).join('<br>') : '–'}</td></tr>`).join('\n')}
+</table></div>`
+    : '';
+
   const sections = [];
   sections.push(`<h1>Nightly results</h1>
 <p class="muted">Playwright E2E Showcase: the same Gherkin scenarios in TypeScript and Java, against our own Toolshop.
 <a href="${REPO}#readme">About the project</a></p>
 <div class="verdict ${v.cls}"><strong>${v.icon} ${esc(v.title)}</strong>${failedText ? `: ${esc(failedText)}` : ''}<br>
-${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}
+${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}${controlNote ? `${controlNote.slice(4)}<br>` : ''}
 <span>${esc(when)}${s.run.url ? ` · <a href="${esc(s.run.url)}">run #${esc(s.run.number)}</a>` : ''}${s.run.sha ? ` · commit <a href="${REPO}/commit/${esc(s.run.sha)}"><code>${esc(s.run.sha)}</code></a>` : ''}</span></div>`);
 
   sections.push(`<div class="lanes">
 <div class="lane"><h3>TypeScript</h3><div class="big">${total(ts.runs)}</div>
 <div class="muted">${tsTests} test runs on Chromium, Firefox and WebKit${tsSetup ? ` + ${plural(tsSetup, 'sign-in setup')} (one per shard with browser tests)` : ''}</div><div>${esc(runCounts(ts.runs))}</div>
+${tsControl ? `<div class="muted">The report also lists the failure control as ${tsControl} failed (${total(ts.runs) + tsControl} tests in all): on purpose, not counted.</div>` : ''}
 <a class="button" href="typescript/">Open the TypeScript report →</a></div>
 <div class="lane"><h3>Java</h3><div class="big">${total(jv.runs)}</div>
 <div class="muted">scenarios (Cucumber-JVM, Chromium), the same feature files</div><div>${esc(runCounts(jv.runs))}</div>
+${javaControl ? `<div class="muted">Plus the failure control, run on its own: ${javaControl} failed on purpose, not counted (end of the Java results).</div>` : ''}
 <a class="button" href="java/">Open the Java results →</a></div>
 </div>
-<p class="muted">The README's "nightly tests" badge shows ${badgeTotal} passed: TypeScript and Java together.</p>`);
+<p class="muted">The README's "nightly tests" badge shows ${badgeTotal} passed: TypeScript and Java together.</p>
+${controlHtml}`);
 
   if (s.failedJobs?.length) {
     sections.push(`<h2>What failed</h2><div class="scroll"><table><tr><th>Job</th><th>Failed step</th><th>What it reported</th></tr>
@@ -276,19 +301,6 @@ ${[...s.rows]
 </table></div>
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
 TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.</p>`);
-
-  // The failure control (C IDs): fails on purpose, never counted; shows on a known example how a failure is reported.
-  if (s.control?.length) {
-    const result = (f) => (f.failed ? 'failed, as intended' : '⚠️ did not fail: check the failure reporting');
-    sections.push(`<h2 id="control">Failure control (not counted)</h2>
-<p>C1 fails on purpose every night, in both languages, so this page always shows what a failure looks like: the steps
-before it passed, the failing step with its error, and the steps after it not run. It is left out of the verdict, the
-counts, the badge and the clean streak. Open it in the <a href="typescript/#?q=C1">TypeScript report</a> or the
-<a href="java/#control">Java results</a>.</p>
-<div class="scroll"><table><tr><th>ID</th><th>Where</th><th>Result</th><th>Failed at step</th><th>Not run after it</th></tr>
-${s.control.map((f) => `<tr><td>${esc(f.id)}</td><td>${esc(f.project)}</td><td>${esc(result(f))}</td><td>${f.step ? `❌ ${esc(f.step)}` : '–'}${f.error ? `<br><code>${esc(f.error.slice(0, 200))}</code>` : ''}</td><td>${f.notRun.length ? f.notRun.map((st) => `⏭️ ${esc(st)}`).join('<br>') : '–'}</td></tr>`).join('\n')}
-</table></div>`);
-  }
 
   if (history.length) {
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };

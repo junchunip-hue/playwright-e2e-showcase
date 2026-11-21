@@ -12,7 +12,9 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 72 TypeScript test cases including quality and architecture checks: 110 runs a night across Chromium, Firefox and
 WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
 The "nightly tests" badge above is the latest nightly's count of runs in both languages (110 TypeScript, including the
-sign-in setups, + 41 Java = 151), coloured like its verdict. Both badges open the nightly's results page: the verdict,
+sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that runs the failure control C1, which
+fails on purpose and is never counted: the TypeScript report lists it as its one failed test (111 in all), the Java
+results in a section of its own, and the results page right below the two lanes. Both badges open the nightly's results page: the verdict,
 the count split by language with the TypeScript report and the Java results, TypeScript vs Java per test ID, and the
 history.
 

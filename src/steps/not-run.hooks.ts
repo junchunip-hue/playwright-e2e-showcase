@@ -1,21 +1,30 @@
 import { AfterStep } from '../fixtures';
+import { rememberNotRun } from '../fixtures/not-run';
 
 /**
- * When a Gherkin step fails, the steps after it do not run, and Playwright's report would simply not show them. This
- * hook lists them, so every failed scenario reads as passed steps, one failed step, and the steps that were not run:
+ * When a Gherkin step fails, the steps after it do not run. This hook, which runs inside the failed step, hands them to
+ * the test.step wrapper (src/fixtures/not-run.ts); once the failed step has ended, the wrapper lists each of them right
+ * after it, at the same level, as a skipped step with its own text and location. So every failed scenario reads as
+ * passed steps, one failed step, and the steps that were not run.
  *
- * - each step after the failed one becomes a skipped sub-step "⏭ Not run: <step>" of the failed step;
- * - the test gets two annotations, read by scripts/pipeline-summary.mjs: "failed step" (the step, with its keyword)
- *   and "not run" (the steps after it, one per line).
+ * It also annotates the test, for scripts/pipeline-summary.mjs: "failed step" (the step, with its keyword) and
+ * "not run" (the steps after it, one per line).
  *
  * Java needs no hook: Cucumber-JVM reports the steps after a failure as skipped (report/ScenarioLog).
  */
-AfterStep(async ({ $step, $bddContext, $test, $testInfo }) => {
+AfterStep(async ({ $step, $bddContext, $testInfo }) => {
   if ($step.error === undefined) return;
-  const steps = $bddContext.bddTestData.steps.map((s) => s.textWithKeyword);
+  const steps = $bddContext.bddTestData.steps;
   const failed = steps[$bddContext.stepIndex];
   const notRun = steps.slice($bddContext.stepIndex + 1);
-  $testInfo.annotations.push({ type: 'failed step', description: failed });
-  if (notRun.length) $testInfo.annotations.push({ type: 'not run', description: notRun.join('\n') });
-  for (const step of notRun) await $test.step(`⏭ Not run: ${step}`, (s) => s.skip());
+  $testInfo.annotations.push({ type: 'failed step', description: failed.textWithKeyword });
+  if (notRun.length)
+    $testInfo.annotations.push({ type: 'not run', description: notRun.map((s) => s.textWithKeyword).join('\n') });
+  rememberNotRun(
+    $testInfo,
+    notRun.map((s) => ({
+      title: s.textWithKeyword,
+      location: { file: $testInfo.file, line: s.pwStepLine, column: 5 },
+    })),
+  );
 });

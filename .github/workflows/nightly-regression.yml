@@ -73,7 +73,7 @@ jobs:
         env:
           SUITE: control
           PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report-control
-        run: npx bddgen && npx playwright test --project=api --retries=0 --reporter=blob
+        run: npx bddgen && npx playwright test --project=control --retries=0 --reporter=blob
 
       - name: Upload the failure control's blob report
         if: ${{ matrix.shard == 1 && !cancelled() }}

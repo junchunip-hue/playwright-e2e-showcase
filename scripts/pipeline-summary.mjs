@@ -553,7 +553,7 @@ const failedSection = failedCases.length
       ),
       '',
       'Each failed scenario stops at its first failing step; the steps after it are listed as not run. The TypeScript',
-      'report shows them as skipped sub-steps of the failed step, the Java results as skipped steps.',
+      'report and the Java results list them as skipped steps, at the same level as the others.',
       '',
     ]
   : [];

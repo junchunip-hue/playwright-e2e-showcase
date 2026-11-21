@@ -22,8 +22,9 @@ steps after it, which never ran, did not appear in the TypeScript report at all.
   if the pinned Toolshop is upgraded to a version with the permission checks.
 - Every failed scenario reads as Gherkin does: the steps before the failure passed, one step failed, and every step
   after it was not run.
-  - TypeScript: `src/steps/not-run.hooks.ts` (an `AfterStep` hook) lists each remaining step as a skipped sub-step
-    "⏭ Not run: …" of the failed step and adds two annotations, `failed step` and `not run`.
+  - TypeScript: an `AfterStep` hook (`src/steps/not-run.hooks.ts`) and a wrapper around `test.step`
+    (`src/fixtures/not-run.ts`) list each remaining Gherkin step right after the failed one, at the same level, as a
+    skipped step with its own text; the test gets two annotations, `failed step` and `not run`.
   - Java: Cucumber already reports the remaining steps as skipped; `ScenarioLog` keeps every step with its status and
     the failed step's error.
   - The run summary and the results page list every failed test with its failed step, its error and the steps that
@@ -40,5 +41,5 @@ it in its own "Failure control" section. If it ever passes, the reporting of fai
 - A red run always means something to fix, and the reports say exactly where: which step, which error, which steps
   never ran.
 - Findings the suite cannot act on (an upstream defect) are recorded in the test plan, not in the suite.
-- playwright-bdd 10 (in pre-release) can skip a step from a hook, which would show the not-run steps at the top level
-  of the TypeScript report instead of under the failed step; worth adopting once it is released.
+- playwright-bdd 10 (in pre-release) can skip a step from a hook; once it is released, the `test.step` wrapper can be
+  replaced by that.
