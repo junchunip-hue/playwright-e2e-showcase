@@ -127,19 +127,20 @@ error), and every step after it was not run.
 
 | Report | Failed step | Steps after it |
 |---|---|---|
-| TypeScript HTML report | ✗ red, with the error | listed right after it, at the same level, as skipped (⊘) Gherkin steps; test annotations `failed step`, `not run` |
-| Java HTML report (same format) | ✗ red, with the error | listed right after it, at the same level, as skipped (Cucumber skips them) |
+| TypeScript HTML report | ✗ red, with the error and, for a UI step, a full-page screenshot taken at that step (click to enlarge or download) | listed right after it, at the same level, as skipped (⊘) Gherkin steps; test annotations `failed step`, `not run` |
+| Java HTML report (same format) | ✗ red, with the error and, for a UI step, the screenshot taken at that step | listed right after it, at the same level, as skipped (Cucumber skips them) |
 | Run summary and results page | "Failed tests": ID, where, failed step and error | listed one per line |
 
-The failure control C1 (`features/control`) shows this on a known example every night, outside the verdict. It is the
-only test allowed to fail; the tier tag `@control` keeps it out of every other run.
+The failure controls show this on known examples every night, outside the verdict: C1 an API failure (no page, so no
+screenshot), C2 a UI failure with its screenshot (`features/control`). They are the only tests allowed to fail; the
+tier tag `@control` keeps them out of every other run.
 
 ## IDs and tags
 
 - Every scenario has a test-plan ID (A, U, S, N, C) at the start of its title, given as described in
   [test-plan.md](test-plan.md#how-ids-work). An ID is never renumbered or reused.
-- Every scenario has exactly one tier tag: `@smoke` (gates every PR) or `@regression` (nightly); the failure control
-  C1 alone has `@control`. Other tags come from
+- Every scenario has exactly one tier tag: `@smoke` (gates every PR) or `@regression` (nightly); the failure controls
+  C1 and C2 alone have `@control`. Other tags come from
   the registry in `src/tags.ts`.
 
 ## What review still checks

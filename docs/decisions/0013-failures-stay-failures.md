@@ -31,12 +31,14 @@ steps after it, which never ran, did not appear in the TypeScript report at all.
     did not run. The Java report is a Playwright HTML report too (`scripts/java-report.mjs`), so it shows a failure
     exactly like the TypeScript one.
 
-**Failure control (added 2026-11-21):** one scenario, C1 (`features/control`, tier `@control`), fails on purpose at
-the same step every night, in both languages, so the reports always show a real failure next to the passing suite: the
-passed steps, the failed step with its error and the steps not run. It is not a product test and not an expected
-failure: it runs in a separate nightly step (`continue-on-error`) after the regression run, is excluded from every other
-suite and Maven run, and the summary leaves it out of the verdict, the counts, the badge and the clean streak, listing
-it in its own "Failure control" section. If it ever passes, the reporting of failures is broken.
+**Failure controls (added 2026-11-21):** two scenarios (`features/control`, tier `@control`) fail on purpose at the
+same step every night, in both languages, so the reports always show real failures next to the passing suite: the
+passed steps, the failed step with its error and the steps not run. C1 is an API failure (no page, no screenshot); C2 a
+UI failure, whose failed step carries the full-page screenshot taken at that moment (a click on it in either report
+opens it enlarged, with a download button). They are not product tests and not expected
+failures: they run in a separate nightly step (`continue-on-error`) after the regression run, are excluded from every
+other suite and Maven run, and the summary leaves them out of the verdict, the counts, the badge and the clean streak,
+listing them in their own "Failure control" section. If one ever passes, the reporting of failures is broken.
 
 **Consequences:**
 - A red run always means something to fix, and the reports say exactly where: which step, which error, which steps

@@ -19,7 +19,7 @@ itself and would race S3.
 | Workflow | Trigger | What runs | Browsers |
 |---|---|---|---|
 | `pr-smoke.yml` | Every PR and push to `master` | **Static:** lint, format (Prettier), typecheck, `check:tags`, `check:steps`, `test:architecture` ([coding rules](coding-rules.md))<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and in parallel the Java lane: Spotless format check, a dry run that binds every feature's steps (seconds, no browser), then the Java smoke suite | Chromium |
-| `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed and the failure control) in 3 shards, plus the full Java suite; then the failure control C1 in both languages, separately (fails on purpose, not counted) | Chromium, Firefox, WebKit |
+| `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed and the failure controls) in 3 shards, plus the full Java suite; then the failure controls C1 (API) and C2 (UI) in both languages, separately (fail on purpose, not counted) | Chromium, Firefox, WebKit |
 | `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR, and comments how to get PR checks on that commit (GitHub runs no workflow for a push made by Actions) | Chromium |
 
 **Dependency updates:** Dependabot (`.github/dependabot.yml`) opens one grouped PR per week for npm, Maven and GitHub
@@ -35,8 +35,8 @@ flowchart LR
   end
   subgraph NW["nightly-regression.yml"]
     direction LR
-    R["regression × 3 shards<br/>Chromium · Firefox · WebKit<br/>(+ failure control C1 in shard 1)"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
-    RJ["regression-java<br/>full suite (+ failure control C1)"] --> S
+    R["regression × 3 shards<br/>Chromium · Firefox · WebKit<br/>(+ failure controls C1, C2 in shard 1)"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
+    RJ["regression-java<br/>full suite (+ failure controls C1, C2)"] --> S
     S --> D["deploy-report<br/>landing page · TS report · Java report ·<br/>badges, master only"]
   end
 ```
@@ -157,19 +157,25 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   only a suite name (`SUITE=pr`), and `playwright.config.ts` turns it into `grep`/`grepInvert`, adding `@setup`
   where a login is needed.
 - **Tiers:** every test has exactly one of `@smoke` (PR gate), `@regression` (nightly), `@setup`, `@seed`, `@control`
-  (the failure control: a separate nightly step only).
+  (the failure controls: a separate nightly step only).
   **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, and `@admin`. An `@admin` test signs in as
   the seeded admin or can change catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
   fixture or `test.skip(isPublicDemo, ...)`, Java: `Hooks` `@Before("@admin")`) and runs against our own Toolshop only.
 - **Failures:** a failing test stays a failure; there are no known-issue markers or expected failures
   ([ADR 0013](decisions/0013-failures-stay-failures.md)). Every report lists the failed step and the steps after it
   as not run.
-- **Failure control (C1):** `features/control/failure-control.feature`, tier `@control`, fails on purpose every night
-  so the reports show a real failure. Shard 1 runs it after the regression run (`SUITE=control`, own blob report,
-  merged into the HTML report; project `api`, tag `@control`) and the Java job runs it after the full suite
-  (`-Dgroups=control -DexcludedGroups=`, own reports); both steps are `continue-on-error`. Every other suite and Maven run excludes it (`src/tags.ts`, `pom.xml`
-  `excludedGroups`), and the summary shows it in its own "Failure control (not counted)" section, outside the verdict,
-  the counts, the badge and the streak.
+- **Failure controls (C1, C2):** `features/control/api-failure.feature` (C1, an API failure, project `api`) and
+  `ui-failure.feature` (C2, a UI failure with its screenshot, project `chromium`), tier `@control`, fail on purpose
+  every night so the reports show real failures. Shard 1 runs them after the regression run (`SUITE=control`, own
+  blob report, merged into the HTML report) and the Java job runs them after the full suite
+  (`-Dgroups=control -DexcludedGroups=`, own reports); both steps are `continue-on-error`. Every other suite and Maven
+  run excludes them (`src/tags.ts`, `pom.xml` `excludedGroups`), and the summary shows them in their own "Failure
+  control (not counted)" section, outside the verdict, the counts, the badge and the streak.
+- **Failure screenshots:** a UI step that fails gets a full-page screenshot taken at that step and attached to it, in
+  both languages (`src/fixtures/evidence.ts` from the AfterStep hook; Java `Hooks` `@AfterStep`, stored by
+  `ScenarioLog` and attached by `scripts/java-report.mjs`). Playwright's own end-of-test screenshot is off. After each
+  report is built, `scripts/report-lightbox.mjs` adds a viewer: a click on a screenshot opens it enlarged, with a
+  download button.
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. Java runs the same feature files, so the check covers both.

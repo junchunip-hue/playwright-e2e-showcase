@@ -59,7 +59,7 @@ The Java lane runs the same stages 2–5 in parallel with Cucumber-JVM over the 
 - **IDs are stable:** never renumbered, reused or filled in, so links, reports and commit messages keep pointing at
   the same test. A number without a test is an item that was planned but not built: backlog (U9–U11) or optional
   (S7), each with its row and status below. A6, A7 and S5 were such items until 2026-11-19.
-- **The next new item** gets the next number after the highest one: A12, U12, S8, N4, C2.
+- **The next new item** gets the next number after the highest one: A12, U12, S8, N4, C3.
 - **A0** is the contract guard that applies to every API response, so it comes before the numbered API checks.
 - **Aliases:** U6 is also S1 (the first journey). U7 and U8 were planned as UI tests and became journeys S2 and S4;
   they keep their row so old references still resolve.
@@ -76,7 +76,7 @@ ID is not reused)
 | UI | U1–U6 (U7 ↪ S2, U8 ↪ S4) | – | U9–U11 |
 | Journeys | S1 (= U6), S2–S6 | S7 | – |
 | Non-functional | N1–N3 | – | – |
-| Control | C1 | – | – |
+| Control | C1 (API), C2 (UI) | – | – |
 
 ### API (`features/api`, project `api`, no browser)
 | ID | Test | Tag | Java | Status |
@@ -176,16 +176,19 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
 | N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, page/module file naming, bddgen before every Playwright run) | PR static stage | ✅ |
 
-### Control (`features/control`, project `api`, tag `@control`; nightly, outside the verdict)
+### Control (`features/control`, tag `@control`; nightly, outside the verdict)
 A control is not a product test. It fails on purpose, at the same step, every night, so the reports always show what a
 failure looks like: the steps before it passed, the failing step with its error, and the steps after it as not run.
-The nightly runs it in a separate step (suite `control`) after the regression run, in both languages, and leaves it
-out of the verdict, the badge, the clean streak and the PR gate ([ADR 0013](decisions/0013-failures-stay-failures.md)).
-If a control ever passes, the way failures are reported needs a look.
+There is one per kind of failure: C1 is an API test (project `api`, no page, so no screenshot), C2 a UI test (project
+`chromium`), whose failed step carries a full-page screenshot taken at that moment. The nightly runs them in a
+separate step (suite `control`) after the regression run, in both languages, and leaves them out of the verdict, the
+badge, the clean streak and the PR gate ([ADR 0013](decisions/0013-failures-stay-failures.md)). If a control ever
+passes, the way failures are reported needs a look.
 
 | ID | Test | Tag | Java | Status |
 |---|---|---|---|---|
-| C1 | Searches the API for "pliers" (it has results), then wrongly expects an empty result: fails at step 2 of 4, and steps 3 and 4 (listing the first page of products) are reported as not run | `@control` | ✅ | ✅ |
+| C1 | API failure: searches the API for "pliers" (it has results), then wrongly expects an empty result. Fails at step 2 of 4, with expected and received; steps 3 and 4 (listing the first page of products) are reported as not run. No screenshot | `@control` | ✅ | ✅ |
+| C2 | UI failure: opens the catalogue, then wrongly expects its first product to be a hammer. Fails at step 2 of 4, with a full-page screenshot attached to that step; steps 3 and 4 (search, then check) are reported as not run | `@control @logged-out` | ✅ | ✅ |
 
 ### Where each ID runs (today)
 | ID | Tests | Tier | PR gate | Nightly | Browsers | Where (both languages unless noted) |
@@ -211,9 +214,10 @@ If a control ever passes, the way failures are reported needs a look.
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
 | N3 | 20 | smoke, architecture | static stage | ✅ | none | TypeScript only |
-| C1 | 1 | control | – | ✅ | API (project `api`), nightly control step only | `features/control/failure-control.feature`: fails on purpose, not counted |
+| C1 | 1 | control | – | ✅ | API (project `api`), nightly control step only | `features/control/api-failure.feature`: fails on purpose, not counted |
+| C2 | 1 | control | – | ✅ | Chromium, nightly control step only | `features/control/ui-failure.feature`: fails on purpose with a screenshot, not counted |
 
-"Tests" counts TypeScript test cases per ID (72 in total, plus the failure control C1; data-driven cases count once
+"Tests" counts TypeScript test cases per ID (72 in total, plus the failure controls C1 and C2; data-driven cases count once
 each). Gherkin features run
 in both languages with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 
@@ -235,7 +239,7 @@ Every test has exactly one tier tag, enforced by `npm run check:tags`.
 | Accessibility | ✅ (`npm run test:a11y`) | ✅ | ✅ |
 | Visual regression | own OS baselines, git-ignored | ✅ (Linux baselines) | ✅ |
 | Java suite | ✅ (`./mvnw test`) | `smoke` | all |
-| Failure control C1 | on demand (`npm run demo -- C1`) | – | separate step, both languages, not counted |
+| Failure controls C1 (API), C2 (UI) | on demand (`npm run demo -- C1`, `-- C2`) | – | separate step, both languages, not counted |
 | Report | local HTML | artifact (14 days) | GitHub Pages |
 
 \* Locally against the public demo, U6 registers a new demo account per run; prefer a local Docker instance.

@@ -155,10 +155,12 @@ function landing(s) {
   const javaControl = control.length - tsControl;
   const controlHtml = control.length
     ? `<h2 id="control">Failure control (not counted)</h2>
-<p>${esc(controlIds)} fails on purpose every night, in both languages, so this page always shows what a failure looks
-like: the steps before it passed, the failing step with its error, and the steps after it not run. It is left out of
-the verdict, the counts above, the badge and the clean streak. Open it in the <a href="typescript/#?q=C1">TypeScript
-report</a> or the <a href="java/#?q=C1">Java report</a>: in both it is the one failed test.</p>
+<p>${esc(controlIds)} fail on purpose every night, in both languages, so this page always shows what a failure looks
+like: the steps before it passed, the failing step with its error, and the steps after it not run. C1 is an API test
+(no page, so no screenshot); C2 is a UI test, with a screenshot of the page at the failed step (click it in the report
+to enlarge or download it). They are left out of the verdict, the counts above, the badge and the clean streak. Open
+them in the <a href="typescript/#?q=@control">TypeScript report</a> or the <a href="java/#?q=@control">Java report</a>:
+in both they are the failed tests.</p>
 <div class="scroll"><table><tr><th>ID</th><th>Where</th><th>Result</th><th>Failed at step</th><th>Not run after it</th></tr>
 ${control.map((f) => `<tr><td>${esc(f.id)}</td><td>${esc(f.project)}</td><td>${esc(f.failed ? 'failed, as intended' : '⚠️ did not fail: check the failure reporting')}</td><td>${f.step ? `❌ ${esc(f.step)}` : '–'}${f.error ? `<br><code>${esc(f.error.slice(0, 200))}</code>` : ''}</td><td>${f.notRun.length ? f.notRun.map((st) => `⏭️ ${esc(st)}`).join('<br>') : '–'}</td></tr>`).join('\n')}
 </table></div>`
@@ -175,11 +177,11 @@ ${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}${controlNote ? `${controlNote.sl
   sections.push(`<div class="lanes">
 <div class="lane"><h3>TypeScript</h3><div class="big">${total(ts.runs)}</div>
 <div class="muted">${tsTests} test runs on Chromium, Firefox and WebKit${tsSetup ? ` + ${plural(tsSetup, 'sign-in setup')} (one per shard with browser tests)` : ''}</div><div>${esc(runCounts(ts.runs))}</div>
-${tsControl ? `<div class="muted">The report also lists the failure control as ${tsControl} failed (${total(ts.runs) + tsControl} tests in all): on purpose, not counted.</div>` : ''}
+${tsControl ? `<div class="muted">The report also lists the failure controls as ${tsControl} failed (${total(ts.runs) + tsControl} tests in all): on purpose, not counted.</div>` : ''}
 <a class="button" href="typescript/">Open the TypeScript report →</a></div>
 <div class="lane"><h3>Java</h3><div class="big">${total(jv.runs)}</div>
 <div class="muted">scenarios (Cucumber-JVM, Chromium), the same feature files</div><div>${esc(runCounts(jv.runs))}</div>
-${javaControl ? `<div class="muted">The report also lists the failure control as ${javaControl} failed (${total(jv.runs) + javaControl} tests in all): on purpose, not counted.</div>` : ''}
+${javaControl ? `<div class="muted">The report also lists the failure controls as ${javaControl} failed (${total(jv.runs) + javaControl} tests in all): on purpose, not counted.</div>` : ''}
 <a class="button" href="java/">Open the Java report →</a></div>
 </div>
 <p class="muted">The README's "nightly tests" badge shows ${badgeTotal} passed: TypeScript and Java together.</p>
