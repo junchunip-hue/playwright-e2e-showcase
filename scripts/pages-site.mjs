@@ -231,7 +231,7 @@ function landing(s, java) {
   const controlNote = control.length
     ? `<br>Failure control ${esc(controlIds)}: ${controlFailed.length === control.length ? 'failed on purpose, as intended' : '⚠️ did not fail: check the failure reporting'}, not counted. <a href="#control">See where it failed ↓</a>`
     : '';
-  const tsControl = control.filter((f) => f.project !== 'Java (chromium)').length;
+  const tsControl = control.filter((f) => !f.project.startsWith('Java')).length;
   const javaControl = control.length - tsControl;
   const controlHtml = control.length
     ? `<h2 id="control">Failure control (not counted)</h2>
@@ -312,7 +312,7 @@ TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and 
   }
 
   sections.push(
-    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${java.length}${control.some((f) => f.project === 'Java (chromium)') ? ', plus the failure control' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary.</p>`,
+    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${java.length}${control.some((f) => f.project.startsWith('Java')) ? ', plus the failure control' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary.</p>`,
   );
   return page('Nightly results · Playwright E2E Showcase', sections.join('\n'));
 }

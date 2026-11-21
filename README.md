@@ -8,10 +8,10 @@ A test automation framework built the way I would set it up in a real team. Ever
 Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwright-bdd) and **Playwright for Java**
 (Cucumber-JVM on JUnit 5). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
 
-**At a glance:** 34 feature scenarios (41 test cases with Scenario Outline examples) run in both languages ·
-72 TypeScript test cases including quality and architecture checks: 110 runs a night across Chromium, Firefox and
-WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per run: ✅ passed,
-⚠️ passed with flaky (or only on a rerun), ❌ failed.
+**At a glance:** 34 feature scenarios (41 test cases with Scenario Outline examples, plus the failure control C1)
+run in both languages · 72 TypeScript test cases including quality and architecture checks: 110 runs a night across
+Chromium, Firefox and WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per
+run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
 
 The "nightly tests" badge above is the latest nightly's count of runs in both languages (110 TypeScript, including the
 sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that runs the failure control C1, which fails on
