@@ -1,18 +1,18 @@
 // Builds the nightly's GitHub Pages landing page, so the README badges open one page for both languages:
-//   index.html       the verdict, both lanes with their counts (the badge's total, split), TypeScript vs Java per test
-//                    ID, flaky tests, failed tests with their failed and not-run steps, and the nightly history
-//   java/index.html  every Java scenario with its steps, read from the Surefire XML (reruns included)
+//   index.html       the verdict, both lanes with their counts (the badge's total, split), the failure control,
+//                    TypeScript vs Java per test ID, flaky tests, failed tests with their failed and not-run steps,
+//                    and the nightly history
 //   typescript/      the merged Playwright HTML report (put there by the workflow)
-// Usage: node scripts/pages-site.mjs <summary.json> <surefire-dir> <site-dir>
+//   java/            the Java results as the same kind of Playwright HTML report (scripts/java-report.mjs, workflow)
+// Usage: node scripts/pages-site.mjs <summary.json> <site-dir>
 //   summary.json comes from pipeline-summary.mjs (env SUMMARY_JSON); <site-dir>/history.json and streak.json from
 //   nightly-history.mjs. Missing inputs leave their section out instead of failing the publish.
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-// <control-dir>: the Java failure control's own reports (C IDs), shown apart and never counted.
-const [summaryFile, javaDir, siteDir, controlDir] = process.argv.slice(2);
+const [summaryFile, siteDir] = process.argv.slice(2);
 if (!summaryFile || !siteDir) {
-  console.error('Usage: node scripts/pages-site.mjs <summary.json> <surefire-dir> <site-dir>');
+  console.error('Usage: node scripts/pages-site.mjs <summary.json> <site-dir>');
   process.exit(2);
 }
 const REPO = 'https://github.com/junchunip-hue/playwright-e2e-showcase';
@@ -57,86 +57,6 @@ const VERDICT = {
   },
   none: { cls: 'skip', icon: '⏹️', title: 'No result', text: 'neither lane ran' },
 };
-
-// --- Java scenarios from the Surefire XML -----------------------------------------------------------------------
-
-const xmlText = (s) =>
-  (s ?? '').replace(/&(lt|gt|quot|apos|amp|#(\d+));/g, (_, name, code) =>
-    code ? String.fromCharCode(Number(code)) : { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' }[name],
-  );
-// Cucumber's pretty output is coloured; Surefire stores the escape character as an entity.
-const noAnsi = (s) => s.replace(/&amp#27;\[[0-9;]*m|&#27;\[[0-9;]*m|\u001b\[[0-9;]*m/g, '');
-const STEP = { '✔': 'passed', '✘': 'failed', '↷': 'skipped', '?': 'undefined', '-': 'pending' };
-
-/**
- * The Java scenario log (com.showcase.report.ScenarioLog): every step with its status per scenario, the last attempt
- * winning. In CI it is the only source of the steps of a passed scenario: with reruns on, Surefire leaves the output
- * of passed tests out of the XML. The XML stays the source of each scenario's status (it knows reruns: flaky).
- */
-function scenarioLog(dir) {
-  const file = dir && join(dir, 'scenarios.jsonl');
-  const byName = new Map();
-  if (!file || !existsSync(file)) return byName;
-  for (const line of readFileSync(file, 'utf8').split('\n')) {
-    try {
-      if (line.trim()) byName.set(JSON.parse(line).name, JSON.parse(line));
-    } catch {
-      // a line cut off by a crashed JVM
-    }
-  }
-  return byName;
-}
-
-function javaScenarios(dir) {
-  if (!dir || !existsSync(dir)) return [];
-  const log = scenarioLog(dir);
-  const scenarios = [];
-  for (const f of readdirSync(dir).filter((n) => n.startsWith('TEST-') && n.endsWith('.xml'))) {
-    const xml = readFileSync(join(dir, f), 'utf8');
-    for (const m of xml.matchAll(/<testcase\b([^>]*?)(\/>|>([\s\S]*?)<\/testcase>)/g)) {
-      const name = xmlText(/name="([^"]*)"/.exec(m[1])?.[1] ?? '');
-      const body = m[3] ?? '';
-      const time = Number(/time="([^"]*)"/.exec(m[1])?.[1] ?? 0);
-      const flakes = [...body.matchAll(/<flaky(?:Failure|Error)\b([^>]*)>/g)];
-      const status = /<(failure|error)\b/.test(body)
-        ? 'failed'
-        : flakes.length
-          ? 'flaky'
-          : /<skipped\b/.test(body)
-            ? 'skipped'
-            : 'passed';
-      const message = xmlText(
-        /<(?:failure|error)\b[^>]*message="([^"]*)"/.exec(body)?.[1] ??
-          (flakes[0] ? /message="([^"]*)"/.exec(flakes[0][1])?.[1] : '') ??
-          '',
-      );
-      // The scenario's own output is the last <system-out>; a rerun's failed attempts carry their own before it.
-      const outs = [...body.matchAll(/<system-out><!\[CDATA\[([\s\S]*?)\]\]><\/system-out>/g)];
-      const out = xmlText(noAnsi(outs.at(-1)?.[1] ?? ''));
-      const steps = [];
-      for (const raw of out.split('\n')) {
-        const line = raw.trim();
-        const step = /^([✔✘↷?-])\s+(.*?)(?:\s+#\s.*)?$/.exec(line);
-        if (step && /^(Given|When|Then|And|But)\b/.test(step[2]))
-          steps.push({ status: STEP[step[1]] ?? 'unknown', text: step[2] });
-      }
-      // "Feature - Scenario", and for a Scenario Outline "Feature - Outline - Examples - Example #1.1: Scenario".
-      const [feature, ...rest] = name.split(' - ');
-      const title = rest.at(-1)?.replace(/^Example #[\d.]+: /, '') ?? name;
-      const logged = log.get(title);
-      scenarios.push({
-        feature,
-        title,
-        status,
-        time,
-        steps: logged?.steps?.length ? logged.steps : steps,
-        message: message.split('\n')[0],
-        attempts: flakes.length,
-      });
-    }
-  }
-  return scenarios;
-}
 
 // --- Page shell ---------------------------------------------------------------------------------------------------
 
@@ -207,7 +127,7 @@ const streakText = (message) => {
   return m ? `${m[1]} clean ${Number(m[1]) === 1 ? 'nightly' : 'nightlies'} in a row${m[2]}` : message;
 };
 
-function landing(s, java) {
+function landing(s) {
   if (!s) return page('Nightly results', '<h1>Nightly results</h1><p>No summary for the latest nightly.</p>');
   const v = VERDICT[s.verdict] ?? VERDICT.none;
   const when = new Date(s.date).toUTCString().replace(' GMT', ' UTC');
@@ -238,7 +158,7 @@ function landing(s, java) {
 <p>${esc(controlIds)} fails on purpose every night, in both languages, so this page always shows what a failure looks
 like: the steps before it passed, the failing step with its error, and the steps after it not run. It is left out of
 the verdict, the counts above, the badge and the clean streak. Open it in the <a href="typescript/#?q=C1">TypeScript
-report</a> (it is the one failed test there) or the <a href="java/#control">Java results</a> (its own section at the end).</p>
+report</a> or the <a href="java/#?q=C1">Java report</a>: in both it is the one failed test.</p>
 <div class="scroll"><table><tr><th>ID</th><th>Where</th><th>Result</th><th>Failed at step</th><th>Not run after it</th></tr>
 ${control.map((f) => `<tr><td>${esc(f.id)}</td><td>${esc(f.project)}</td><td>${esc(f.failed ? 'failed, as intended' : '⚠️ did not fail: check the failure reporting')}</td><td>${f.step ? `❌ ${esc(f.step)}` : '–'}${f.error ? `<br><code>${esc(f.error.slice(0, 200))}</code>` : ''}</td><td>${f.notRun.length ? f.notRun.map((st) => `⏭️ ${esc(st)}`).join('<br>') : '–'}</td></tr>`).join('\n')}
 </table></div>`
@@ -259,8 +179,8 @@ ${tsControl ? `<div class="muted">The report also lists the failure control as $
 <a class="button" href="typescript/">Open the TypeScript report →</a></div>
 <div class="lane"><h3>Java</h3><div class="big">${total(jv.runs)}</div>
 <div class="muted">scenarios (Cucumber-JVM, Chromium), the same feature files</div><div>${esc(runCounts(jv.runs))}</div>
-${javaControl ? `<div class="muted">Plus the failure control, run on its own: ${javaControl} failed on purpose, not counted (end of the Java results).</div>` : ''}
-<a class="button" href="java/">Open the Java results →</a></div>
+${javaControl ? `<div class="muted">The report also lists the failure control as ${javaControl} failed (${total(jv.runs) + javaControl} tests in all): on purpose, not counted.</div>` : ''}
+<a class="button" href="java/">Open the Java report →</a></div>
 </div>
 <p class="muted">The README's "nightly tests" badge shows ${badgeTotal} passed: TypeScript and Java together.</p>
 ${controlHtml}`);
@@ -312,57 +232,11 @@ TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and 
   }
 
   sections.push(
-    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${java.length}${control.some((f) => f.project.startsWith('Java')) ? ', plus the failure control' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary.</p>`,
+    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${total(jv.runs)}${javaControl ? ', plus the failure control' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary; both reports are Playwright HTML reports (Java: <code>scripts/java-report.mjs</code>).</p>`,
   );
   return page('Nightly results · Playwright E2E Showcase', sections.join('\n'));
 }
 
-// --- Java page ----------------------------------------------------------------------------------------------------
-
-function javaPage(scenarios, s, control = []) {
-  const ICON = { passed: '✅', flaky: '⚠️', failed: '❌', skipped: '⏭️' };
-  // Per step: passed (no label), failed, or skipped = not run because an earlier step failed.
-  const stepLabel = (status) =>
-    status === 'passed'
-      ? ''
-      : status === 'failed'
-        ? '<strong>[failed]</strong> '
-        : status === 'skipped'
-          ? '[not run] '
-          : `[${esc(status)}] `;
-  const byFeature = new Map();
-  // Features in the test plan's order (API, UI, journeys), each by its first ID, as on the results page.
-  const idOf = (sc) => /^([AUS]\d+):/.exec(sc.title)?.[1] ?? 'S999';
-  for (const sc of [...scenarios].sort((a, b) => byPlanOrder(idOf(a), idOf(b)))) {
-    byFeature.set(sc.feature, [...(byFeature.get(sc.feature) ?? []), sc]);
-  }
-  const count = (st) => scenarios.filter((x) => x.status === st).length;
-  const head = `<p><a href="../">← Nightly results</a></p><h1>Java results</h1>
-<p class="muted">Cucumber-JVM on JUnit 5, Chromium, the same feature files as TypeScript. Read from the Surefire XML, so a
-scenario that passed on a rerun shows as flaky.${s?.run?.url ? ` <a href="${esc(s.run.url)}">Run #${esc(s.run.number)}</a>` : ''}</p>
-<p><strong>${scenarios.length} scenarios</strong>: ${count('passed')} passed · ${count('flaky')} flaky · ${count('failed')} failed${count('skipped') ? ` · ${count('skipped')} skipped` : ''}${control.length ? ` · plus the <a href="#control">failure control</a> at the end (fails on purpose, not counted)` : ''}</p>`;
-  const empty = scenarios.length ? '' : '<p>No Java results in this run.</p>';
-  const scenarioHtml = (
-    sc,
-  ) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
-${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${stepLabel(st.status)}${esc(st.text)}${st.error ? `<br><code>${esc(st.error.slice(0, 300))}</code>` : ''}</li>`).join('')}</ol>` : ''}
-${sc.message && !sc.steps.some((st) => st.error) ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}</details>`;
-  const features = [...byFeature.entries()].map(
-    ([feature, list]) => `<h2>${esc(feature)}</h2>
-${list.map(scenarioHtml).join('\n')}`,
-  );
-  // The failure control (C IDs): its own section, outside the counts above.
-  const controlHtml = control.length
-    ? `<h2 id="control">Failure control (not counted)</h2><p class="muted">Fails on purpose every night, outside the verdict, to
-show how a failed scenario is reported: the passed steps, the failed step with its error, and the steps after it not run.</p>
-${control.map(scenarioHtml).join('\n')}`
-    : '';
-  return page('Java results · Playwright E2E Showcase', `${head}${empty}${features.join('\n')}${controlHtml}`);
-}
-
-const java = javaScenarios(javaDir).filter((sc) => !/^C\d+:/.test(sc.title));
-const javaControl = controlDir ? javaScenarios(controlDir).filter((sc) => /^C\d+:/.test(sc.title)) : [];
-mkdirSync(join(siteDir, 'java'), { recursive: true });
-writeFileSync(join(siteDir, 'index.html'), landing(summary, java));
-writeFileSync(join(siteDir, 'java', 'index.html'), javaPage(java, summary, javaControl));
-console.log(`Pages: index.html (verdict ${summary?.verdict ?? 'missing'}), java/index.html (${java.length} scenarios)`);
+mkdirSync(siteDir, { recursive: true });
+writeFileSync(join(siteDir, 'index.html'), landing(summary));
+console.log(`Pages: index.html (verdict ${summary?.verdict ?? 'missing'})`);

@@ -164,8 +164,10 @@ function javaResults(dir) {
       const failedHere = /<(failure|error)\b/.test(body);
       const entry = () => {
         const logged = log.get(javaScenarioName(xmlText(name)));
+        // Steps and hooks in order (ScenarioLog); a failed hook is named as such, and only Gherkin steps count as not run.
         const steps = logged?.steps ?? [];
         const failedAt = steps.findIndex((s) => s.status === 'failed');
+        const failed = steps[failedAt];
         const className = /classname="([^"]*)"/.exec(m[1])?.[1] ?? '';
         const message = /<(?:failure|error)\b[^>]*message="([^"]*)"/.exec(body)?.[1];
         return {
@@ -173,8 +175,18 @@ function javaResults(dir) {
           project: 'Java (chromium)',
           // The feature file the scenario comes from (both languages run it); the runner class if the log is missing.
           where: logged?.uri ?? `java/src/test/java/${className.replaceAll('.', '/')}.java`,
-          step: failedAt >= 0 ? steps[failedAt].text : null,
-          notRun: failedAt >= 0 ? steps.slice(failedAt + 1).map((s) => s.text) : [],
+          step: failed
+            ? failed.hook
+              ? `${failed.hook === 'before' ? 'Before' : 'After'} hook ${failed.text}`
+              : failed.text
+            : null,
+          notRun:
+            failedAt >= 0
+              ? steps
+                  .slice(failedAt + 1)
+                  .filter((s) => !s.hook)
+                  .map((s) => s.text)
+              : [],
           error: firstLine(steps[failedAt]?.error ?? logged?.error ?? xmlText(message ?? '')),
         };
       };

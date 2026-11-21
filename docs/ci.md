@@ -37,7 +37,7 @@ flowchart LR
     direction LR
     R["regression × 3 shards<br/>Chromium · Firefox · WebKit<br/>(+ failure control C1 in shard 1)"] --> M["merge-reports<br/>HTML + JSON"] --> S["summary<br/>verdict · commit status · badge"]
     RJ["regression-java<br/>full suite (+ failure control C1)"] --> S
-    S --> D["deploy-report<br/>landing page · TS report · Java results ·<br/>badges, master only"]
+    S --> D["deploy-report<br/>landing page · TS report · Java report ·<br/>badges, master only"]
   end
 ```
 The nightly's GitHub Pages site, built by the `summary` job because only it has both languages' results:
@@ -45,8 +45,12 @@ The nightly's GitHub Pages site, built by the `summary` job because only it has 
   counts and links, TypeScript vs Java per test ID, failed tests with their failed and not-run steps, flaky tests and the
   nightly history. Both README
   badges open it.
-- `/typescript/` the merged Playwright HTML report; `/java/` every Java scenario with its steps, from the Surefire
-  XML and the scenario log.
+- `/typescript/` the merged Playwright HTML report; `/java/` the Java results as the same kind of Playwright HTML
+  report: `scripts/java-report.mjs` turns the scenario logs (every attempt, step, hook, duration and error, written by
+  `com.showcase.report.ScenarioLog`) and the traces of failed attempts into a Playwright blob report, and
+  `playwright merge-reports` renders it with the standard HTML reporter. Same list, filters, search, step tree,
+  errors and trace viewer as TypeScript; a scenario that passed on a rerun shows as flaky. Also an artifact
+  (`java-report`) on every run.
 - `badge.json`, which the "nightly tests" badge reads (shields.io endpoint): all test runs of both languages, coloured
   like the verdict (green passed, yellow passed with flaky, red failed); `streak.json` and `history.json` (below).
 **Merging:** a ruleset on `master` makes the PR pipeline a real gate: every change goes through a pull request, and
