@@ -13,7 +13,7 @@
     "test:a11y": "node scripts/run-suite.mjs a11y --project=chromium",
     "test:visual": "node scripts/run-suite.mjs visual --project=chromium",
     "test:architecture": "node scripts/run-suite.mjs architecture --project=architecture",
-    "check:tags": "bddgen && playwright test --list --reporter=./src/reporters/tag-guard.ts",
+    "check:tags": "node scripts/run-suite.mjs all --list --reporter=./src/reporters/tag-guard.ts",
     "steps": "node scripts/step-catalog.mjs",
     "check:steps": "node scripts/step-catalog.mjs --check",
     "report": "playwright show-report",

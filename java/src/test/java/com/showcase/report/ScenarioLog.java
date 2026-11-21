@@ -42,8 +42,13 @@ public class ScenarioLog implements ConcurrentEventListener {
   private final ThreadLocal<List<Map<String, String>>> steps =
       ThreadLocal.withInitial(ArrayList::new);
 
+  /**
+   * The file from the plugin argument, unless -Dscenario.log points elsewhere: the nightly's run of
+   * the failure control writes its own log next to its own reports.
+   */
   public ScenarioLog(String path) {
-    this.file = Path.of(path);
+    String override = System.getProperty("scenario.log");
+    this.file = Path.of(override == null || override.isBlank() ? path : override);
   }
 
   @Override

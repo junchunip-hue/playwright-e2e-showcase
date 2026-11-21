@@ -12,6 +12,9 @@ export const Tag = {
   regression: '@regression', // broader coverage; nightly
   setup: '@setup', // auth setup project, a dependency of the UI tests
   seed: '@seed', // starting state for Playwright Test Agents, not a test case
+  // The failure control (C IDs, ADR 0013): fails on purpose every night so the reports show what a failure looks
+  // like. Runs only in its own nightly step, never in the verdict, the badge or a suite that gates anything.
+  control: '@control',
 
   // Kind: optional, any number.
   negative: '@negative',
@@ -32,7 +35,7 @@ export type TagValue = (typeof Tag)[keyof typeof Tag];
  */
 export const RUNNER_TAG = /^@timeout:\d+$/;
 
-export const TIER_TAGS: readonly TagValue[] = [Tag.smoke, Tag.regression, Tag.setup, Tag.seed];
+export const TIER_TAGS: readonly TagValue[] = [Tag.smoke, Tag.regression, Tag.setup, Tag.seed, Tag.control];
 
 /** Kinds that run on Chromium only: axe results and screenshots do not depend on the engine. */
 export const CHROMIUM_ONLY: readonly TagValue[] = [Tag.a11y, Tag.visual];
@@ -57,8 +60,12 @@ export const SUITES = {
   visual: { include: [Tag.visual] },
   /** Static pipeline/code rules; runs in the PR static stage before Toolshop is up. */
   architecture: { include: [Tag.architecture] },
-  /** Nightly: everything except the agents' seed. */
-  nightly: { exclude: [Tag.seed] },
+  /** Nightly: everything except the agents' seed and the failure control (which runs in its own step). */
+  nightly: { exclude: [Tag.seed, Tag.control] },
+  /** The failure control alone (C IDs): the nightly runs it separately and leaves it out of the verdict. */
+  control: { include: [Tag.control] },
+  /** Every test, the control included: for listing (`npm run check:tags`), never for a run that gates anything. */
+  all: {},
 } as const satisfies Record<string, Suite>;
 
 export type SuiteName = keyof typeof SUITES;
@@ -76,7 +83,8 @@ export function suiteGrepInvert(suite: Suite, extra: readonly TagValue[] = []): 
 }
 
 export function resolveSuite(name: string | undefined): Suite {
-  if (!name) return {};
+  // No suite (e.g. `npm test`): everything but the failure control, which fails on purpose.
+  if (!name) return { exclude: [Tag.control] };
   if (!(name in SUITES)) {
     throw new Error(`Unknown SUITE "${name}". Known suites: ${Object.keys(SUITES).join(', ')}`);
   }

@@ -9,7 +9,8 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const [summaryFile, javaDir, siteDir] = process.argv.slice(2);
+// <control-dir>: the Java failure control's own reports (C IDs), shown apart and never counted.
+const [summaryFile, javaDir, siteDir, controlDir] = process.argv.slice(2);
 if (!summaryFile || !siteDir) {
   console.error('Usage: node scripts/pages-site.mjs <summary.json> <surefire-dir> <site-dir>');
   process.exit(2);
@@ -276,6 +277,19 @@ ${[...s.rows]
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
 TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.</p>`);
 
+  // The failure control (C IDs): fails on purpose, never counted; shows on a known example how a failure is reported.
+  if (s.control?.length) {
+    const result = (f) => (f.failed ? 'failed, as intended' : '⚠️ did not fail: check the failure reporting');
+    sections.push(`<h2 id="control">Failure control (not counted)</h2>
+<p>C1 fails on purpose every night, in both languages, so this page always shows what a failure looks like: the steps
+before it passed, the failing step with its error, and the steps after it not run. It is left out of the verdict, the
+counts, the badge and the clean streak. Open it in the <a href="typescript/#?q=C1">TypeScript report</a> or the
+<a href="java/#control">Java results</a>.</p>
+<div class="scroll"><table><tr><th>ID</th><th>Where</th><th>Result</th><th>Failed at step</th><th>Not run after it</th></tr>
+${s.control.map((f) => `<tr><td>${esc(f.id)}</td><td>${esc(f.project)}</td><td>${esc(result(f))}</td><td>${f.step ? `❌ ${esc(f.step)}` : '–'}${f.error ? `<br><code>${esc(f.error.slice(0, 200))}</code>` : ''}</td><td>${f.notRun.length ? f.notRun.map((st) => `⏭️ ${esc(st)}`).join('<br>') : '–'}</td></tr>`).join('\n')}
+</table></div>`);
+  }
+
   if (history.length) {
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };
     const recent = history.slice(-30).reverse();
@@ -293,7 +307,7 @@ TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and 
 
 // --- Java page ----------------------------------------------------------------------------------------------------
 
-function javaPage(scenarios, s) {
+function javaPage(scenarios, s, control = []) {
   const ICON = { passed: '✅', flaky: '⚠️', failed: '❌', skipped: '⏭️' };
   // Per step: passed (no label), failed, or skipped = not run because an earlier step failed.
   const stepLabel = (status) =>
@@ -315,24 +329,28 @@ function javaPage(scenarios, s) {
 <p class="muted">Cucumber-JVM on JUnit 5, Chromium, the same feature files as TypeScript. Read from the Surefire XML, so a
 scenario that passed on a rerun shows as flaky.${s?.run?.url ? ` <a href="${esc(s.run.url)}">Run #${esc(s.run.number)}</a>` : ''}</p>
 <p><strong>${scenarios.length} scenarios</strong>: ${count('passed')} passed · ${count('flaky')} flaky · ${count('failed')} failed${count('skipped') ? ` · ${count('skipped')} skipped` : ''}</p>`;
-  if (!scenarios.length) return page('Java results', `${head}<p>No Java results in this run.</p>`);
+  const empty = scenarios.length ? '' : '<p>No Java results in this run.</p>';
+  const scenarioHtml = (
+    sc,
+  ) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
+${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${stepLabel(st.status)}${esc(st.text)}${st.error ? `<br><code>${esc(st.error.slice(0, 300))}</code>` : ''}</li>`).join('')}</ol>` : ''}
+${sc.message && !sc.steps.some((st) => st.error) ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}</details>`;
   const features = [...byFeature.entries()].map(
     ([feature, list]) => `<h2>${esc(feature)}</h2>
-${list
-  .map(
-    (
-      sc,
-    ) => `<details${sc.status === 'failed' || sc.status === 'flaky' ? ' open' : ''}><summary>${ICON[sc.status] ?? ''} ${esc(sc.title.replace(/^([AUS]\d+):/, (_, id) => `${withAlias(id)}:`))} <span class="muted">${sc.time.toFixed(1)} s${sc.attempts ? ` · passed after ${plural(sc.attempts, 'failed attempt')}` : ''}</span></summary>
-${sc.steps.length ? `<ol>${sc.steps.map((st) => `<li class="step-${st.status}">${stepLabel(st.status)}${esc(st.text)}${st.error ? `<br><code>${esc(st.error.slice(0, 300))}</code>` : ''}</li>`).join('')}</ol>` : ''}
-${sc.message && !sc.steps.some((st) => st.error) ? `<p class="step-failed"><code>${esc(sc.message.slice(0, 300))}</code></p>` : ''}</details>`,
-  )
-  .join('\n')}`,
+${list.map(scenarioHtml).join('\n')}`,
   );
-  return page('Java results · Playwright E2E Showcase', `${head}${features.join('\n')}`);
+  // The failure control (C IDs): its own section, outside the counts above.
+  const controlHtml = control.length
+    ? `<h2 id="control">Failure control (not counted)</h2><p class="muted">Fails on purpose every night, outside the verdict, to
+show how a failed scenario is reported: the passed steps, the failed step with its error, and the steps after it not run.</p>
+${control.map(scenarioHtml).join('\n')}`
+    : '';
+  return page('Java results · Playwright E2E Showcase', `${head}${empty}${features.join('\n')}${controlHtml}`);
 }
 
-const java = javaScenarios(javaDir);
+const java = javaScenarios(javaDir).filter((sc) => !/^C\d+:/.test(sc.title));
+const javaControl = controlDir ? javaScenarios(controlDir).filter((sc) => /^C\d+:/.test(sc.title)) : [];
 mkdirSync(join(siteDir, 'java'), { recursive: true });
 writeFileSync(join(siteDir, 'index.html'), landing(summary, java));
-writeFileSync(join(siteDir, 'java', 'index.html'), javaPage(java, summary));
+writeFileSync(join(siteDir, 'java', 'index.html'), javaPage(java, summary, javaControl));
 console.log(`Pages: index.html (verdict ${summary?.verdict ?? 'missing'}), java/index.html (${java.length} scenarios)`);

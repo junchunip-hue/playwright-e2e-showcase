@@ -15,7 +15,7 @@ import { filesUnder, ROOT } from './repo';
 function featureIds(): Set<string> {
   const features = filesUnder(join(ROOT, 'features'), (n) => n.endsWith('.feature'));
   const names = features.flatMap((f) => [
-    ...readFileSync(f, 'utf8').matchAll(/^\s*Scenario(?: Outline)?:\s*([ASUN]\d+):/gm),
+    ...readFileSync(f, 'utf8').matchAll(/^\s*Scenario(?: Outline)?:\s*([ASUNC]\d+):/gm),
   ]);
   return new Set(names.map((m) => m[1]));
 }
@@ -23,14 +23,14 @@ function featureIds(): Set<string> {
 /** Test IDs used in TypeScript test titles, e.g. test('S2: ...') or test(`S2: ... ${x}`), plus the features. */
 function typescriptIds(): Set<string> {
   const specs = filesUnder(join(ROOT, 'tests'), (n) => n.endsWith('.spec.ts'));
-  const titles = specs.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/\btest\(\s*['`"]([ASUN]\d+):/g)]);
+  const titles = specs.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/\btest\(\s*['`"]([ASUNC]\d+):/g)]);
   return new Set([...titles.map((m) => m[1]), ...featureIds()]);
 }
 
 /** Test IDs used in Java display names, e.g. @DisplayName("S2: ..."), plus the features the Cucumber suite runs. */
 function javaIds(): Set<string> {
   const sources = filesUnder(join(ROOT, 'java', 'src', 'test', 'java'), (n) => n.endsWith('.java'));
-  const names = sources.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/@DisplayName\("([ASUN]\d+):/g)]);
+  const names = sources.flatMap((f) => [...readFileSync(f, 'utf8').matchAll(/@DisplayName\("([ASUNC]\d+):/g)]);
   const runsFeatures = existsSync(join(ROOT, 'java', 'src', 'test', 'java', 'com', 'showcase', 'RunCucumberTest.java'));
   return new Set([...names.map((m) => m[1]), ...(runsFeatures ? featureIds() : [])]);
 }
@@ -49,8 +49,8 @@ function planJavaIds(): Set<string> {
 }
 
 const sorted = (ids: Iterable<string>): string[] => [...ids].sort();
-/** Scenario tests (API, UI, journeys) run in both languages; N = quality and architecture checks stay TypeScript-only. */
-const scenarios = (ids: Set<string>): string[] => sorted([...ids].filter((id) => /^[ASU]/.test(id)));
+/** Scenario tests (API, UI, journeys, controls) run in both languages; N = quality and architecture checks stay TypeScript-only. */
+const scenarios = (ids: Set<string>): string[] => sorted([...ids].filter((id) => /^[ASUC]/.test(id)));
 
 test.describe('TypeScript/Java parity', { tag: [Tag.smoke, Tag.architecture] }, () => {
   test('N3: every scenario (A, U, S) exists in both languages', () => {

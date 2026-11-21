@@ -131,6 +131,9 @@ error), and every step after it was not run.
 | Java results page | `[failed]` with the error | `[not run]` (Cucumber skips them) |
 | Run summary and results page | "Failed tests": ID, where, failed step and error | listed one per line |
 
+The failure control C1 (`features/control`) shows this on a known example every night, outside the verdict. It is the
+only test allowed to fail; the tier tag `@control` keeps it out of every other run.
+
 ## IDs and tags
 
 - Every scenario has a test-plan ID (A, U, S, N) at the start of its title, given as described in

@@ -23,6 +23,11 @@
     <surefire.reportsDirectory>${project.build.directory}/surefire-reports</surefire.reportsDirectory>
     <!-- Spotless: locally every build formats the code first; CI (profile below) only checks it. -->
     <spotless.apply.skip>false</spotless.apply.skip>
+    <!--
+      The failure control (@control, C1: features/control) fails on purpose, so no ordinary run includes it. The
+      nightly runs it on its own: -Dgroups=control -DexcludedGroups= (see .github/workflows/nightly-regression.yml).
+    -->
+    <excludedGroups>control</excludedGroups>
   </properties>
 
   <dependencyManagement>

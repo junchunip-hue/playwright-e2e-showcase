@@ -67,9 +67,9 @@ export default defineConfig({
     // Logs in once via UI and saves the session for all UI projects.
     { name: 'setup', testMatch: /.*\.setup\.ts/ },
 
-    // Pure API tests: no browser needed.
+    // Pure API tests: no browser needed. features/control (the failure control, C1) calls the API only, too.
     // The generated API features (testDir stays tests/: playwright-bdd needs it to be its output folder).
-    { name: 'api', testMatch: /[\\/]tests[\\/]features[\\/]api[\\/].*\.spec\.js$/ },
+    { name: 'api', testMatch: /[\\/]tests[\\/]features[\\/](api|control)[\\/].*\.spec\.js$/ },
 
     // Static rules about the pipeline and code (cycles, self-triggering workflows): no browser, no Toolshop.
     { name: 'architecture', testDir: './tests/architecture' },

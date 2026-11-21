@@ -76,7 +76,10 @@ API scenarios read the same way; the API client stands in for the page
 - A failing test stays a failure: no "known issue" markers, no expected failures. A failed scenario shows, in every
   report, the steps that passed, the one step that failed, and each step after it as not run (TypeScript report,
   Java results, run summary and results page). The fix goes into the test or the product until everything passes
-  ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)).
+  ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)). To show what that looks like, the nightly also runs
+  one failure control, C1 ([`failure-control.feature`](features/control/failure-control.feature)): it fails on purpose
+  at step 3 of 4 in both languages, appears in the reports as a real failure, and is left out of the verdict, the
+  counts and the badge ([results page, "Failure control"](https://junchunip-hue.github.io/playwright-e2e-showcase/#control)).
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
@@ -121,7 +124,8 @@ flowchart LR
 ```
 
 Every run ends with a summary on its Actions page: one verdict, the run as a diagram, every failed test with the step
-where it failed and the steps that did not run, every flaky test by name, and TypeScript vs Java per test ID. The verdict is also posted as a commit status (`test verdict / nightly`), and the
+where it failed and the steps that did not run, every flaky test by name, TypeScript vs Java per test ID, and the failure
+control C1 (not counted). The verdict is also posted as a commit status (`test verdict / nightly`), and the
 nightly's lands on its [results page](https://junchunip-hue.github.io/playwright-e2e-showcase/) with both reports and
 the history.
 
@@ -161,7 +165,8 @@ CI never uses the public demo: it boots its own Toolshop for every run, so resul
 ## Layout
 
 ```
-features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A9), ui/ (U1–U5), journeys/ (U6 = S1, S2–S6)
+features/       the scenarios, shared by both languages (ADR 0012): api/ (A0–A9), ui/ (U1–U5), journeys/ (U6 = S1, S2–S6),
+                control/ (C1: fails on purpose, outside the verdict)
 src/
   steps/        Gherkin bindings: one sentence → one page method (playwright-bdd); api/ calls the API client
   pages/        what a user does on a page (*.page.ts), built on its module; network.page.ts mocks the backend (S6)
@@ -201,7 +206,7 @@ npm run format              # code style for both languages (Spotless, Prettier,
 npm run steps               # rebuild docs/steps.md; check:steps fails on a stale catalogue or an unused step
 npm test                    # everything (Chromium locally; ALL_BROWSERS=1 adds Firefox and WebKit)
 npm run report              # open the HTML report
-npm run demo                # live demo: U6 in a visible, slowed-down Chromium, trace kept (`npm run demo -- S2` for another ID)
+npm run demo                # live demo: U6 in a visible, slowed-down Chromium, trace kept (`npm run demo -- S2` for another ID, `-- C1` for a failure)
 ```
 Every npm test script runs `bddgen` first, which turns the features into Playwright tests; after editing a feature or
 a step outside these scripts, run `npx bddgen` before `npx playwright test`.

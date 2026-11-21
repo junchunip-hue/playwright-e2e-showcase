@@ -64,6 +64,26 @@ jobs:
           path: blob-report/
           retention-days: 1
 
+      # The failure control (C1, features/control, ADR 0013) fails on purpose, so the merged report always shows what a
+      # failure looks like. Shard 1 runs it once, after the regression run and with its own blob report (picked up by
+      # merge-reports like the shards'); continue-on-error keeps the shard green, and the summary counts it nowhere.
+      - name: Run the failure control C1 (fails on purpose, not counted)
+        if: ${{ matrix.shard == 1 && !cancelled() }}
+        continue-on-error: true
+        env:
+          SUITE: control
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report-control
+        run: npx bddgen && npx playwright test --project=api --retries=0 --reporter=blob
+
+      - name: Upload the failure control's blob report
+        if: ${{ matrix.shard == 1 && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: blob-report-control
+          path: blob-report-control/
+          if-no-files-found: ignore
+          retention-days: 1
+
   merge-reports:
     name: merge reports
     if: ${{ !cancelled() }}
@@ -173,6 +193,25 @@ jobs:
           path: java/target/surefire-reports/
           retention-days: 30
 
+      # The failure control C1 (see the TypeScript shard): excluded from every ordinary Maven run (pom.xml
+      # excludedGroups), run here on its own, without reruns, into its own reports and scenario log.
+      - name: Run the failure control C1 (fails on purpose, not counted)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        working-directory: java
+        run: >-
+          ./mvnw -B test -Dgroups=control -DexcludedGroups= -Dsurefire.rerunFailingTestsCount=0
+          -Dsurefire.reportsDirectory=target/control-reports -Dscenario.log=target/control-reports/scenarios.jsonl
+
+      - name: Upload the failure control's JUnit reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-reports-control
+          path: java/target/control-reports/
+          if-no-files-found: ignore
+          retention-days: 30
+
       # Traces exist only for failed attempts (RETAIN_ON_FAILURE), including those of a flaky test, whose job is green.
       - name: Upload Java traces of failed attempts
         if: ${{ !cancelled() }}
@@ -211,6 +250,13 @@ jobs:
         with:
           name: junit-reports-nightly
           path: results/java
+
+      - name: Download the Java failure control's results
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: junit-reports-control
+          path: results/java-control
 
       # The tests this run planned (same suite and projects as the test job, no browser needed), so a test that never
       # ran shows as "not run" instead of disappearing from the counts.
@@ -254,6 +300,7 @@ jobs:
           # shard's tests are simply absent from the merged report (nightly 2026-11-19, apt mirrors unreachable).
           TS_JOB: ${{ needs.regression.result != 'success' && needs.regression.result || needs.merge-reports.result }}
           JAVA_JOB: ${{ needs.regression-java.result }}
+          CONTROL_JAVA_DIR: results/java-control # the failure control C1: shown apart, never counted
         run: node scripts/pipeline-summary.mjs results/ts/ts-results.json results/java results/jobs results/ts-planned.json
 
       # Green check for Passed and for Passed with flaky (the description names the flaky tests), red cross for Failed.
@@ -301,7 +348,7 @@ jobs:
       - name: Build the landing page
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         continue-on-error: true # without it the reports and badges still publish
-        run: node scripts/pages-site.mjs summary.json results/java site
+        run: node scripts/pages-site.mjs summary.json results/java site results/java-control
 
       - name: Upload GitHub Pages artifact
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}

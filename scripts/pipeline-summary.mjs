@@ -23,6 +23,16 @@ const tally = () => ({ passed: 0, failed: 0, flaky: 0, skipped: 0, notRun: 0 });
 const failedCases = [];
 
 /**
+ * The failure control (C IDs, features/control, ADR 0013): fails on purpose every night so the reports show what a
+ * failure looks like. Never counted in the totals, the per-ID table, the verdict or the badge; listed in its own
+ * section, with a warning if it did not fail. TS: in the merged results (the nightly runs it in shard 1, separately);
+ * Java: its own reports, CONTROL_JAVA_DIR. Entries: { id, title, project, where, failed, step, notRun, error }
+ */
+const CONTROL = /^(C\d+):/;
+const isControl = (title) => CONTROL.test(title);
+const controlCases = [];
+
+/**
  * Flaky = failed at least once, then passed on a retry. The run still passes, but each case is listed by name with
  * its attempts and first error, so it is fixed rather than retried forever.
  * Entries: { id, title, project, where, attempts: ['failed', 'passed', …], error }
@@ -78,21 +88,24 @@ function typescriptResults(file) {
   const walk = (suite) => {
     for (const spec of suite.specs ?? []) {
       for (const t of spec.tests ?? []) {
+        const last = t.results.at(-1);
+        const note = (type) => (t.annotations ?? []).find((a) => a.type === type)?.description;
+        const entry = () => ({
+          title: spec.title,
+          project: t.projectName,
+          where: `tests/${spec.file}:${spec.line}`,
+          step: note('failed step') ?? null,
+          notRun: (note('not run') ?? '').split('\n').filter(Boolean),
+          error: firstLine(last?.error?.message ?? last?.errors?.[0]?.message),
+        });
+        // The failure control fails on purpose: shown on its own, never counted.
+        if (isControl(spec.title)) {
+          controlCases.push({ id: CONTROL.exec(spec.title)[1], failed: t.status === 'unexpected', ...entry() });
+          continue;
+        }
         countRun('ts', OUTCOME[t.status] ?? 'failed');
         reportedTs.add(testKey(spec, t));
-        if (t.status === 'unexpected') {
-          const last = t.results.at(-1);
-          const note = (type) => (t.annotations ?? []).find((a) => a.type === type)?.description;
-          failedCases.push({
-            id: ID.exec(spec.title)?.[1] ?? '–',
-            title: spec.title,
-            project: t.projectName,
-            where: `tests/${spec.file}:${spec.line}`,
-            step: note('failed step') ?? null,
-            notRun: (note('not run') ?? '').split('\n').filter(Boolean),
-            error: firstLine(last?.error?.message ?? last?.errors?.[0]?.message),
-          });
-        }
+        if (t.status === 'unexpected') failedCases.push({ id: ID.exec(spec.title)?.[1] ?? '–', ...entry() });
       }
       const id = ID.exec(spec.title)?.[1];
       if (!id) continue;
@@ -148,14 +161,14 @@ function javaResults(dir) {
     for (const m of xml.matchAll(/<testcase\b([^>]*?)(\/>|>([\s\S]*?)<\/testcase>)/g)) {
       const name = /name="([^"]*)"/.exec(m[1])?.[1] ?? '';
       const body = m[3] ?? '';
-      if (/<(failure|error)\b/.test(body)) {
+      const failedHere = /<(failure|error)\b/.test(body);
+      const entry = () => {
         const logged = log.get(javaScenarioName(xmlText(name)));
         const steps = logged?.steps ?? [];
         const failedAt = steps.findIndex((s) => s.status === 'failed');
         const className = /classname="([^"]*)"/.exec(m[1])?.[1] ?? '';
         const message = /<(?:failure|error)\b[^>]*message="([^"]*)"/.exec(body)?.[1];
-        failedCases.push({
-          id: ID.exec(name)?.[1] ?? '–',
+        return {
           title: javaScenarioName(xmlText(name)),
           project: 'Java (chromium)',
           // The feature file the scenario comes from (both languages run it); the runner class if the log is missing.
@@ -163,8 +176,15 @@ function javaResults(dir) {
           step: failedAt >= 0 ? steps[failedAt].text : null,
           notRun: failedAt >= 0 ? steps.slice(failedAt + 1).map((s) => s.text) : [],
           error: firstLine(steps[failedAt]?.error ?? logged?.error ?? xmlText(message ?? '')),
-        });
+        };
+      };
+      // The failure control: shown on its own, never counted (its own reports dir: CONTROL_JAVA_DIR).
+      const scenario = javaScenarioName(xmlText(name));
+      if (isControl(scenario)) {
+        controlCases.push({ id: CONTROL.exec(scenario)[1], failed: failedHere, ...entry() });
+        continue;
       }
+      if (failedHere) failedCases.push({ id: ID.exec(name)?.[1] ?? '–', ...entry() });
       countRun(
         'java',
         /<(failure|error)\b/.test(body)
@@ -205,6 +225,8 @@ function javaResults(dir) {
 
 const ts = typescriptResults(tsFile);
 const java = javaResults(javaDir);
+// The Java failure control runs separately with its own reports; only its control entries are read from there.
+if (process.env.CONTROL_JAVA_DIR) javaResults(process.env.CONTROL_JAVA_DIR);
 
 /**
  * Tests that were planned but never ran (their job failed before or while running them). They are shown as
@@ -497,6 +519,28 @@ const whatFailed = failed.length
 
 // Each failed test with its steps: the step that failed, and the steps after it, which did not run (Gherkin stops at
 // the first failing step). A test outside the features (e.g. a quality spec) has no steps to show.
+// The failure control (C IDs): fails on purpose, never counted. It shows, on a known example, what the report of a
+// failed scenario looks like; a control that passed means that reporting needs a look.
+const controlSection = controlCases.length
+  ? [
+      '## Failure control (not counted)',
+      '',
+      'C1 fails on purpose every night, outside the verdict, to show how a failure is reported: the steps before it',
+      'passed, the failing step with its error, and the steps after it not run (test plan, "Control").',
+      '',
+      '| ID | Where | Result | Failed at step | Not run after it |',
+      '|---|---|---|---|---|',
+      ...controlCases.map((f) => {
+        const result = f.failed ? 'failed, as intended' : '⚠️ did not fail: check the failure reporting';
+        const step = f.step ? `❌ ${cellText(f.step)}` : '–';
+        const error = f.error ? `<br/>\`${cellText(f.error.slice(0, 160))}\`` : '';
+        const notRun = f.notRun.length ? f.notRun.map((s) => `⏭️ ${cellText(s)}`).join('<br/>') : '–';
+        return `| ${f.id} | ${f.project} | ${result} | ${step}${error} | ${notRun} |`;
+      }),
+      '',
+    ]
+  : [];
+
 const failedSection = failedCases.length
   ? [
       '## Failed tests',
@@ -557,6 +601,7 @@ const md = [
   '',
   'Every A, U and S ID must show results in both columns (same tier, so same pipeline); N IDs are TypeScript-only (ADR 0009).',
   '',
+  ...controlSection,
 ].join('\n');
 
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, md);
@@ -689,6 +734,7 @@ if (process.env.SUMMARY_JSON) {
     })),
     flaky: flakyCases,
     failed: failedCases,
+    control: controlCases,
     failedJobs: failed,
   };
   writeFileSync(process.env.SUMMARY_JSON, `${JSON.stringify(data, null, 2)}\n`);
