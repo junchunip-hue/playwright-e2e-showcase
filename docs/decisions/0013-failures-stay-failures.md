@@ -28,7 +28,8 @@ steps after it, which never ran, did not appear in the TypeScript report at all.
   - Java: Cucumber already reports the remaining steps as skipped; `ScenarioLog` keeps every step with its status and
     the failed step's error.
   - The run summary and the results page list every failed test with its failed step, its error and the steps that
-    did not run; the Java results page marks each step `[failed]` or `[not run]`.
+    did not run. The Java report is a Playwright HTML report too (`scripts/java-report.mjs`), so it shows a failure
+    exactly like the TypeScript one.
 
 **Failure control (added 2026-11-21):** one scenario, C1 (`features/control`, tier `@control`), fails on purpose at
 the same step every night, in both languages, so the reports always show a real failure next to the passing suite: the

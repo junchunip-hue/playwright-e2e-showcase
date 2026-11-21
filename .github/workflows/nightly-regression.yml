@@ -123,6 +123,7 @@ jobs:
       - name: Merge into one HTML report
         env:
           PLAYWRIGHT_JSON_OUTPUT_FILE: reports/ts-results.json
+          PLAYWRIGHT_HTML_TITLE: 'TypeScript (Playwright Test) · nightly run #${{ github.run_number }}'
         run: npx playwright merge-reports --reporter html,json ./all-blob-reports
 
       - name: Upload results for the summary
@@ -259,6 +260,14 @@ jobs:
           name: junit-reports-control
           path: results/java-control
 
+      # Traces of failed Java attempts (the failure control's included), attached to the Java report.
+      - name: Download the Java traces
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: junit-reports-nightly-traces
+          path: results/java-traces
+
       # The tests this run planned (same suite and projects as the test job, no browser needed), so a test that never
       # ran shows as "not run" instead of disappearing from the counts.
       # Only the planned-test list needs it: if npm fails, the summary still runs and says the list is missing.
@@ -345,11 +354,38 @@ jobs:
           curl -fsSL "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/history.json" -o previous-history.json             || echo "No published history yet: starting from the seed"
           node scripts/nightly-history.mjs previous-history.json scripts/nightly-history-seed.json site
 
-      # index.html (verdict, both lanes, TS vs Java per ID, flaky, failed tests with their steps, history) and java/index.html.
+      # index.html: verdict, both lanes, the failure control, TS vs Java per ID, flaky, failed tests with their steps,
+      # history.
       - name: Build the landing page
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
         continue-on-error: true # without it the reports and badges still publish
-        run: node scripts/pages-site.mjs summary.json results/java site results/java-control
+        run: node scripts/pages-site.mjs summary.json site
+
+      # The Java results as a Playwright HTML report, in the same format as the TypeScript one: the scenario logs (with
+      # every attempt, step, hook and error) become a blob report that the standard HTML reporter renders
+      # (scripts/java-report.mjs). Built on every run (artifact java-report), published to /java/ from master.
+      - name: Build the Java report
+        id: java-report
+        continue-on-error: true
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: java-report
+          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_HTML_TITLE: 'Java (Cucumber-JVM) · nightly run #${{ github.run_number }}'
+        run: |
+          node scripts/java-report.mjs java-blob results/java results/java-control --traces results/java-traces
+          npx playwright merge-reports --reporter html java-blob
+
+      - name: Upload the Java report
+        if: ${{ steps.java-report.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: java-report
+          path: java-report/
+          retention-days: 14
+
+      - name: Add the Java report to the site
+        if: ${{ steps.java-report.outcome == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
+        run: cp -r java-report site/java
 
       - name: Upload GitHub Pages artifact
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}

@@ -3,8 +3,11 @@ package com.showcase.report;
 import com.google.gson.Gson;
 import io.cucumber.plugin.ConcurrentEventListener;
 import io.cucumber.plugin.event.EventPublisher;
+import io.cucumber.plugin.event.HookTestStep;
+import io.cucumber.plugin.event.HookType;
 import io.cucumber.plugin.event.PickleStepTestStep;
 import io.cucumber.plugin.event.Status;
+import io.cucumber.plugin.event.TestCase;
 import io.cucumber.plugin.event.TestCaseFinished;
 import io.cucumber.plugin.event.TestCaseStarted;
 import io.cucumber.plugin.event.TestRunStarted;
@@ -22,25 +25,30 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Cucumber plugin: one JSON line per scenario attempt (name, status, every Gherkin step with its
- * status), appended to a file next to the Surefire XML. A step is "passed", "failed" (with its
- * error) or "skipped": Cucumber does not run the steps after a failed one, and they are listed as
- * skipped, so the pipeline summary and the nightly's Java page can show which step failed and which
- * steps did not run.
+ * Cucumber plugin: one JSON line per scenario attempt, appended to a file next to the Surefire XML.
+ * It holds what the Java report needs to look like the TypeScript one (scripts/java-report.mjs
+ * turns it into a Playwright HTML report): the scenario's feature, line, tags, start and duration,
+ * and every step in order, the hooks included, each with its status, duration, line and, if it
+ * failed, its error. A step is "passed", "failed" or "skipped": Cucumber does not run the steps
+ * after a failed one, and they are listed as skipped.
  *
  * <p>Why not the XML alone: in CI a failed scenario is rerun (pom.xml, profile ci-retries), and
  * with reruns on, Surefire leaves the output of passed tests out of the XML, steps included. Reruns
  * start a new Cucumber run in the same JVM, so the file is truncated once per JVM and appended to
- * after that: a rerun adds its attempt, and readers take the last line per scenario. Not written in
- * a dry run.
+ * after that: a rerun adds its attempt, so every attempt is in the file, in order. Not written in a
+ * dry run.
  */
 public class ScenarioLog implements ConcurrentEventListener {
   private static final AtomicBoolean TRUNCATED = new AtomicBoolean();
   private static final Gson GSON = new Gson();
 
+  /** Errors are kept whole (Playwright's messages span several lines), up to this length. */
+  private static final int MAX_ERROR = 4000;
+
   private final Path file;
-  private final ThreadLocal<List<Map<String, String>>> steps =
+  private final ThreadLocal<List<Map<String, Object>>> steps =
       ThreadLocal.withInitial(ArrayList::new);
+  private final ThreadLocal<Long> started = ThreadLocal.withInitial(() -> 0L);
 
   /**
    * The file from the plugin argument, unless -Dscenario.log points elsewhere: the nightly's run of
@@ -55,7 +63,12 @@ public class ScenarioLog implements ConcurrentEventListener {
   public void setEventPublisher(EventPublisher publisher) {
     if (Boolean.parseBoolean(System.getProperty("cucumber.execution.dry-run"))) return;
     publisher.registerHandlerFor(TestRunStarted.class, e -> truncateOnce());
-    publisher.registerHandlerFor(TestCaseStarted.class, e -> steps.get().clear());
+    publisher.registerHandlerFor(
+        TestCaseStarted.class,
+        e -> {
+          steps.get().clear();
+          started.set(e.getInstant().toEpochMilli());
+        });
     publisher.registerHandlerFor(TestStepFinished.class, this::step);
     publisher.registerHandlerFor(TestCaseFinished.class, this::finished);
   }
@@ -71,24 +84,39 @@ public class ScenarioLog implements ConcurrentEventListener {
   }
 
   private void step(TestStepFinished event) {
-    if (!(event.getTestStep() instanceof PickleStepTestStep step)) return; // hooks are not steps
-    Map<String, String> entry = new LinkedHashMap<>();
-    entry.put("text", step.getStep().getKeyword() + step.getStep().getText());
+    Map<String, Object> entry = new LinkedHashMap<>();
+    if (event.getTestStep() instanceof PickleStepTestStep step) {
+      entry.put("text", step.getStep().getKeyword() + step.getStep().getText());
+      entry.put("line", step.getStep().getLine());
+    } else if (event.getTestStep() instanceof HookTestStep hook) {
+      // Hooks show as "Before Hooks" / "After Hooks" in the report, like Playwright's own.
+      entry.put("hook", hook.getHookType() == HookType.BEFORE ? "before" : "after");
+      entry.put("text", hook.getCodeLocation().replaceFirst("^com\\.showcase\\.", ""));
+    } else {
+      return;
+    }
+    long duration = event.getResult().getDuration().toMillis();
     entry.put("status", event.getResult().getStatus().name().toLowerCase());
+    entry.put("start", event.getInstant().toEpochMilli() - duration);
+    entry.put("duration", duration);
     Throwable error = event.getResult().getError();
     if (event.getResult().getStatus() == Status.FAILED && error != null)
-      entry.put("error", firstLine(error));
+      entry.put("error", message(error));
     steps.get().add(entry);
   }
 
   private void finished(TestCaseFinished event) {
+    TestCase testCase = event.getTestCase();
     Map<String, Object> entry = new LinkedHashMap<>();
-    entry.put("name", event.getTestCase().getName());
-    entry.put(
-        "uri", event.getTestCase().getUri().toString().replaceFirst("^.*?/features/", "features/"));
+    entry.put("name", testCase.getName());
+    entry.put("uri", testCase.getUri().toString().replaceFirst("^.*?/features/", "features/"));
+    entry.put("line", testCase.getLocation().getLine());
+    entry.put("tags", testCase.getTags());
     entry.put("status", event.getResult().getStatus().name().toLowerCase());
+    entry.put("start", started.get());
+    entry.put("duration", event.getInstant().toEpochMilli() - started.get());
     Throwable error = event.getResult().getError();
-    if (error != null) entry.put("error", firstLine(error));
+    if (error != null) entry.put("error", message(error));
     entry.put("steps", List.copyOf(steps.get()));
     String line = GSON.toJson(entry) + System.lineSeparator();
     synchronized (ScenarioLog.class) {
@@ -105,7 +133,8 @@ public class ScenarioLog implements ConcurrentEventListener {
     }
   }
 
-  private static String firstLine(Throwable error) {
-    return String.valueOf(error.getMessage()).lines().findFirst().orElse("");
+  private static String message(Throwable error) {
+    String text = String.valueOf(error.getMessage()).strip();
+    return text.length() > MAX_ERROR ? text.substring(0, MAX_ERROR) + "…" : text;
   }
 }

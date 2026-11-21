@@ -15,10 +15,10 @@ run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
 
 The "nightly tests" badge above is the latest nightly's count of runs in both languages (110 TypeScript, including the
 sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that runs the failure control C1, which fails on
-purpose and is never counted: the TypeScript report lists it as its one failed test (111 in all), the Java results in a
-section of their own, and the results page right below the two lanes. Both badges open the nightly's results page: the
-verdict, the count split by language with the TypeScript report and the Java results, the failure control, TypeScript
-vs Java per test ID, and the history.
+purpose and is never counted: the TypeScript and the Java report each list it as their one failed test, and the results
+page shows it right below the two lanes. Both badges open the nightly's results page: the verdict, the count split by
+language with the TypeScript report and the Java report (both Playwright HTML reports, in the same format), the
+failure control, TypeScript vs Java per test ID, and the history.
 
 <p align="center">
   <img src="docs/images/checkout-journey.gif" width="720"
@@ -79,7 +79,7 @@ API scenarios read the same way; the API client stands in for the page
 - Every API response is checked against a schema ([`src/api/schemas.ts`](src/api/schemas.ts), Java: [`Contracts.java`](java/src/test/java/com/showcase/api/Contracts.java)).
 - A failing test stays a failure: no "known issue" markers, no expected failures. A failed scenario shows, in every
   report, the steps that passed, the one step that failed, and each step after it as not run (TypeScript report,
-  Java results, run summary and results page). The fix goes into the test or the product until everything passes
+  Java report, run summary and results page). The fix goes into the test or the product until everything passes
   ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)). To show what that looks like, the nightly also runs
   one failure control, C1 ([`failure-control.feature`](features/control/failure-control.feature)): it fails on purpose
   at step 2 of 4 in both languages, with steps 3 and 4 listed as not run, appears in the reports as a real failure, and
@@ -124,7 +124,7 @@ flowchart LR
     SH["TypeScript: 3 shards ×<br/>Chromium, Firefox, WebKit"] --> M["Merged HTML report"] --> NS["Summary: verdict<br/>+ commit status"]
     NJ["Java: every feature"] --> NS
     C["Failure control C1, both languages<br/>(fails on purpose, not counted)"] -.-> NS
-    NS --> P["GitHub Pages: results page,<br/>TS report, Java results, badges"]
+    NS --> P["GitHub Pages: results page,<br/>TS report, Java report, badges"]
   end
   L["PR label<br/>update-snapshots"] --> B["Regenerate visual baselines<br/>and commit to the PR"]
 ```
@@ -192,9 +192,10 @@ tests/
   ui/           the Playwright Test Agents' seed
   features/     generated from features/ by `npx bddgen` (git-ignored)
 java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/; report/ScenarioLog
-                keeps each scenario's steps with their status for the summary
+                logs every scenario attempt with its steps, hooks and errors for the summary and the Java report
 scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
-                install, the CI pipeline summary, and the nightly's history and results page on GitHub Pages
+                install, the CI pipeline summary, the Java report (java-report.mjs), and the nightly's history and
+                results page on GitHub Pages
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)
@@ -245,7 +246,7 @@ HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo o
 | What runs, where, and which IDs exist? | [docs/test-plan.md](docs/test-plan.md) |
 | How does the pipeline work and protect itself? | [docs/ci.md](docs/ci.md) |
 | Which decisions were made, and why? | [docs/decisions/](docs/decisions/) |
-| Where do I see the latest results? | [Nightly results page](https://junchunip-hue.github.io/playwright-e2e-showcase/): verdict, [TypeScript report](https://junchunip-hue.github.io/playwright-e2e-showcase/typescript/) (3 browsers), [Java results](https://junchunip-hue.github.io/playwright-e2e-showcase/java/), history · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram, failed tests with their steps, TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
+| Where do I see the latest results? | [Nightly results page](https://junchunip-hue.github.io/playwright-e2e-showcase/): verdict, [TypeScript report](https://junchunip-hue.github.io/playwright-e2e-showcase/typescript/) (3 browsers), [Java report](https://junchunip-hue.github.io/playwright-e2e-showcase/java/) (same format), history · each run's summary in [Actions](https://github.com/junchunip-hue/playwright-e2e-showcase/actions): run diagram, failed tests with their steps, TS vs Java per ID ([how](docs/ci.md#pipeline-summary)) |
 | What comes next? | [docs/roadmap.md §6](docs/roadmap.md#6-what-comes-next): keep it green, optional S7, ranked candidates, backlog |
 | How do the TypeScript and Java lanes stay in sync? | [docs/java.md](docs/java.md) |
 
