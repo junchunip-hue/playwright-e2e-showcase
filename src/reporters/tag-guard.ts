@@ -6,7 +6,7 @@ import type { FullConfig, FullResult, Reporter, Suite, TestCase } from '@playwri
 import { RUNNER_TAG, Tag, type TagValue, TIER_TAGS } from '../tags';
 
 /** Test titles start with their test-plan ID: A = API, U = UI, S = story/journey, N = non-functional. */
-export const TEST_ID = /^([ASUN]\d+): /;
+export const TEST_ID = /^([ASUNC]\d+): /;
 
 /** Tiers that are infrastructure, not test cases, and therefore have no test-plan ID. */
 const WITHOUT_ID: readonly TagValue[] = [Tag.setup, Tag.seed];
@@ -14,7 +14,7 @@ const WITHOUT_ID: readonly TagValue[] = [Tag.setup, Tag.seed];
 /**
  * `npm run check:tags`: lists every test (no browser is started) and fails when
  *  - a test carries a tag that is not registered in src/tags.ts,
- *  - a test does not have exactly one tier tag (smoke / regression / setup / seed), or
+ *  - a test does not have exactly one tier tag (smoke / regression / setup / seed / control), or
  *  - a test title does not start with an ID from docs/test-plan.md (e.g. "U6: ..."), so the plan and the code
  *    cannot drift apart.
  * Both lanes read the same feature files (features/), so an ID has the same tier in TypeScript and Java by construction.
@@ -75,7 +75,7 @@ export default class TagGuard implements Reporter {
 /** IDs in the first column of the test-plan tables, e.g. "| A4 |" or "| **U6** |". */
 function testPlanIds(): Set<string> {
   const plan = readFileSync(resolve(__dirname, '..', '..', 'docs', 'test-plan.md'), 'utf8');
-  return new Set([...plan.matchAll(/^\|\s*\**([ASUN]\d+)\**\s*\|/gm)].map((m) => m[1]));
+  return new Set([...plan.matchAll(/^\|\s*\**([ASUNC]\d+)\**\s*\|/gm)].map((m) => m[1]));
 }
 
 function describe(test: TestCase): string {

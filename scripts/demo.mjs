@@ -6,8 +6,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 
 const id = process.argv[2] ?? 'U6';
-if (!/^[ASU]\d+$/.test(id)) {
-  console.error(`Usage: npm run demo [-- <scenario ID, e.g. U6, S2, A8>] (got "${id}")`);
+if (!/^[ASUC]\d+$/.test(id)) {
+  console.error(`Usage: npm run demo [-- <scenario ID, e.g. U6, S2, A8, or C1 for a failure>] (got "${id}")`);
   process.exit(2);
 }
 
@@ -18,12 +18,14 @@ const bddCli = join(dirname(bddPackage), require(bddPackage).bin.bddgen);
 const bddgen = spawnSync(process.execPath, [bddCli], { stdio: 'inherit' });
 if (bddgen.status !== 0) process.exit(bddgen.status ?? 1);
 
-// API scenarios have no browser: they run in the api project, still with their steps in the report.
-const project = id.startsWith('A') ? 'api' : 'chromium';
+// API scenarios and the failure control (C1) have no browser: they run in the api project, with their steps in the
+// report. The control is left out of every suite but `control`, so a C ID selects that suite.
+const project = /^[AC]/.test(id) ? 'api' : 'chromium';
+const suite = id.startsWith('C') ? { SUITE: 'control' } : {};
 const cli = require.resolve('@playwright/test/cli');
 const { status } = spawnSync(
   process.execPath,
   [cli, 'test', `--project=${project}`, '--grep', `${id}: `, '--headed', '--workers=1', '--trace=on'],
-  { stdio: 'inherit', env: { ...process.env, SLOW_MO: process.env.SLOW_MO ?? '400' } },
+  { stdio: 'inherit', env: { ...process.env, ...suite, SLOW_MO: process.env.SLOW_MO ?? '400' } },
 );
 process.exit(status ?? 1);

@@ -29,6 +29,13 @@ steps after it, which never ran, did not appear in the TypeScript report at all.
   - The run summary and the results page list every failed test with its failed step, its error and the steps that
     did not run; the Java results page marks each step `[failed]` or `[not run]`.
 
+**Failure control (added 2026-11-21):** one scenario, C1 (`features/control`, tier `@control`), fails on purpose at
+the same step every night, in both languages, so the reports always show a real failure next to the passing suite: the
+passed steps, the failed step with its error and the steps not run. It is not a product test and not an expected
+failure: it runs in a separate nightly step (`continue-on-error`) after the regression run, is excluded from every other
+suite and Maven run, and the summary leaves it out of the verdict, the counts, the badge and the clean streak, listing
+it in its own "Failure control" section. If it ever passes, the reporting of failures is broken.
+
 **Consequences:**
 - A red run always means something to fix, and the reports say exactly where: which step, which error, which steps
   never ran.

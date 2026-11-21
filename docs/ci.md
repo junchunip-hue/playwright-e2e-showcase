@@ -159,6 +159,12 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
 - **Failures:** a failing test stays a failure; there are no known-issue markers or expected failures
   ([ADR 0013](decisions/0013-failures-stay-failures.md)). Every report lists the failed step and the steps after it
   as not run.
+- **Failure control (C1):** `features/control/failure-control.feature`, tier `@control`, fails on purpose every night
+  so the reports show a real failure. Shard 1 runs it after the regression run (`SUITE=control`, own blob report,
+  merged into the HTML report) and the Java job runs it after the full suite (`-Dgroups=control -DexcludedGroups=`, own
+  reports); both steps are `continue-on-error`. Every other suite and Maven run excludes it (`src/tags.ts`, `pom.xml`
+  `excludedGroups`), and the summary shows it in its own "Failure control (not counted)" section, outside the verdict,
+  the counts, the badge and the streak.
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. Java runs the same feature files, so the check covers both.
