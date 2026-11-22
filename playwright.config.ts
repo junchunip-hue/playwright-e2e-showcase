@@ -69,7 +69,10 @@ export default defineConfig({
   use: {
     baseURL: env.baseURL,
     testIdAttribute: 'data-test', // Toolshop exposes data-test attributes -> getByTestId()
-    trace: 'on-first-retry',
+    // A failed browser test keeps the trace of its first retry. The failure controls run without retries, so they keep
+    // the trace of the failed run instead (C2, as the Java C2 has). Set here, not with --trace on the command line,
+    // which would override the api project's "off".
+    trace: process.env.SUITE === 'control' ? 'retain-on-failure' : 'on-first-retry',
     screenshot: 'off', // failure screenshots are taken at the failed step instead (src/fixtures/evidence.ts)
     video: 'retain-on-failure',
     // SLOW_MO=<ms> slows every action down, for a live demo (`npm run demo`); 0 otherwise.
@@ -83,7 +86,13 @@ export default defineConfig({
     // Pure API tests: no browser needed.
     // The generated API features (testDir stays tests/: playwright-bdd needs it to be its output folder).
     // Also the API failure control (C1, features/control/api-*): no page, so no screenshot.
-    { name: 'api', testMatch: /[\\/]tests[\\/]features[\\/](api[\\/].*|control[\\/]api-.*)\.spec\.js$/ },
+    // No trace either, as in Java: an API test's trace shows an empty page and the request, while its error already
+    // says what was expected and what came back.
+    {
+      name: 'api',
+      testMatch: /[\\/]tests[\\/]features[\\/](api[\\/].*|control[\\/]api-.*)\.spec\.js$/,
+      use: { trace: 'off' },
+    },
 
     // Static rules about the pipeline and code (cycles, self-triggering workflows): no browser, no Toolshop.
     { name: 'architecture', testDir: './tests/architecture' },
