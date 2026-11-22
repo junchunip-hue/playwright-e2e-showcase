@@ -34,7 +34,9 @@ public class CheckoutSteps {
     this.ctx = ctx;
   }
 
-  /** Built on first use: the browser page exists only once the @Before hook has run. */
+  /**
+   * Built on first use: the first call opens the scenario's browser page (PlaywrightContext#page).
+   */
   private CheckoutPage checkoutPage() {
     if (checkoutPage == null) checkoutPage = new CheckoutPage(playwright.page());
     return checkoutPage;

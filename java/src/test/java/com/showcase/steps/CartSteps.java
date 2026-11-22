@@ -18,7 +18,9 @@ public class CartSteps {
     this.ctx = ctx;
   }
 
-  /** Built on first use: the browser page exists only once the @Before hook has run. */
+  /**
+   * Built on first use: the first call opens the scenario's browser page (PlaywrightContext#page).
+   */
   private ProductPage productPage() {
     if (productPage == null) productPage = new ProductPage(playwright.page());
     return productPage;
