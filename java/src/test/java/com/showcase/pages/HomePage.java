@@ -29,7 +29,7 @@ public class HomePage {
 
   /** Waits for the search API response so the result list is stable before assertions. */
   public void search(String term) {
-    ui.searchInput.fill(term);
+    ui.searchInput.fill(term.strip());
     page.waitForResponse(
         res -> res.url().contains("/products/search") && res.ok(), ui.searchSubmit::click);
   }

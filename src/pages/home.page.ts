@@ -21,7 +21,7 @@ export class HomePage {
 
   /** Waits for the search API response so the result list is stable before assertions. */
   async search(term: string): Promise<void> {
-    await this.ui.searchInput.fill(term);
+    await this.ui.searchInput.fill(term.trim());
     await Promise.all([
       this.page.waitForResponse((res) => res.url().includes('/products/search') && res.ok()),
       this.ui.searchSubmit.click(),
