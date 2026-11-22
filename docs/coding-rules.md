@@ -128,7 +128,7 @@ error), and every step after it was not run.
 | Report | Failed step | Steps after it |
 |---|---|---|
 | TypeScript HTML report | ✗ red, with the error and, for a UI step, a full-page screenshot taken at that step (click to enlarge or download) | listed right after it, at the same level, as skipped (⊘) Gherkin steps; test annotations `failed step`, `not run` |
-| Java HTML report (same format) | ✗ red, with the error and, for a UI step, the screenshot taken at that step | listed right after it, at the same level, as skipped (Cucumber skips them) |
+| Java HTML report (same format) | ✗ red, with the error and, for a UI step, the screenshot taken at that step | listed right after it, at the same level, as skipped (Cucumber skips them); test annotations `failed step`, `not run`, as in TypeScript |
 | Run summary and results page | "Failed tests": ID, where, failed step and error | listed one per line |
 
 The failure controls show this on known examples every night, outside the verdict: C1 an API failure (no page, so no

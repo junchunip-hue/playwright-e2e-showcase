@@ -9,7 +9,8 @@
 //     Gherkin tags as chips and project "api" (features/api, the API failure control C1) or "chromium" (everything else);
 //   - every attempt as a result, so a scenario that passed on a CI rerun shows as flaky, as in TypeScript;
 //   - "Before Hooks", each Gherkin step and "After Hooks" as top-level steps, with durations; the failed step carries
-//     its error, and the steps after it are listed as skipped (not run);
+//     its error, and the steps after it are listed as skipped (not run); the attempt's annotations name the failed
+//     step and list the steps not run ("failed step", "not run"), as in TypeScript;
 //   - the screenshot taken at the failed step (steps/Hooks.java, @AfterStep) attached to that step, like TypeScript;
 //   - the Playwright trace of a failed scenario (java/target/playwright/<scenario>/trace.zip) as its trace attachment.
 //
@@ -243,14 +244,24 @@ for (const sc of scenarios.values()) {
         attachmentCount++;
       }
     }
+    // As in TypeScript (src/steps/not-run.hooks.ts): a failed Gherkin step is named, and the steps after it listed
+    // as not run, in the attempt's annotations (a failed hook shows in its group instead).
+    const gherkin = (a.steps ?? []).filter((x) => !x.hook);
+    const failedAt = gherkin.findIndex((x) => x.status === 'failed');
+    const notRun = failedAt >= 0 ? gherkin.slice(failedAt + 1).map((x) => x.text) : [];
+    const attemptAnnotations = [
+      ...annotations,
+      ...(failedAt >= 0 ? [{ type: 'failed step', description: gherkin[failedAt].text }] : []),
+      ...(notRun.length ? [{ type: 'not run', description: notRun.join('\n') }] : []),
+    ];
     emit('onTestEnd', {
-      test: { testId: sc.testId, expectedStatus: 'passed', timeout: 0, annotations },
+      test: { testId: sc.testId, expectedStatus: 'passed', timeout: 0, annotations: attemptAnnotations },
       result: {
         id: resultId,
         duration: a.duration ?? 0,
         status,
         errors: status === 'failed' && a.error ? [error(a.error)] : [],
-        annotations,
+        annotations: attemptAnnotations,
       },
     });
   });
