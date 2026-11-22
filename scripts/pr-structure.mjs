@@ -197,13 +197,13 @@ for (const f of changes) {
     const [, fromLayer, fromRank] = layer(f.path);
     const [, toLayer, toRank] = layer(to);
     const problems = [];
-    if (fromRank > toRank) problems.push(`against the layers: ${fromLayer} must not use ${toLayer}`);
-    if (inNewCycle(f.path, to)) problems.push('closes a dependency cycle');
+    if (fromRank > toRank) problems.push('points up');
+    if (inNewCycle(f.path, to)) problems.push('closes a cycle');
     newEdges.push({
       from: f.path,
       to,
       layers: fromLayer === toLayer ? `${fromLayer} (same layer)` : `${fromLayer} → ${toLayer}`,
-      check: problems.length ? `⚠️ ${problems.join('; ')}` : '✅ follows the layers',
+      check: problems.length ? `⚠️ ${problems.join(', ')}` : '✅ follows the layers',
       bad: problems.length > 0,
     });
   }
@@ -261,38 +261,41 @@ const out = [
   ...rows.map((r) => `| ${r.join(' | ')} |`),
   '',
 ];
-const link = (f) => `[${f}](${blob(f)})`;
+// Short names keep the verdict on screen: `data/Payments.java (Java)`, `data/payments.ts`; each links the file.
+const shortName = (f) =>
+  f.startsWith('java/')
+    ? `${f.replace(/^java\/src\/test\/java\/com\/showcase\//, '')} (Java)`
+    : f.replace(/^src\//, '');
+const link = (f) => `[${shortName(f)}](${blob(f)})`;
 if (newEdges.length) {
   out.push(
     '### Dependencies added by this PR',
     '',
     'A file now uses another it did not use before (TypeScript import, Java class reference). Dependencies may only point down the layers, from the scenario to its building blocks; one that points up, or closes a cycle, ties the parts together so that a change in either breaks the other.',
     '',
-    '| From | Now uses | Layers | Check |',
+    '| Check | From | Now uses | Layers |',
     '|---|---|---|---|',
     ...newEdges
       .sort((a, b) => b.bad - a.bad)
-      .map((e) => `| ${link(e.from)} | ${link(e.to)} | ${e.layers} | ${e.check} |`),
+      .map((e) => `| ${e.check} | ${link(e.from)} | ${link(e.to)} | ${e.layers} |`),
     '',
   );
 }
 if (cycles.length) {
   out.push('### Dependency cycles', '');
   for (const c of cycles)
-    out.push(
-      `- ${c.isNew ? '**new in this PR**' : 'already on the base branch'}: ${c.files.map((f) => `\`${f}\``).join(' ↔ ')}`,
-    );
+    out.push(`- ${c.isNew ? '**new in this PR**' : 'already on the base branch'}: ${c.files.map(link).join(' ↔ ')}`);
   out.push('');
 }
 if (upward.length) {
   const table = [
-    '| From | Uses | Layers | |',
+    '| | From | Uses | Layers |',
     '|---|---|---|---|',
     ...upward
       .sort((a, b) => b.isNew - a.isNew)
       .map(
         (u) =>
-          `| ${link(u.from)} | ${link(u.to)} | ${u.layers} | ${u.isNew ? '⚠️ new in this PR' : 'already on the base branch'} |`,
+          `| ${u.isNew ? '⚠️ new in this PR' : 'already on the base branch'} | ${link(u.from)} | ${link(u.to)} | ${u.layers} |`,
       ),
   ];
   out.push(
