@@ -73,7 +73,9 @@ jobs:
         env:
           SUITE: control
           PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report-control
-        run: npx bddgen && npx playwright test --project=api --project=chromium --retries=0 --reporter=blob
+        # --no-deps: C2 is @logged-out, so the chromium project's sign-in setup is not needed; run here it would be counted
+        # as one more TypeScript test (nightly #94 showed 152 instead of 151).
+        run: npx bddgen && npx playwright test --project=api --project=chromium --no-deps --retries=0 --reporter=blob
 
       - name: Upload the failure control's blob report
         if: ${{ matrix.shard == 1 && !cancelled() }}
