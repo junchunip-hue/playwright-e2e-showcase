@@ -201,7 +201,8 @@ java/           the same features in Java: RunCucumberTest + steps/ â†’ pages/ â
                 logs every scenario attempt with its steps, hooks and errors for the summary and the Java report
 scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
                 install, the CI pipeline summary, the Java report (java-report.mjs), the screenshot viewer for both
-                reports (report-lightbox.mjs), and the nightly's history and results page on GitHub Pages
+                reports (report-lightbox.mjs), the site's navigation bar (site-nav.mjs), and the nightly's history and
+                results page on GitHub Pages
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)

@@ -4,18 +4,21 @@
 //                    and the nightly history
 //   typescript/      the merged Playwright HTML report (put there by the workflow)
 //   java/            the Java results as the same kind of Playwright HTML report (scripts/java-report.mjs, workflow)
+// Every page carries the same navigation bar (scripts/site-nav.mjs): back one level, a breadcrumb up to the README.
 // Usage: node scripts/pages-site.mjs <summary.json> <site-dir>
 //   summary.json comes from pipeline-summary.mjs (env SUMMARY_JSON); <site-dir>/history.json and streak.json from
 //   nightly-history.mjs. Missing inputs leave their section out instead of failing the publish.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+// The site's navigation bar, the same on every page: back one level, or any level above.
+import { NAV_CSS, navBar, REPO } from './site-nav.mjs';
+
 const [summaryFile, siteDir] = process.argv.slice(2);
 if (!summaryFile || !siteDir) {
   console.error('Usage: node scripts/pages-site.mjs <summary.json> <site-dir>');
   process.exit(2);
 }
-const REPO = 'https://github.com/junchunip-hue/playwright-e2e-showcase';
 const read = (file) => {
   try {
     return file && existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
@@ -85,8 +88,11 @@ details ol{margin:0 0 10px;padding:0 12px 0 40px}details p{margin:6px 12px}.step
 function page(title, body) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)}</title><style>${STYLE}</style></head>
-<body><main>${body}</main></body></html>
+<title>${esc(title)}</title><style>${STYLE}${NAV_CSS}</style></head>
+<body>${navBar({ href: `${REPO}#readme`, label: 'Project README' }, [
+    { href: `${REPO}#readme`, label: 'Project README' },
+    { label: 'Nightly results' },
+  ])}<main>${body}</main></body></html>
 `;
 }
 
