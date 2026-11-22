@@ -70,9 +70,9 @@ export default defineConfig({
     baseURL: env.baseURL,
     testIdAttribute: 'data-test', // Toolshop exposes data-test attributes -> getByTestId()
     // A failed browser test keeps the trace of its first retry. The failure controls run without retries, so they keep
-    // the trace of the failed run instead (C2, as the Java C2 has). Set here, not with --trace on the command line,
-    // which would override the api project's "off".
-    trace: process.env.SUITE === 'control' ? 'retain-on-failure' : 'on-first-retry',
+    // the trace of the failed run instead (C2, as the Java C2 has); the live demo (DEMO=1, scripts/demo.mjs) keeps
+    // every trace. Set here, not with --trace on the command line, which would override the api project's "off".
+    trace: process.env.DEMO ? 'on' : process.env.SUITE === 'control' ? 'retain-on-failure' : 'on-first-retry',
     screenshot: 'off', // failure screenshots are taken at the failed step instead (src/fixtures/evidence.ts)
     video: 'retain-on-failure',
     // SLOW_MO=<ms> slows every action down, for a live demo (`npm run demo`); 0 otherwise.

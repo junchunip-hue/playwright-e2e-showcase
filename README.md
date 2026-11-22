@@ -84,7 +84,8 @@ API scenarios read the same way; the API client stands in for the page
 - A UI step that fails carries its evidence: a full-page screenshot taken at that step and attached to it, in both
   languages ([`evidence.ts`](src/fixtures/evidence.ts), Java [`Hooks.java`](java/src/test/java/com/showcase/steps/Hooks.java)).
   In the report a click on it opens it enlarged, with a download button. An API step has no page, so no screenshot:
-  its error shows the expected and received values. Playwright's extra `error-context.md` download is left out
+  its error shows the expected and received values. A failed UI test also has its Playwright trace; API tests record
+  none, in either language. Playwright's extra `error-context.md` download is left out
   ([`no-error-context.ts`](src/reporters/no-error-context.ts)), so both languages show the same evidence.
 - To show both every night, two failure controls fail on purpose at step 2 of 4, in both languages, with steps 3 and 4
   listed as not run: C1 an API test ([`api-failure.feature`](features/control/api-failure.feature)), C2 a UI test with
