@@ -109,6 +109,11 @@ API scenarios read the same way; the API client stands in for the page
 - Every scenario runs in a TypeScript lane and a Java lane. A missing step fails the PR in either language: `bddgen` for
   TypeScript, a Cucumber dry run over every feature for Java. A summary on each CI run compares the lanes per test ID
   and lists every failed test with its failed and not-run steps (see "How it runs").
+- Every PR shows what else it can break: a comment lists each scenario, in either language, that uses the changed
+  code, with the steps and the chain of code that leads there (`CheckoutModule.finish → CheckoutPage.pay`), its tier and
+  whether the PR's smoke runs it; a second comment checks the structure (architecture rules, types, Java compile and dry
+  run, how far the changed files reach, cycles, dependencies against the layers). Both update on every push
+  ([ADR 0014](docs/decisions/0014-pr-impact-comments.md)).
 - Flaky is visible, never silent: both lanes retry a failed test twice in CI, and a test that passed only on a retry
   turns the verdict gold (⚠️ passed with flaky) and is listed by name with its first error, as an annotation and in the
   commit status ([ADR 0011](docs/decisions/0011-retries-and-flaky-tests.md)).
@@ -125,6 +130,7 @@ flowchart LR
     J["Java: step dry run of every feature ·<br/>Cucumber-JVM smoke (same features)"]
     TS --> SUM["Summary: verdict ✅ ⚠️ ❌ · run diagram ·<br/>failed and flaky tests · TS vs Java per ID<br/>+ commit status"]
     J --> SUM
+    IMP["Impact (static, two PR comments):<br/>scenarios and steps the change can affect ·<br/>structure check"]
   end
   subgraph N["Nightly 02:00 UTC"]
     direction LR
@@ -204,11 +210,12 @@ java/           the same features in Java: RunCucumberTest + steps/ → pages/ �
 scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
                 install, the CI pipeline summary, the Java report (java-report.mjs), the screenshot viewer for both
                 reports (report-lightbox.mjs), the step colours (report-step-colors.mjs), the site's navigation bar
-                (site-nav.mjs), and the nightly's history and results page on GitHub Pages
+                (site-nav.mjs), the nightly's history and results page on GitHub Pages, and the PR impact comments
+                (pr-impact.mjs, pr-structure.mjs, impact/model.mjs)
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)
-.github/        workflows (PR, nightly, baselines) and shared actions
+.github/        workflows (PR smoke, PR impact, nightly, baselines) and shared actions
 .githooks/      pre-push: code style and step checks (installed by npm install)
 CONTRIBUTING.md how to add a scenario, step by step
 ```

@@ -23,6 +23,7 @@ itself and would race S3.
 | Workflow | Trigger | What runs | Browsers |
 |---|---|---|---|
 | `pr-smoke.yml` | Every PR and push to `master` | **Static:** lint, format (Prettier), typecheck, `check:tags`, `check:steps`, `test:architecture` ([coding rules](coding-rules.md))<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and in parallel the Java lane: Spotless format check, a dry run that binds every feature's steps (seconds, no browser), then the Java smoke suite | Chromium |
+| `pr-impact.yml` | Every PR push | Two PR comments, kept up to date: the **scenarios the change can affect** (with the steps and why, per language) and a **structure check** (architecture rules, types, Java compile and dry run, tags, steps, reach, cycles, layer direction). Static, informative; see [PR impact comments](#pr-impact-comments) | none |
 | `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed and the failure controls) in 3 shards, plus the full Java suite; then the failure controls C1 (API) and C2 (UI) in both languages, separately (fail on purpose, not counted) | Chromium, Firefox, WebKit |
 | `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR, and comments how to get PR checks on that commit (GitHub runs no workflow for a push made by Actions) | Chromium |
 
@@ -98,6 +99,38 @@ project only runs in shards that contain UI tests. A PR that changes the workflo
 
 **Local runs** default to Chromium. Firefox and WebKit are opt-in (`ALL_BROWSERS=1`), because Playwright's Firefox
 failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-browser coverage is a CI concern.
+
+## PR impact comments
+`pr-impact.yml` runs on every PR push, next to the smoke tests, and keeps two comments on the PR up to date
+([ADR 0014](decisions/0014-pr-impact-comments.md)). Neither needs Toolshop or a browser; neither gates the merge.
+
+**1. Scenarios this PR can affect** (`scripts/pr-impact.mjs`, model in `scripts/impact/model.mjs`)
+- From each changed line to its code unit: a step definition, a page method, a module locator (a constructor's
+  `this.x = …` belongs to `x`), an API resource method, a fixture, a data builder, a helper. Comment, blank and
+  import lines are left out, so a comment-only PR affects nothing.
+- From a unit to every unit that uses it, recursively: by name, made precise by declared types (a fixture's class,
+  `this`, `readonly ui: CheckoutModule`, Java fields and accessor return types). An unknown receiver counts the member
+  on every class the file can reach: a scenario too many, never one too few.
+- From the step definitions reached to every scenario step whose sentence they match (Scenario Outlines per Examples
+  row). A changed feature line marks its scenario; a reworded step or step definition that no longer matches is a
+  warning (it would be undefined).
+- Files every run depends on mark every scenario of their language: `playwright.config.ts`, `package.json`,
+  `src/tags.ts`, `src/config/env.ts`, the failure reporting (`src/fixtures/not-run.ts`, `evidence.ts`,
+  `not-run.hooks.ts`), the sign-in setup (browser scenarios), `java/pom.xml`, `RunCucumberTest`, `Hooks`,
+  `ScenarioLog`, `Env`.
+- The comment lists, per feature, each scenario with its affected steps, why (the chain of code), the language, the
+  tier and whether this PR's smoke runs it; then the spec tests (N1, N2) the change reaches, and the command to run the
+  nightly-only scenarios on the branch.
+
+**2. Structure check** (`scripts/pr-structure.mjs`)
+- The static checks, each with its first error: architecture rules (N3), `typecheck`, Java `test-compile` (with
+  Spotless), the Java dry run, `check:tags`, `check:steps`.
+- How far each changed file reaches: the files that use it, directly and recursively (TypeScript imports, Java class
+  names), how many of them are step or test files, and whether it sits in a dependency cycle.
+- New dependencies the PR adds, flagged when one points up through the layers (steps → fixtures → pages → data →
+  modules/api → config), e.g. a module that imports a page.
+
+Locally: `node scripts/pr-impact.mjs --base origin/master` prints the first comment for the current branch.
 
 ## Pipeline summary
 Both workflows end with a `pipeline summary` job (`scripts/pipeline-summary.mjs`). It reads the Playwright JSON

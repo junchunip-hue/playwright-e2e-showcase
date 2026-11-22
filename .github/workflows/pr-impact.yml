@@ -1,0 +1,74 @@
+name: PR impact
+
+# Two comments on every pull request, updated on each push, next to the smoke tests (not instead of them):
+#   1. Scenario impact: every feature scenario the change can affect, the steps in it and why, per language
+#      (scripts/pr-impact.mjs: changed lines → code that uses them → step definitions → scenario steps).
+#   2. Structure check: architecture rules, types, Java compile and dry run, tags, step catalogue, and how far the
+#      changed code reaches, dependency cycles and dependencies against the layers (scripts/pr-structure.mjs).
+# Static analysis only: no Toolshop, no browser. It reports; the smoke workflow's checks gate the merge.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: pr-impact-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write # the two comments
+
+jobs:
+  impact:
+    name: PR impact (scenarios and structure)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE: origin/${{ github.base_ref }}
+    steps:
+      # The whole history: the analysis compares the PR with the base branch it merges into.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/setup-node-suite
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: java/pom.xml
+
+      - name: Scenario impact
+        run: node scripts/pr-impact.mjs --base "$BASE" --out pr-impact.md
+
+      # Each check records pass or fail and its output for the comment; a failure does not stop the others.
+      - name: Structure checks
+        run: |
+          mkdir -p pr-checks
+          check() { name=$1; shift; if "$@" > "pr-checks/$name.log" 2>&1; then echo pass; else echo fail; fi > "pr-checks/$name.status"; }
+          check typecheck npm run typecheck
+          check tags npm run check:tags
+          check steps npm run check:steps
+          PLAYWRIGHT_JSON_OUTPUT_FILE=pr-checks/arch.json npm run test:architecture -- --reporter=json > pr-checks/arch.log 2>&1 || true
+          check java-compile bash -c 'cd java && ./mvnw -B -q test-compile'
+          check java-dry-run bash -c 'cd java && ./mvnw -B -q test -Dcucumber.execution.dry-run=true -DexcludedGroups= -Dsurefire.reportsDirectory=target/dry-run-reports'
+
+      - name: Structure comment
+        if: ${{ !cancelled() }}
+        run: |
+          node scripts/pr-structure.mjs --checks pr-checks --base "$BASE" --out pr-structure.md
+          cat pr-impact.md pr-structure.md >> "$GITHUB_STEP_SUMMARY"
+
+      # A PR from a fork gets a read-only token: its analysis stays in the run's summary.
+      - name: Post or update the two PR comments
+        if: ${{ !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          node scripts/pr-comment.mjs pr-impact.md
+          node scripts/pr-comment.mjs pr-structure.md

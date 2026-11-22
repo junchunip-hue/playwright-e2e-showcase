@@ -90,6 +90,13 @@ The PR gate runs the static checks (lint, format, types, tags, steps, architectu
 the Java dry run plus smoke suite. All of them must pass before the PR can merge. A `@regression` scenario runs in the
 nightly after the merge, on Chromium, Firefox and WebKit.
 
+Two comments appear on the PR and update with every push ([ci.md](docs/ci.md#pr-impact-comments)):
+- **Scenarios this PR can affect:** every scenario, in either language, that uses what you changed, with the step and
+  the chain of code that leads to it. Check the ones you did not write, and run the nightly-only ones it lists with
+  the `--grep` it gives. Locally: `node scripts/pr-impact.mjs`.
+- **Structure check:** the static checks with their first error, how far your changed files reach, and new
+  dependencies that go against the layers.
+
 If a check fails, its message says what to run. The most common ones:
 
 | Failure | Fix |

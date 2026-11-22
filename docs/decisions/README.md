@@ -18,3 +18,4 @@ New decisions get the next number; a reversed decision is marked "Superseded" an
 | [0011](0011-retries-and-flaky-tests.md) | CI retries failed tests in both languages, and a test that passed only on a retry is reported as flaky, never hidden |
 | [0012](0012-gherkin-features-with-layered-steps.md) | Scenarios are shared Gherkin features, run in both languages through steps → pages → modules |
 | [0013](0013-failures-stay-failures.md) | A failing test stays a failure (no known-issue markers), and every report shows the failed step and the steps not run |
+| [0014](0014-pr-impact-comments.md) | Every PR gets two comments: the scenarios (and steps) it can affect, and a structure check |
