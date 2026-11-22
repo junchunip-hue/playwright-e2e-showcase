@@ -218,6 +218,7 @@ docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI
 .github/        workflows (PR smoke, PR impact, nightly, baselines) and shared actions
 .githooks/      pre-push: code style and step checks (installed by npm install)
 CONTRIBUTING.md how to add a scenario, step by step
+CLAUDE.md       guide for Claude Code sessions, local or cloud: what to read, structure, checks, working rules
 ```
 
 ## Run it
