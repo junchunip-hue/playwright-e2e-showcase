@@ -366,17 +366,23 @@ if (list.length) {
       if (e.featureReasons?.some((r) => r !== 'changed'))
         lines.push(`_scenario ${e.featureReasons.filter((r) => r !== 'changed').join(', ')} in this PR_`);
       for (const w of new Set(e.whole)) lines.push(`_every step: ${w}_`);
-      // Why, per language: "TypeScript: CheckoutModule.finish → CheckoutPage.pay · Java: CheckoutPage.pay".
+      // The step, then one line per language with its reason:
+      //   `When I pay with "cash-on-delivery"`
+      //   ↳ Java: CheckoutPage.pay
+      //   ↳ TypeScript: CheckoutModule.finish → CheckoutPage.pay
+      const ORDER = ['both', 'java', 'ts'];
       for (const s of steps) {
-        const per = [...s.byLang].map(([lang, whys]) => {
-          const why = [...whys].slice(0, 2).join('; ');
-          return lang === 'both' ? why : s.byLang.size > 1 ? `${LANGS[lang]}: ${why}` : `${why} (${LANGS[lang]})`;
-        });
-        lines.push(`\`${esc(`${s.step.keyword} ${s.step.text}`)}\` ← ${per.join(' · ')}`);
+        const per = [...s.byLang]
+          .sort(([a], [b]) => ORDER.indexOf(a) - ORDER.indexOf(b))
+          .map(([lang, whys]) => {
+            const why = [...whys].slice(0, 2).join('; ');
+            return `↳ ${lang === 'both' ? why : `${LANGS[lang]}: ${why}`}`;
+          });
+        lines.push([`\`${esc(`${s.step.keyword} ${s.step.text}`)}\``, ...per].join('<br>'));
       }
       const id = `[${sc.id}](${blob(file, sc.line)})${sc.examples ? ` ×${sc.examples}` : ''}`;
       out.push(
-        `| ${id} | ${esc(sc.title.replace(/^[A-Z]\d+:\s*/, ''))} | ${tier(sc)} | ${inPr(sc)} | ${langCell(e.langs)} | ${lines.join('<br>')} |`,
+        `| ${id} | ${esc(sc.title.replace(/^[A-Z]\d+:\s*/, ''))} | ${tier(sc)} | ${inPr(sc)} | ${langCell(e.langs)} | ${lines.join('<br><br>')} |`,
       );
     }
     out.push('');
