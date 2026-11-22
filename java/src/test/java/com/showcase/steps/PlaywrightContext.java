@@ -13,7 +13,9 @@ import java.nio.file.Path;
 /**
  * One scenario's browser and API client: a fresh browser context (signed out) per scenario, on one
  * Playwright and Chromium per thread. PicoContainer creates it per scenario and injects it into the
- * step classes; {@link Hooks} opens and closes it. Same settings as the TypeScript `use` block in
+ * step classes. The browser context opens on the first {@link #page()} call, so an API-only
+ * scenario opens no browser and records no trace, as in TypeScript, where only a test that asks for
+ * a page gets one; {@link Hooks} closes it. Same settings as the TypeScript `use` block in
  * playwright.config.ts: base URL, data-test ids, headless unless HEADED=1, trace kept only when the
  * scenario fails. TypeScript twin: the Playwright Test fixtures (page, api) that playwright-bdd
  * injects into the steps.
@@ -50,7 +52,7 @@ public class PlaywrightContext {
     return playwright;
   }
 
-  void open() {
+  private void open() {
     context = BROWSER.get().newContext(new Browser.NewContextOptions().setBaseURL(Env.BASE_URL));
     context
         .tracing()
@@ -63,15 +65,25 @@ public class PlaywrightContext {
    * on failure.
    */
   void close(boolean failed, String scenarioName) {
-    if (context == null) return;
-    Tracing.StopOptions stop = new Tracing.StopOptions();
-    if (failed) stop.setPath(Path.of("target", "playwright", slug(scenarioName), "trace.zip"));
-    context.tracing().stop(stop);
-    context.close();
+    if (context != null) {
+      Tracing.StopOptions stop = new Tracing.StopOptions();
+      if (failed) stop.setPath(Path.of("target", "playwright", slug(scenarioName), "trace.zip"));
+      context.tracing().stop(stop);
+      context.close();
+    }
     if (api != null) api.close();
   }
 
+  /** The scenario's page, opening the browser context (and its trace) on first use. */
   public Page page() {
+    if (page == null) open();
+    return page;
+  }
+
+  /**
+   * The page if a step opened one, else null: for hooks that must not open a browser themselves.
+   */
+  Page pageIfOpen() {
     return page;
   }
 

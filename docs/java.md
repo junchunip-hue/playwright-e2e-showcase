@@ -81,7 +81,8 @@ repository, not a scenario.
 - **Same Playwright release line.** `playwright.version` in `java/pom.xml` follows the minor version of
   `@playwright/test` (Java patch releases can lag behind Node).
 
-**Debugging a Java failure:** tests record a Playwright trace and keep it only on failure
+**Debugging a Java failure:** a scenario that uses a page records a Playwright trace (the browser opens on its first
+page use, so API-only scenarios record none) and keeps it only on failure
 (`target/playwright/`); CI uploads it as `junit-reports-traces` (PR) or `junit-reports-nightly-traces`, next to the
 Surefire XML, also when the test passed on a rerun (the trace is the failed attempt's). Open it with `npx playwright show-trace <file>.zip`.
 
