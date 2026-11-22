@@ -56,8 +56,8 @@ The nightly's GitHub Pages site, built by the `summary` job because only it has 
   errors and trace viewer as TypeScript; a scenario that passed on a rerun shows as flaky. Also an artifact
   (`java-report`) on every run.
 - On every page the same **navigation bar** (`scripts/site-nav.mjs`): a back button one level up and a breadcrumb up
-  to the README (README › Nightly results › TypeScript or Java report › a test › its trace), plus "About the
-  project". In a report, the list goes back to the results page and a test back to the list with its search kept; the
+  to the README (README › Nightly results › TypeScript or Java report › a test › its trace); the reports also link
+  "About the project" (the results page has it in its intro line). In a report, the list goes back to the results page and a test back to the list with its search kept; the
   trace viewer goes back to its test. `pages-site.mjs` builds it into the results page; the workflow adds it to both
   reports and their trace viewers after `report-lightbox.mjs`. Its links to the results page and the README are
   absolute, so a report downloaded as an artifact has them too.
@@ -185,7 +185,12 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   both languages (`src/fixtures/evidence.ts` from the AfterStep hook; Java `Hooks` `@AfterStep`, stored by
   `ScenarioLog` and attached by `scripts/java-report.mjs`). Playwright's own end-of-test screenshot is off. After each
   report is built, `scripts/report-lightbox.mjs` adds a viewer: a click on a screenshot opens it enlarged, with a
-  download button.
+  download button. Playwright's own `error-context.md` (the error again, plus a text snapshot of the page) is left
+  out by `src/reporters/no-error-context.ts`, listed before the other reporters, since Playwright has no option for
+  it: the evidence is the screenshot, in both languages. Traces: TypeScript records one on the first retry of a
+  failed test, Java one for every failed attempt; the failure controls run without retries, so the TypeScript control
+  step records with `--trace=retain-on-failure` and C2 has its trace in both reports. (TypeScript also traces the API
+  calls of C1 and keeps a video of a failed UI test; the Java API client and Java runs have neither.)
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. Java runs the same feature files, so the check covers both.

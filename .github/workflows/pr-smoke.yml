@@ -91,7 +91,7 @@ jobs:
 
       # The PR runs only the smoke scenarios in Java, so a sentence with no Java step in a regression-only scenario
       # would first fail at night. A dry run binds every step of every feature without a browser (seconds) and fails
-      # on an undefined one (the failure control's feature included: -DexcludedGroups=). Its reports go elsewhere, so they
+      # on an undefined one (the failure controls' features included: -DexcludedGroups=). Its reports go elsewhere, so they
       # never stand in for the smoke results below.
       - name: Check every feature has its Java steps (dry run)
         working-directory: java

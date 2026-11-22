@@ -29,6 +29,9 @@ defineBddConfig({
 const BROWSER_TESTS =
   /[\\/]tests[\\/]((ui|quality)[\\/].*\.spec\.ts|features[\\/]((ui|journeys)[\\/].*|control[\\/]ui-.*)\.spec\.js)$/;
 
+// Listed first wherever reporters are chosen, also on the command line in CI (the nightly's --reporter=…).
+const NO_ERROR_CONTEXT = './src/reporters/no-error-context.ts';
+
 // Which tests run is decided by name only (SUITE=pr, SUITE=nightly, ...); the tag lists live in src/tags.ts.
 const suite = resolveSuite(process.env.SUITE);
 
@@ -40,10 +43,17 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
   workers: isPublicDemo ? 2 : undefined,
-  // In CI the JSON results feed the pipeline summary (scripts/pipeline-summary.mjs).
+  // In CI the JSON results feed the pipeline summary (scripts/pipeline-summary.mjs). no-error-context goes first: it
+  // takes Playwright's error-context.md out before the others record it (evidence is the failed step's screenshot).
   reporter: isCI
-    ? [['html', { open: 'never' }], ['github'], ['list'], ['json', { outputFile: 'reports/ts-results.json' }]]
-    : [['html', { open: 'never' }], ['list']],
+    ? [
+        [NO_ERROR_CONTEXT],
+        ['html', { open: 'never' }],
+        ['github'],
+        ['list'],
+        ['json', { outputFile: 'reports/ts-results.json' }],
+      ]
+    : [[NO_ERROR_CONTEXT], ['html', { open: 'never' }], ['list']],
 
   // Visual baselines are generated on Linux in CI against the pinned Toolshop; the {platform} suffix keeps
   // local (Windows/macOS) baselines separate, and those are git-ignored.

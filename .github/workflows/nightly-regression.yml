@@ -43,13 +43,13 @@ jobs:
       - name: Wait for Toolshop and start its background jobs
         uses: ./.github/actions/toolshop-ready
 
-      # Suite "nightly" (src/tags.ts): everything except the Test Agents' seed and the failure control (step below).
+      # Suite "nightly" (src/tags.ts): everything except the Test Agents' seed and the failure controls (step below).
       # blob output is merged into one HTML report by merge-reports.
       - name: Run regression shard
         env:
           SUITE: nightly
         # bddgen first: the Gherkin features become Playwright tests (playwright.config.ts).
-        run: npx bddgen && npx playwright test --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }} --reporter=blob,github
+        run: npx bddgen && npx playwright test --shard=${{ matrix.shard }}/${{ env.SHARD_TOTAL }} --reporter=./src/reporters/no-error-context.ts,blob,github
 
       - name: Dump Toolshop logs on failure
         if: ${{ failure() }}
@@ -65,7 +65,7 @@ jobs:
           retention-days: 1
 
       # The failure controls (features/control, ADR 0013) fail on purpose, so the merged report always shows what a
-      # failure looks like: C1 an API failure (api project), C2 a UI failure with its screenshot (chromium). Shard 1 runs it once, after the regression run and with its own blob report (picked up by
+      # failure looks like: C1 an API failure (api project), C2 a UI failure with its screenshot (chromium). Shard 1 runs them once, after the regression run and with their own blob report (picked up by
       # merge-reports like the shards'); continue-on-error keeps the shard green, and the summary counts it nowhere.
       - name: Run the failure controls C1, C2 (fail on purpose, not counted)
         if: ${{ matrix.shard == 1 && !cancelled() }}
@@ -75,9 +75,13 @@ jobs:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: blob-report-control
         # --no-deps: C2 is @logged-out, so the chromium project's sign-in setup is not needed; run here it would be counted
         # as one more TypeScript test (nightly #94 showed 152 instead of 151).
-        run: npx bddgen && npx playwright test --project=api --project=chromium --no-deps --retries=0 --reporter=blob
+        # --trace=retain-on-failure: with no retry the usual on-first-retry records nothing; this way C2 has its trace,
+        # as the Java C2 has (C1 has no page, so no trace).
+        run: >-
+          npx bddgen && npx playwright test --project=api --project=chromium --no-deps --retries=0
+          --trace=retain-on-failure --reporter=./src/reporters/no-error-context.ts,blob
 
-      - name: Upload the failure control's blob report
+      - name: Upload the failure controls' blob report
         if: ${{ matrix.shard == 1 && !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
@@ -214,7 +218,7 @@ jobs:
           ./mvnw -B test -Dgroups=control -DexcludedGroups= -Dsurefire.rerunFailingTestsCount=0
           -Dsurefire.reportsDirectory=target/control-reports -Dscenario.log=target/control-reports/scenarios.jsonl
 
-      - name: Upload the failure control's JUnit reports
+      - name: Upload the failure controls' JUnit reports
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
@@ -262,14 +266,14 @@ jobs:
           name: junit-reports-nightly
           path: results/java
 
-      - name: Download the Java failure control's results
+      - name: Download the Java failure controls' results
         continue-on-error: true
         uses: actions/download-artifact@v8
         with:
           name: junit-reports-control
           path: results/java-control
 
-      # Traces of failed Java attempts (the failure control's included), attached to the Java report.
+      # Traces of failed Java attempts (the failure controls' included), attached to the Java report.
       - name: Download the Java traces
         continue-on-error: true
         uses: actions/download-artifact@v8
