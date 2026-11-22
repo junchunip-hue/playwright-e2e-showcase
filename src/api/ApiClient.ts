@@ -13,6 +13,7 @@ import type { ValidationErrors } from './schemas';
 
 export type { Address } from './resources/addresses';
 export type { NewCustomer } from './resources/customers';
+export type { Payment, PaymentMethod } from './resources/payments';
 export type { NewProduct, ProductFilter } from './resources/products';
 export type { Invoice, InvoicePage, Product, ProductPage, ProductSearchPage } from './schemas';
 
