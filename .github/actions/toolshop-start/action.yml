@@ -34,6 +34,23 @@ runs:
         ref: ${{ inputs.ref }}
         path: toolshop
 
+    # Toolshop's UI image installs the Angular CLI as `@angular/cli@latest`: the one part of the pinned commit that
+    # floats. A brand-new npm release can then break every job before a test runs (2026-11-22: a dependency published
+    # two minutes earlier was not downloadable yet, npm 404). Pin it to the CLI version Toolshop's UI itself declares
+    # (sprint package.json, locked by its package-lock.json), so the build depends on the pinned commit only.
+    - name: Pin the Angular CLI of the UI image
+      shell: bash
+      working-directory: toolshop
+      run: |
+        version=$(node -p "const p = require('./${{ inputs.sprint }}/UI/package.json');
+          ((p.devDependencies || {})['@angular/cli'] || (p.dependencies || {})['@angular/cli'] || '').replace(/^[~^]/, '')")
+        if [ -z "$version" ] || ! grep -q '@angular/cli@latest' _docker/ui.docker; then
+          echo "::error::Cannot pin the Angular CLI (version '$version'): the Toolshop UI Dockerfile or package.json changed"
+          exit 1
+        fi
+        sed -i "s#@angular/cli@latest#@angular/cli@${version}#" _docker/ui.docker
+        echo "Angular CLI pinned to ${version} in _docker/ui.docker"
+
     # The API container runs PHP as www-data (uid 1000), the runner checks out as uid 1001.
     # Without this, Laravel cannot write its file cache and data endpoints return 500.
     - name: Make Laravel storage writable
