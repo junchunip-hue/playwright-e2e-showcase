@@ -6,7 +6,11 @@
 CI never uses the public demo. Every job boots Toolshop in Docker from an upstream commit that is pinned in one
 place, `.github/actions/toolshop-start` (version, sprint and URLs, exported to the job). The database is
 migrated and seeded on every run, so results depend only on the code under test
-([ADR 0001](decisions/0001-ci-runs-its-own-toolshop.md)).
+([ADR 0001](decisions/0001-ci-runs-its-own-toolshop.md)). One part of that commit floated: its UI image installs
+`@angular/cli@latest`, and on 2026-11-22 a dependency released two minutes earlier was not downloadable yet (npm 404),
+so Toolshop did not start and every job failed before a test ran. `toolshop-start` now pins that install to the CLI
+version Toolshop's UI declares itself (its `package.json`, locked by `package-lock.json`), and fails with a clear
+error if that line or file changes upstream.
 
 `toolshop-ready` installs API dependencies, seeds the database and waits until a data endpoint (`/products`) and the
 UI both return 200. A plain health endpoint was green while data endpoints still failed. It also starts Toolshop's
