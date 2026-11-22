@@ -26,7 +26,7 @@ steps after it, which never ran, did not appear in the TypeScript report at all.
     (`src/fixtures/not-run.ts`) list each remaining Gherkin step right after the failed one, at the same level, as a
     skipped step with its own text; the test gets two annotations, `failed step` and `not run`.
   - Java: Cucumber already reports the remaining steps as skipped; `ScenarioLog` keeps every step with its status and
-    the failed step's error.
+    the failed step's error, and the Java report adds the same `failed step` and `not run` annotations.
   - The run summary and the results page list every failed test with its failed step, its error and the steps that
     did not run. The Java report is a Playwright HTML report too (`scripts/java-report.mjs`), so it shows a failure
     exactly like the TypeScript one.
@@ -39,6 +39,16 @@ opens it enlarged, with a download button). They are not product tests and not e
 failures: they run in a separate nightly step (`continue-on-error`) after the regression run, are excluded from every
 other suite and Maven run, and the summary leaves them out of the verdict, the counts, the badge and the clean streak,
 listing them in their own "Failure controls" section. If one ever passes, the reporting of failures is broken.
+
+**Evidence of a failure (added 2026-11-22), the same in both languages:**
+- A failed UI step carries a full-page screenshot taken at that step (`src/fixtures/evidence.ts`, Java `Hooks`), the
+  sign-in setup included; a failed browser test also keeps its Playwright trace (TypeScript: the first retry's, or the
+  failed run's for the controls; Java: every failed attempt's). A trace's thumbnail in the report opens the trace viewer.
+- An API test opens no page: no screenshot and no trace. Its error states what was expected and what came back, which a
+  trace of an empty page would only repeat. Java opens the browser on a scenario's first page use, so its API
+  scenarios record none either.
+- Playwright's own `error-context.md` is left out of the reports (`src/reporters/no-error-context.ts`): the
+  screenshot is the evidence. TypeScript also keeps a video of a failed UI test; Java records none.
 
 **Consequences:**
 - A red run always means something to fix, and the reports say exactly where: which step, which error, which steps

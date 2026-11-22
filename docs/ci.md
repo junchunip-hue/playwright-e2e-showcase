@@ -190,7 +190,8 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   it: the evidence is the screenshot, in both languages. Traces, for browser tests only in both languages:
   TypeScript records one on the first retry of a failed test, Java one for every failed attempt; the failure controls
   run without retries, so with `SUITE=control` TypeScript keeps the failed run's trace and C2 has its trace in both
-  reports. API tests (the `api` project, C1 too) record none, as in Java: their trace would show an empty page and
+  reports. API tests (the `api` project, C1 too) record none, nor do Java's API scenarios, which open no browser (it
+  opens on a scenario's first page use): their trace would show an empty page and
   the request, and the error already says what was expected and what came back. A trace still lists Playwright's
   "error-context" attachment among its actions (the trace is closed before the reporter can take it out). TypeScript
   also keeps a video of a failed UI test; Java has none. In the reports, a trace's thumbnail opens the trace viewer;

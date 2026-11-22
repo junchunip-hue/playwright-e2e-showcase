@@ -9,8 +9,8 @@ import io.cucumber.java.Scenario;
 import org.junit.jupiter.api.Assumptions;
 
 /**
- * Opens a fresh browser context before each scenario and closes it after (trace kept on failure),
- * and takes the failure screenshot at the step that failed.
+ * Closes the scenario's browser context, if a step opened one (trace kept on failure), and takes
+ * the failure screenshot at the step that failed.
  */
 public class Hooks {
   private final PlaywrightContext playwright;
@@ -41,11 +41,6 @@ public class Hooks {
         Env.isPublicDemo(), "needs our own Toolshop (CI, local Docker), not the public demo");
   }
 
-  @Before(order = 1)
-  public void openBrowser() {
-    playwright.open();
-  }
-
   /**
    * Failure evidence (TypeScript twin: src/fixtures/evidence.ts): right after the step that failed,
    * a full-page screenshot as it was, attached to that step. Cucumber runs this hook after every
@@ -56,7 +51,7 @@ public class Hooks {
   public void screenshotFailedStep(Scenario scenario) {
     if (!scenario.isFailed() || screenshotTaken) return;
     screenshotTaken = true;
-    Page page = playwright.page();
+    Page page = playwright.pageIfOpen();
     if (page == null || page.isClosed() || "about:blank".equals(page.url())) return;
     try {
       byte[] png =
