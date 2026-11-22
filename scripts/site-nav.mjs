@@ -42,14 +42,16 @@ export const NAV_CSS = `
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 // back: { href, label }; crumbs: [{ href?, label, id?, hidden? }], the last one is the current page.
-export function navBar(back, crumbs) {
+// about: the "About the project" link on the right; the results page leaves it out, as its back button and first
+// crumb already lead to the README and its intro line links it too.
+export function navBar(back, crumbs, { about = true } = {}) {
   const items = crumbs.map((c, i) => {
     const attrs = `${c.id ? ` id="${c.id}"` : ''}${c.hidden ? ' hidden' : ''}`;
     const inner = c.href ? `<a href="${esc(c.href)}">${esc(c.label)}</a>` : esc(c.label);
     return `<li${attrs}${i === crumbs.length - 1 ? ' aria-current="page"' : ''}>${inner}</li>`;
   });
   return `<nav id="snav" aria-label="Site"><a class="sn-back" id="sn-back" href="${esc(back.href)}">← ${esc(back.label)}</a>
-<ol>${items.join('')}</ol><a class="sn-about" href="${README}">About the project</a></nav>`;
+<ol>${items.join('')}</ol>${about ? `<a class="sn-about" href="${README}">About the project</a>` : ''}</nav>`;
 }
 
 // The results page's crumbs, the start of every report's.

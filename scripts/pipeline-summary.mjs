@@ -191,8 +191,10 @@ function javaResults(dir) {
       // The failure control: shown on its own, never counted (its own reports dir: CONTROL_JAVA_DIR).
       const scenario = javaScenarioName(xmlText(name));
       if (isControl(scenario)) {
-        // The control calls the API only: no browser, so the label is just "Java".
-        controlCases.push({ id: CONTROL.exec(scenario)[1], failed: failedHere, ...entry(), project: 'Java' });
+        // Labelled like the TypeScript rows: C1 calls the API only (features/control/api-*), C2 runs in Chromium.
+        const control = entry();
+        const project = control.where.includes('features/control/api-') ? 'Java (api)' : 'Java (chromium)';
+        controlCases.push({ id: CONTROL.exec(scenario)[1], failed: failedHere, ...control, project });
         continue;
       }
       if (failedHere) failedCases.push({ id: ID.exec(name)?.[1] ?? '–', ...entry() });
