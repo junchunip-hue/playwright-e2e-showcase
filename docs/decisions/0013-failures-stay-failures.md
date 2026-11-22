@@ -38,7 +38,7 @@ UI failure, whose failed step carries the full-page screenshot taken at that mom
 opens it enlarged, with a download button). They are not product tests and not expected
 failures: they run in a separate nightly step (`continue-on-error`) after the regression run, are excluded from every
 other suite and Maven run, and the summary leaves them out of the verdict, the counts, the badge and the clean streak,
-listing them in their own "Failure control" section. If one ever passes, the reporting of failures is broken.
+listing them in their own "Failure controls" section. If one ever passes, the reporting of failures is broken.
 
 **Consequences:**
 - A red run always means something to fix, and the reports say exactly where: which step, which error, which steps

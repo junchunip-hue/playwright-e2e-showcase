@@ -55,6 +55,12 @@ The nightly's GitHub Pages site, built by the `summary` job because only it has 
   `playwright merge-reports` renders it with the standard HTML reporter. Same list, filters, search, step tree,
   errors and trace viewer as TypeScript; a scenario that passed on a rerun shows as flaky. Also an artifact
   (`java-report`) on every run.
+- On every page the same **navigation bar** (`scripts/site-nav.mjs`): a back button one level up and a breadcrumb up
+  to the README (README › Nightly results › TypeScript or Java report › a test › its trace), plus "About the
+  project". In a report, the list goes back to the results page and a test back to the list with its search kept; the
+  trace viewer goes back to its test. `pages-site.mjs` builds it into the results page; the workflow adds it to both
+  reports and their trace viewers after `report-lightbox.mjs`. Its links to the results page and the README are
+  absolute, so a report downloaded as an artifact has them too.
 - `badge.json`, which the "nightly tests" badge reads (shields.io endpoint): all test runs of both languages, coloured
   like the verdict (green passed, yellow passed with flaky, red failed); `streak.json` and `history.json` (below).
 **Merging:** a ruleset on `master` makes the PR pipeline a real gate: every change goes through a pull request, and
@@ -174,7 +180,7 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   blob report, merged into the HTML report) and the Java job runs them after the full suite
   (`-Dgroups=control -DexcludedGroups=`, own reports); both steps are `continue-on-error`. Every other suite and Maven
   run excludes them (`src/tags.ts`, `pom.xml` `excludedGroups`), and the summary shows them in their own "Failure
-  control (not counted)" section, outside the verdict, the counts, the badge and the streak.
+  controls (not counted)" section, outside the verdict, the counts, the badge and the streak.
 - **Failure screenshots:** a UI step that fails gets a full-page screenshot taken at that step and attached to it, in
   both languages (`src/fixtures/evidence.ts` from the AfterStep hook; Java `Hooks` `@AfterStep`, stored by
   `ScenarioLog` and attached by `scripts/java-report.mjs`). Playwright's own end-of-test screenshot is off. After each

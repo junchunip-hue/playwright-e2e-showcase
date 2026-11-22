@@ -1,21 +1,24 @@
 // Builds the nightly's GitHub Pages landing page, so the README badges open one page for both languages:
-//   index.html       the verdict, both lanes with their counts (the badge's total, split), the failure control,
+//   index.html       the verdict, both lanes with their counts (the badge's total, split), the failure controls,
 //                    TypeScript vs Java per test ID, flaky tests, failed tests with their failed and not-run steps,
 //                    and the nightly history
 //   typescript/      the merged Playwright HTML report (put there by the workflow)
 //   java/            the Java results as the same kind of Playwright HTML report (scripts/java-report.mjs, workflow)
+// Every page carries the same navigation bar (scripts/site-nav.mjs): back one level, a breadcrumb up to the README.
 // Usage: node scripts/pages-site.mjs <summary.json> <site-dir>
 //   summary.json comes from pipeline-summary.mjs (env SUMMARY_JSON); <site-dir>/history.json and streak.json from
 //   nightly-history.mjs. Missing inputs leave their section out instead of failing the publish.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+// The site's navigation bar, the same on every page: back one level, or any level above.
+import { NAV_CSS, navBar, REPO } from './site-nav.mjs';
+
 const [summaryFile, siteDir] = process.argv.slice(2);
 if (!summaryFile || !siteDir) {
   console.error('Usage: node scripts/pages-site.mjs <summary.json> <site-dir>');
   process.exit(2);
 }
-const REPO = 'https://github.com/junchunip-hue/playwright-e2e-showcase';
 const read = (file) => {
   try {
     return file && existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
@@ -85,8 +88,11 @@ details ol{margin:0 0 10px;padding:0 12px 0 40px}details p{margin:6px 12px}.step
 function page(title, body) {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)}</title><style>${STYLE}</style></head>
-<body><main>${body}</main></body></html>
+<title>${esc(title)}</title><style>${STYLE}${NAV_CSS}</style></head>
+<body>${navBar({ href: `${REPO}#readme`, label: 'Project README' }, [
+    { href: `${REPO}#readme`, label: 'Project README' },
+    { label: 'Nightly results' },
+  ])}<main>${body}</main></body></html>
 `;
 }
 
@@ -149,12 +155,12 @@ function landing(s) {
   const controlFailed = control.filter((f) => f.failed);
   const controlIds = [...new Set(control.map((f) => f.id))].join(', ');
   const controlNote = control.length
-    ? `<br>Failure control ${esc(controlIds)}: ${controlFailed.length === control.length ? 'failed on purpose, as intended' : '⚠️ did not fail: check the failure reporting'}, not counted. <a href="#control">See where it failed ↓</a>`
+    ? `<br>Failure controls ${esc(controlIds)}: ${controlFailed.length === control.length ? 'failed on purpose, as intended' : '⚠️ did not fail: check the failure reporting'}, not counted. <a href="#control">See where it failed ↓</a>`
     : '';
   const tsControl = control.filter((f) => !f.project.startsWith('Java')).length;
   const javaControl = control.length - tsControl;
   const controlHtml = control.length
-    ? `<h2 id="control">Failure control (not counted)</h2>
+    ? `<h2 id="control">Failure controls (not counted)</h2>
 <p>${esc(controlIds)} fail on purpose every night, in both languages, so this page always shows what a failure looks
 like: the steps before it passed, the failing step with its error, and the steps after it not run. C1 is an API test
 (no page, so no screenshot); C2 is a UI test, with a screenshot of the page at the failed step (click it in the report
@@ -222,19 +228,19 @@ ${[...s.rows]
   .join('\n')}
 </table></div>
 <p class="muted">Every A, U and S ID runs in both languages; N IDs (visual, accessibility, architecture) are TypeScript-only.
-TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.${control.length ? ` The failure control (${esc(controlIds)}) is not in this table: it is shown above, not counted.` : ''}</p>`);
+TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and N IDs once. U6 is also S1, the first journey.${control.length ? ` The failure controls (${esc(controlIds)}) are not in this table: they are shown above, not counted.` : ''}</p>`);
 
   if (history.length) {
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };
     const recent = history.slice(-30).reverse();
     sections.push(`<h2 id="history">Nightly history</h2>
-<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun; the failure control does not count). ` : ''}Latest first; each links to its run.</p>
+<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun; the failure controls do not count). ` : ''}Latest first; each links to its run.</p>
 <div class="dots">${recent.map((r) => `<a class="dot ${cls[r.verdict] ?? 'skip'}" href="${REPO}/actions/runs/${esc(r.id)}" title="${esc(`#${r.run} · ${r.date} · ${r.verdict}${r.note ? ` · ${r.note}` : ''}`)}">#${esc(r.run)}</a>`).join('')}</div>
-<p class="muted">Green passed · gold flaky, passed on a rerun or unverified · red failed. Data: <a href="history.json">history.json</a>.</p>`);
+<p class="muted">Green passed · gold flaky, passed on a rerun or unverified · red failed. Only nightlies on <code>master</code> are listed: a missing number is a run of the same workflow on a branch or a pull request, which never publishes here. Data: <a href="history.json">history.json</a>.</p>`);
   }
 
   sections.push(
-    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${total(jv.runs)}${javaControl ? ', plus the failure control' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary; both reports are Playwright HTML reports (Java: <code>scripts/java-report.mjs</code>).</p>`,
+    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${total(jv.runs)}${javaControl ? ', plus the failure controls' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary; both reports are Playwright HTML reports (Java: <code>scripts/java-report.mjs</code>).</p>`,
   );
   return page('Nightly results · Playwright E2E Showcase', sections.join('\n'));
 }

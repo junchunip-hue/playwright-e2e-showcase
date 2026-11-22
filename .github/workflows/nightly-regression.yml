@@ -129,8 +129,11 @@ jobs:
         run: npx playwright merge-reports --reporter html,json ./all-blob-reports
 
       # A click on a screenshot (e.g. a failed step's) opens it enlarged, with a download button (scripts/report-lightbox.mjs).
-      - name: Add the screenshot viewer to the report
-        run: node scripts/report-lightbox.mjs playwright-report
+      # The site's navigation bar on top: back one level (results page, list, test) or up to the README (site-nav.mjs).
+      - name: Add the screenshot viewer and the navigation to the report
+        run: |
+          node scripts/report-lightbox.mjs playwright-report
+          node scripts/site-nav.mjs playwright-report "TypeScript report"
 
       - name: Upload results for the summary
         uses: actions/upload-artifact@v7
@@ -360,7 +363,7 @@ jobs:
           curl -fsSL "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/history.json" -o previous-history.json             || echo "No published history yet: starting from the seed"
           node scripts/nightly-history.mjs previous-history.json scripts/nightly-history-seed.json site
 
-      # index.html: verdict, both lanes, the failure control, TS vs Java per ID, flaky, failed tests with their steps,
+      # index.html: verdict, both lanes, the failure controls, TS vs Java per ID, flaky, failed tests with their steps,
       # history.
       - name: Build the landing page
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/master' }}
@@ -381,6 +384,7 @@ jobs:
           node scripts/java-report.mjs java-blob results/java results/java-control --traces results/java-traces
           npx playwright merge-reports --reporter html java-blob
           node scripts/report-lightbox.mjs java-report
+          node scripts/site-nav.mjs java-report "Java report"
 
       - name: Upload the Java report
         if: ${{ steps.java-report.outcome == 'success' }}

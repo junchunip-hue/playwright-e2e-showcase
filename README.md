@@ -18,7 +18,7 @@ sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that run 
 which fail on purpose and are never counted: the TypeScript and the Java report each list them as their failed tests,
 and the results page shows them right below the two lanes. Both badges open the nightly's results page: the verdict, the count split by
 language with the TypeScript report and the Java report (both Playwright HTML reports, in the same format), the
-failure control, TypeScript vs Java per test ID, and the history.
+failure controls, TypeScript vs Java per test ID, and the history.
 
 <p align="center">
   <img src="docs/images/checkout-journey.gif" width="720"
@@ -89,7 +89,7 @@ API scenarios read the same way; the API client stands in for the page
   listed as not run: C1 an API test ([`api-failure.feature`](features/control/api-failure.feature)), C2 a UI test with
   its screenshot ([`ui-failure.feature`](features/control/ui-failure.feature)). They appear in the reports as real
   failures and are left out of the verdict, the counts and the badge
-  ([results page, "Failure control"](https://junchunip-hue.github.io/playwright-e2e-showcase/#control)).
+  ([results page, "Failure controls"](https://junchunip-hue.github.io/playwright-e2e-showcase/#control)).
 - Network mocking shows what a customer sees when the backend is slow or fails ([`resilience.feature`](features/journeys/resilience.feature), mocking in [`network.page.ts`](src/pages/network.page.ts)).
 - Accessibility (axe, WCAG 2.1 AA) and visual regression run in [`tests/quality/`](tests/quality/).
 - The full suite runs nightly on Chromium, Firefox and WebKit.
@@ -171,8 +171,8 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 
 Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).
 
-CI never uses the public demo: it boots its own Toolshop for every run, so results depend only on the code
-([why](docs/ci.md#system-under-test)).
+CI never uses the public demo: it boots its own Toolshop for every run, from a pinned commit and with the Angular CLI of
+its UI image pinned too, so results depend only on the code ([why](docs/ci.md#system-under-test)).
 
 ## Layout
 
@@ -201,7 +201,8 @@ java/           the same features in Java: RunCucumberTest + steps/ â†’ pages/ â
                 logs every scenario attempt with its steps, hooks and errors for the summary and the Java report
 scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
                 install, the CI pipeline summary, the Java report (java-report.mjs), the screenshot viewer for both
-                reports (report-lightbox.mjs), and the nightly's history and results page on GitHub Pages
+                reports (report-lightbox.mjs), the site's navigation bar (site-nav.mjs), and the nightly's history and
+                results page on GitHub Pages
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)
