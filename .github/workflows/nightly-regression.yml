@@ -134,10 +134,12 @@ jobs:
 
       # A click on a screenshot (e.g. a failed step's) opens it enlarged, with a download button (scripts/report-lightbox.mjs).
       # The site's navigation bar on top: back one level (results page, list, test) or up to the README (site-nav.mjs).
-      - name: Add the screenshot viewer and the navigation to the report
+      # Step titles in bold, coloured by result: passed green, failed red, not run gray (report-step-colors.mjs).
+      - name: Add the screenshot viewer, the navigation and the step colours to the report
         run: |
           node scripts/report-lightbox.mjs playwright-report
           node scripts/site-nav.mjs playwright-report "TypeScript report"
+          node scripts/report-step-colors.mjs playwright-report
 
       - name: Upload results for the summary
         uses: actions/upload-artifact@v7
@@ -389,6 +391,7 @@ jobs:
           npx playwright merge-reports --reporter html java-blob
           node scripts/report-lightbox.mjs java-report
           node scripts/site-nav.mjs java-report "Java report"
+          node scripts/report-step-colors.mjs java-report
 
       - name: Upload the Java report
         if: ${{ steps.java-report.outcome == 'success' }}
