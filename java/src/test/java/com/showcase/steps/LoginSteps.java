@@ -25,7 +25,9 @@ public class LoginSteps {
     this.ctx = ctx;
   }
 
-  /** Built on first use: the browser page exists only once the @Before hook has run. */
+  /**
+   * Built on first use: the first call opens the scenario's browser page (PlaywrightContext#page).
+   */
   private LoginPage loginPage() {
     if (loginPage == null) loginPage = new LoginPage(playwright.page());
     return loginPage;

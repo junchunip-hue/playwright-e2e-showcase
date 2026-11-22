@@ -35,6 +35,7 @@ the build only checks it and fails on an unformatted file ([coding rules](coding
 | HTML report | Playwright HTML reporter (`/typescript/`) | the same Playwright HTML report (`/java/`), built from the scenario log by `scripts/java-report.mjs` |
 | Failed step and the steps not run (ADR 0013) | `src/steps/not-run.hooks.ts` + `src/fixtures/not-run.ts`: the steps after a failure are listed right after it, at the same level, as skipped; the test is annotated | Cucumber skips them; `report/ScenarioLog` keeps every step with its status and the failed step's error, which survives CI reruns |
 | Tags and tiers | `src/tags.ts`; Gherkin tags become Playwright tags | the same Gherkin tags; Cucumber tags are JUnit tags (`-Dgroups=smoke`) |
+| Before every scenario/test ("Before Hooks" in the report) | auto fixture `ownToolshopOnly` (`src/fixtures/index.ts`): skips `@admin` and `@own-toolshop` on the public demo; the browser fixtures only for tests that use a page | `Hooks.ownToolshopOnly`, untagged so it runs for every scenario: the same check; the browser opens on a step's first page use |
 | Data-driven tests | Scenario Outline / data table in the shared feature | the same feature |
 | Tag/ID guard | `npm run check:tags` (covers the shared features for both languages) | – (same features, same tags) |
 
