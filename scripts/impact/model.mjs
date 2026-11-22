@@ -25,7 +25,9 @@ export function readAt(rev, path) {
 
 /** Every tracked file of the working tree, or of a revision. */
 export function listFiles(rev) {
-  const out = rev ? git('ls-tree', '-r', '--name-only', rev) : git('ls-files');
+  const out = rev
+    ? git('ls-tree', '-r', '--name-only', rev)
+    : git('ls-files', '--cached', '--others', '--exclude-standard'); // new files too, before they are committed
   return out.split('\n').filter(Boolean);
 }
 
@@ -65,6 +67,12 @@ export function changedFiles(base) {
     }
   }
   for (const f of files) f.path ??= f.oldPath;
+  // Files not committed yet (a local run before `git add`): new, every line added. In CI everything is committed.
+  for (const path of git('ls-files', '--others', '--exclude-standard').split('\n').filter(Boolean)) {
+    const lines = readFileSync(path, 'utf8').split('\n');
+    const added = new Set(lines.map((l, i) => (isNoise(l) ? 0 : i + 1)).filter(Boolean));
+    files.push({ path, oldPath: null, status: 'added', added, removed: new Set() });
+  }
   return files.filter((f) => f.path);
 }
 
@@ -200,14 +208,16 @@ function chainsOf(body) {
   return chains;
 }
 
-function finishUnit(u, lines) {
-  u.body = lines.slice(u.start - 1, u.end).join('\n');
-  // Names in strings and comments are not uses: '/users/register' does not call register().
-  const code = u.body
+/** Source without comments and string contents: names there are not uses ('/users/register' calls no register()). */
+export const codeOnly = (src) =>
+  src
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|[^:])\/\/.*$/gm, '$1')
     .replace(/(["'`])(?:\\.|(?!\1)[^\\\n])*\1/g, '""');
-  u.tokens = new Set(code.match(IDENT) ?? []);
+
+function finishUnit(u, lines) {
+  u.body = lines.slice(u.start - 1, u.end).join('\n');
+  u.tokens = new Set(codeOnly(u.body).match(IDENT) ?? []);
   u.chains = chainsOf(u.body);
   return u;
 }
@@ -424,7 +434,7 @@ function parseJava(file, src) {
     imports: new Set(),
     units: units.map((u) => finishUnit(u, lines)),
     src,
-    tokens: new Set(src.match(IDENT) ?? []),
+    tokens: new Set(codeOnly(src).match(IDENT) ?? []),
   };
 }
 

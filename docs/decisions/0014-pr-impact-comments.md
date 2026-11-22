@@ -26,9 +26,11 @@ two comments up to date:
    every run depends on (config, Hooks.java, the failure reporting) marks every scenario of its language; a reworded
    step that no definition matches any more is a warning. Comment and import lines change nothing and are left out.
 2. **Structure check** (`scripts/pr-structure.mjs`): the architecture rules, TypeScript types, Java compile, the Java
-   dry run, tags and IDs, the step catalogue, each with its first error; and every dependency the PR adds, flagged
-   when it points up through the layers or closes a cycle the base branch did not have. How many files a change
-   reaches is not counted: the first comment already names the scenarios and steps it affects.
+   dry run, tags and IDs, the step catalogue, each with its first error; dependency cycles and
+   dependencies against the layers in the whole repository, both languages, new files and folders included, each
+   marked new in this PR or already on the base branch; and every dependency the PR adds. How many files a change
+   reaches is not counted: the first comment already names the scenarios and steps it affects. A cycle also fails an
+   architecture rule (TypeScript imports and Java class references), so it cannot be merged in either language.
 
 Both are static: no Toolshop, no browser, a few minutes. They inform; the smoke workflow's checks still gate the merge.
 

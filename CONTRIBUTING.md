@@ -94,8 +94,9 @@ Two comments appear on the PR and update with every push ([ci.md](docs/ci.md#pr-
 - **Scenarios this PR can affect:** every scenario, in either language, that uses what you changed, with the step and
   the chain of code that leads to it. Check the ones you did not write, and run the nightly-only ones it lists with
   the `--grep` it gives. Locally: `node scripts/pr-impact.mjs`.
-- **Structure check:** the static checks with their first error, and every dependency you added: ✅ if it points down
-  the layers, ⚠️ if it points up or closes a cycle.
+- **Structure check:** the static checks with their first error; dependency cycles and dependencies against the
+  layers across the whole repository (each marked new in your PR or already there); and every dependency you added:
+  ✅ if it points down the layers, ⚠️ if it points up or closes a cycle. A cycle fails the PR in either language.
 
 If a check fails, its message says what to run. The most common ones:
 

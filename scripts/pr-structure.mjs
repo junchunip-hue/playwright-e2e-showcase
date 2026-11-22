@@ -59,16 +59,14 @@ const arch = (() => {
     for (const spec of suite.specs ?? [])
       for (const t of spec.tests ?? []) {
         const r = t.results?.at(-1);
-        // The assertion's message, and what it received (e.g. the cycle), in one line.
-        const lines = plain(r?.errors?.[0]?.message ?? '')
-          .split('\n')
-          .map((l) => l.trim());
-        const received = lines.find((l) => /^Received/.test(l));
-        tests.push({
-          title: spec.title,
-          ok: r?.status === 'passed',
-          error: [lines[0], received].filter(Boolean).join(' · '),
+        // Each failed assertion's message and what it received (e.g. the cycle), one line each.
+        const errors = (r?.errors ?? []).map((e) => {
+          const lines = plain(e.message ?? '')
+            .split('\n')
+            .map((l) => l.trim());
+          return [lines[0], lines.find((l) => /^Received/.test(l))].filter(Boolean).join(' · ');
         });
+        tests.push({ title: spec.title, ok: r?.status === 'passed', error: errors.join('<br>') });
       }
   };
   try {
@@ -88,7 +86,15 @@ if (arch) {
     'Architecture rules (N3)',
     bad.length ? `❌ ${bad.length} of ${arch.length} failed` : `✅ ${arch.length} passed`,
     bad.length
-      ? bad.map((t) => `${esc(t.title)}: ${esc(t.error.slice(0, 160))}`).join('<br>')
+      ? bad
+          .map(
+            (t) =>
+              `${esc(t.title)}: ${t.error
+                .split('<br>')
+                .map((e) => esc(e.slice(0, 200)))
+                .join('<br>')}`,
+          )
+          .join('<br>')
       : 'pipeline cannot loop or hang, layer rules, TypeScript/Java parity',
   ]);
 } else rows.push(['Architecture rules (N3)', '⚪ not run', 'no report']);
@@ -101,7 +107,7 @@ for (const [id, name, what] of CHECKS) {
   } else rows.push([name, '⚪ not run', what]);
 }
 
-// --- 2. New dependencies: do they follow the layers, do they close a cycle? ------------------------------------
+// --- 2. Dependencies: cycles and layers in the whole repository, and what this PR adds ---------------------
 const head = loadModel(null);
 const before = loadModel(base);
 const changes = changedFiles(base).filter((f) => f.added.size + f.removed.size > 0);
@@ -154,10 +160,6 @@ function cyclesOf(graph) {
   for (const v of graph.keys()) if (!idx.has(v)) visit(v);
   return cycles;
 }
-// Only cycles this PR creates: one that already existed on the base branch is not this PR's doing.
-const known = new Set(cyclesOf(then).map((c) => c.join('|')));
-const newCycles = cyclesOf(now).filter((c) => !known.has(c.join('|')));
-
 // Layers, from the scenario down: a dependency may only point down (or within a layer).
 const LAYERS = [
   [/^tests\/|^src\/steps\/|\/steps\/[^/]*Steps\.java$|\/steps\/api\//, 'steps', 0],
@@ -170,14 +172,28 @@ const LAYERS = [
 ];
 const layer = (f) => LAYERS.find(([re]) => re.test(f)) ?? [null, 'support', 6];
 
-// Every dependency the PR adds (in a changed file), checked against the layers and against new cycles.
-const inNewCycle = (from, to) => newCycles.some((c) => c.includes(from) && c.includes(to));
+// Dependency cycles anywhere in the repository, both languages; one the base branch did not have is this PR's.
+const baseCycles = new Set(cyclesOf(then).map((c) => c.join('|')));
+const cycles = cyclesOf(now).map((files) => ({ files, isNew: !baseCycles.has(files.join('|')) }));
+const inNewCycle = (from, to) => cycles.some((c) => c.isNew && c.files.includes(from) && c.files.includes(to));
+
+// Every dependency against the layers anywhere in the repository; one the base branch did not have is this PR's.
+const oldPathOf = new Map(changes.map((f) => [f.path, f.oldPath ?? f.path]));
+const hadEdge = (from, to) => (then.get(oldPathOf.get(from) ?? from) ?? new Set()).has(to);
+const upward = [];
+for (const [from, tos] of now)
+  for (const to of tos) {
+    const [, fromLayer, fromRank] = layer(from);
+    const [, toLayer, toRank] = layer(to);
+    if (fromRank > toRank) upward.push({ from, to, layers: `${fromLayer} → ${toLayer}`, isNew: !hadEdge(from, to) });
+  }
+
+// The dependencies this PR adds (in its changed files), each checked against the layers and the new cycles.
 const newEdges = [];
 for (const f of changes) {
   if (!now.has(f.path)) continue;
-  const old = then.get(f.oldPath ?? f.path) ?? new Set();
   for (const to of now.get(f.path)) {
-    if (old.has(to)) continue;
+    if (hadEdge(f.path, to)) continue;
     const [, fromLayer, fromRank] = layer(f.path);
     const [, toLayer, toRank] = layer(to);
     const problems = [];
@@ -192,24 +208,46 @@ for (const f of changes) {
     });
   }
 }
-const badEdges = newEdges.filter((e) => e.bad).length;
-const warnings = badEdges + newCycles.length;
-rows.push([
-  'Dependencies',
-  !newEdges.length && !newCycles.length
-    ? '✅ none new'
-    : warnings
-      ? `⚠️ ${[badEdges && `${badEdges} against the layers`, newCycles.length && `${newCycles.length} new cycle${newCycles.length > 1 ? 's' : ''}`].filter(Boolean).join(', ')}`
-      : `✅ ${newEdges.length} new, all follow the layers`,
-  'new dependencies point down the layers (steps → fixtures → pages → data → modules, api → config) and close no cycle',
-]);
+
+const newCycles = cycles.filter((c) => c.isNew).length;
+const newUpward = upward.filter((u) => u.isNew).length;
+const plural = (n, word) => `${n} ${n === 1 ? word : word.replace(/y$/, 'ie')}${n === 1 ? '' : 's'}`;
+rows.push(
+  [
+    'Dependency cycles (whole repository)',
+    cycles.length
+      ? `❌ ${plural(cycles.length, 'cycle')}${newCycles ? `, ${newCycles} new in this PR` : ', none from this PR'}`
+      : '✅ none',
+    'no file depends on itself through others: TypeScript imports and Java class references of every file under `src/`, `tests/` and `java/src/test/java`, new files and folders included',
+  ],
+  [
+    'Layer direction (whole repository)',
+    upward.length
+      ? `⚠️ ${plural(upward.length, 'dependency')} against the layers${newUpward ? `, ${newUpward} new in this PR` : ', none from this PR'}`
+      : '✅ every dependency points down',
+    'steps → fixtures → pages → data → modules, api → config: a building block never uses what is built on it',
+  ],
+  [
+    'Dependencies added by this PR',
+    !newEdges.length
+      ? '✅ none'
+      : newEdges.some((e) => e.bad)
+        ? `⚠️ ${newEdges.filter((e) => e.bad).length} of ${newEdges.length} with a problem`
+        : `✅ ${newEdges.length}, all follow the layers`,
+    'every dependency this PR adds, each checked in the table below',
+  ],
+);
+if (cycles.length) failed++;
 
 // --- 3. The comment ------------------------------------------------------------------------------------------------
+const fromPr = newCycles + newUpward + newEdges.filter((e) => e.bad).length;
 const verdict = failed
-  ? `❌ **${failed} check${failed > 1 ? 's' : ''} failed**: the framework itself breaks with this change, before any scenario runs.`
-  : warnings
-    ? `⚠️ **All checks pass, ${warnings} structural warning${warnings > 1 ? 's' : ''}** below.`
-    : '✅ **No structural risk found**: all checks pass, and no new dependency points against the layers or closes a cycle.';
+  ? `❌ **${plural(failed, 'check')} failed**: the framework itself breaks${cycles.length && !newCycles ? ' (a dependency cycle the base branch already has)' : ''}.`
+  : fromPr
+    ? `⚠️ **All checks pass, but this PR adds ${plural(newUpward, 'dependency')} against the layers** (below).`
+    : upward.length
+      ? `✅ **This PR adds no structural risk.** ${plural(upward.length, 'dependency')} against the layers already exist on the base branch (below).`
+      : '✅ **No structural risk found**: all checks pass, no dependency cycle, every dependency points down the layers.';
 const out = [
   '<!-- pr-impact:structure -->',
   '## 🧱 Structure check of this PR',
@@ -223,22 +261,53 @@ const out = [
   ...rows.map((r) => `| ${r.join(' | ')} |`),
   '',
 ];
+const link = (f) => `[${f}](${blob(f)})`;
 if (newEdges.length) {
   out.push(
-    '### New dependencies in this PR',
+    '### Dependencies added by this PR',
     '',
-    'A file now uses another it did not use before (TypeScript import, Java class name). Dependencies may only point down the layers, from the scenario to its building blocks; one that points up, or closes a cycle, ties the parts together so that a change in either breaks the other.',
+    'A file now uses another it did not use before (TypeScript import, Java class reference). Dependencies may only point down the layers, from the scenario to its building blocks; one that points up, or closes a cycle, ties the parts together so that a change in either breaks the other.',
     '',
     '| From | Now uses | Layers | Check |',
     '|---|---|---|---|',
     ...newEdges
       .sort((a, b) => b.bad - a.bad)
-      .map((e) => `| [${e.from}](${blob(e.from)}) | [${e.to}](${blob(e.to)}) | ${e.layers} | ${e.check} |`),
+      .map((e) => `| ${link(e.from)} | ${link(e.to)} | ${e.layers} | ${e.check} |`),
     '',
   );
 }
-for (const c of newCycles)
-  out.push(`> [!WARNING]\n> New dependency cycle: ${c.map((f) => `\`${f.split('/').pop()}\``).join(' ↔ ')}`, '');
+if (cycles.length) {
+  out.push('### Dependency cycles', '');
+  for (const c of cycles)
+    out.push(
+      `- ${c.isNew ? '**new in this PR**' : 'already on the base branch'}: ${c.files.map((f) => `\`${f}\``).join(' ↔ ')}`,
+    );
+  out.push('');
+}
+if (upward.length) {
+  const table = [
+    '| From | Uses | Layers | |',
+    '|---|---|---|---|',
+    ...upward
+      .sort((a, b) => b.isNew - a.isNew)
+      .map(
+        (u) =>
+          `| ${link(u.from)} | ${link(u.to)} | ${u.layers} | ${u.isNew ? '⚠️ new in this PR' : 'already on the base branch'} |`,
+      ),
+  ];
+  out.push(
+    ...(newUpward
+      ? ['### Dependencies against the layers (whole repository)', '', ...table, '']
+      : [
+          '<details><summary><b>Dependencies against the layers already on the base branch</b> (not from this PR)</summary>',
+          '',
+          ...table,
+          '',
+          '</details>',
+          '',
+        ]),
+  );
+}
 const pipeline = changes.filter((f) => f.path.startsWith('.github/'));
 if (pipeline.length)
   out.push(

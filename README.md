@@ -112,7 +112,7 @@ API scenarios read the same way; the API client stands in for the page
 - Every PR shows what else it can break: a comment lists each scenario, in either language, that uses the changed
   code, with the steps and the chain of code that leads there (`CheckoutModule.finish → CheckoutPage.pay`), its tier and
   whether the PR's smoke runs it; a second comment checks the structure (architecture rules, types, Java compile and dry
-  run, and every new dependency: does it follow the layers, does it close a cycle). Both update on every push
+  run, dependency cycles and layer direction across the whole repository, and every dependency the PR adds). Both update on every push
   ([ADR 0014](docs/decisions/0014-pr-impact-comments.md)).
 - Flaky is visible, never silent: both lanes retry a failed test twice in CI, and a test that passed only on a retry
   turns the verdict gold (⚠️ passed with flaky) and is listed by name with its first error, as an annotation and in the
@@ -174,7 +174,7 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 | UI | U1–U5 | Login, search (incl. UI = API), cart | [`features/ui`](features/ui/), TS + Java |
 | Journeys | U6 (S1), S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | [`tests/quality`](tests/quality/), TS |
-| Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, TS/Java parity, equal CI retries | [`tests/architecture`](tests/architecture/), TS |
+| Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, no dependency cycle (TS imports, Java classes), TS/Java parity, equal CI retries | [`tests/architecture`](tests/architecture/), TS |
 | Control | C1, C2 | Not product tests: fail on purpose every night to show how an API failure (C1) and a UI failure with its screenshot (C2) are reported; never counted | [`features/control`](features/control/), TS + Java |
 
 Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).

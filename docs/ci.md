@@ -125,10 +125,19 @@ failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-
 **2. Structure check** (`scripts/pr-structure.mjs`)
 - The static checks, each with its first error: architecture rules (N3), `typecheck`, Java `test-compile` (with
   Spotless), the Java dry run, `check:tags`, `check:steps`.
-- Every dependency the PR adds: a file that now uses another (TypeScript import, Java class name), with its layers and
-  ✅ when it points down (steps → fixtures → pages → data → modules/api → config) or ⚠️ when it points up (a module that
-  imports a page) or closes a dependency cycle. Only cycles the PR creates count; how many files a change reaches is
-  not counted, since the first comment already lists the scenarios and steps it affects.
+- **Dependency cycles, whole repository:** every file under `src/`, `tests/` and `java/src/test/java`, found by
+  walking the folders, so a new file or subfolder is checked without being registered anywhere. A file depends on what
+  it imports (TypeScript) or on every class it names in its code (Java: imports and same-package classes; comments and
+  strings are left out). Any cycle fails, and each is marked new in this PR or already on the base branch. The same
+  check is an architecture rule (`N3: TypeScript imports and Java class references are acyclic`), so a cycle fails
+  the PR gate in either language.
+- **Layer direction, whole repository:** every dependency must point down, steps → fixtures → pages → data →
+  modules/api → config (by folder in both languages, subfolders included); one that points up, e.g. a page that uses a
+  step, is listed with ⚠️ and marked new in this PR or already there. This catches a loop between layers even where no
+  single file cycle exists. Advisory: it does not fail the gate.
+- **Dependencies added by this PR:** each new dependency with its layers, ✅ when it points down, ⚠️ when it points up
+  or closes a cycle. How many files a change reaches is not counted: the first comment already lists the scenarios and
+  steps it affects.
 
 Locally: `node scripts/pr-impact.mjs --base origin/master` prints the first comment for the current branch.
 
