@@ -9,8 +9,9 @@ import io.cucumber.java.Scenario;
 import org.junit.jupiter.api.Assumptions;
 
 /**
- * Closes the scenario's browser context, if a step opened one (trace kept on failure), and takes
- * the failure screenshot at the step that failed.
+ * Before every scenario, checks whether it may run here; after it, closes its browser context if a
+ * step opened one (trace kept on failure); and takes the failure screenshot at the step that
+ * failed.
  */
 public class Hooks {
   private final PlaywrightContext playwright;
@@ -21,24 +22,21 @@ public class Hooks {
   }
 
   /**
-   * @admin scenarios change catalogue or orders (or need the admin to look them up): our own
-   *     Toolshop only, never the shared public demo. Same rule as the TS ownToolshopOnly and
-   *     adminToken fixtures. Runs before the browser opens, so a skipped scenario costs nothing.
+   * Runs before every scenario, so every scenario's report shows the same "Before Hooks", as in
+   * TypeScript, where the auto fixture of the same name runs for every test
+   * (src/fixtures/index.ts). It checks whether the scenario may run here: @admin scenarios change
+   * catalogue or orders (or need the admin to look them up) and @own-toolshop ones need our own
+   * Toolshop (e.g. its background jobs), so both are skipped on the shared public demo. It opens no
+   * browser: that happens on a step's first page use, so a skipped scenario costs nothing.
    */
-  @Before(value = "@admin", order = 0)
-  public void ownToolshopOnly() {
+  @Before(order = 0)
+  public void ownToolshopOnly(Scenario scenario) {
+    boolean ownOnly =
+        scenario.getSourceTagNames().contains("@admin")
+            || scenario.getSourceTagNames().contains("@own-toolshop");
     Assumptions.assumeFalse(
-        Env.isPublicDemo(), "changes catalogue and orders: our own Toolshop only");
-  }
-
-  /**
-   * @own-toolshop scenarios need our own Toolshop (e.g. its background jobs): skipped on the public
-   *     demo.
-   */
-  @Before(value = "@own-toolshop", order = 0)
-  public void ownToolshopTag() {
-    Assumptions.assumeFalse(
-        Env.isPublicDemo(), "needs our own Toolshop (CI, local Docker), not the public demo");
+        ownOnly && Env.isPublicDemo(),
+        "needs our own Toolshop (CI, local Docker), not the public demo");
   }
 
   /**
