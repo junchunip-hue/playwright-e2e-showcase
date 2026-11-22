@@ -164,8 +164,8 @@ function landing(s) {
     ? `<h2 id="control">Failure controls (not counted)</h2>
 <p>${esc(controlIds)} fail on purpose every night, in both languages, so this page always shows what a failure looks
 like: the steps before it passed, the failing step with its error, and the steps after it not run. C1 is an API test
-(no page, so no screenshot); C2 is a UI test, with a screenshot of the page at the failed step (click it in the report
-to enlarge or download it). They are left out of the verdict, the counts above, the badge and the clean streak. Open
+(no page, so no screenshot and, as in Java, no trace); C2 is a UI test, with a screenshot of the page at the failed step
+(click it in the report to enlarge or download it) and its trace. They are left out of the verdict, the counts above, the badge and the clean streak. Open
 them in the <a href="typescript/#?q=@control">TypeScript report</a> or the <a href="java/#?q=@control">Java report</a>:
 in both they are the failed tests.</p>
 <div class="scroll"><table><tr><th>ID</th><th>Where</th><th>Result</th><th>Failed at step</th><th>Not run after it</th></tr>
