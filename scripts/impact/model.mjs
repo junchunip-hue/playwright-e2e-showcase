@@ -415,15 +415,17 @@ function parseJava(file, src) {
     u.types = types;
     u.staticImports = staticImports;
   }
-  // The class header (and anything outside the members): a change there changes the whole class.
+  // The class declaration (`public class X extends …`): a change there changes the whole class. Imports above it are
+  // not part of it: a class does not use everything its file imports, its members do.
+  const declLine = lines.findIndex((l) => new RegExp(`\\b(class|interface|enum|record)\\s+${cls}\\b`).test(l)) + 1 || 1;
   units.push({
     kind: 'class',
     lang: 'java',
     file,
     cls,
     name: cls,
-    start: 1,
-    end: (units[0]?.start ?? lines.length) - 1,
+    start: declLine,
+    end: Math.max(declLine, (units[0]?.start ?? lines.length) - 1),
     types,
     staticImports,
   });
