@@ -201,8 +201,9 @@ const matches = (def, step) => {
 const addStep = (sc, step, lang, why) => {
   const e = entry(sc);
   e.langs.add(lang);
-  const s = e.steps.get(step.line) ?? { step, why: new Set(), langs: new Set() };
+  const s = e.steps.get(step.line) ?? { step, why: new Set(), byLang: new Map(), langs: new Set() };
   s.why.add(why);
+  s.byLang.set(lang, new Set([...(s.byLang.get(lang) ?? []), why]));
   s.langs.add(lang);
   e.steps.set(step.line, s);
 };
@@ -365,10 +366,14 @@ if (list.length) {
       if (e.featureReasons?.some((r) => r !== 'changed'))
         lines.push(`_scenario ${e.featureReasons.filter((r) => r !== 'changed').join(', ')} in this PR_`);
       for (const w of new Set(e.whole)) lines.push(`_every step: ${w}_`);
-      for (const s of steps)
-        lines.push(
-          `\`${esc(`${s.step.keyword} ${s.step.text}`)}\` ← ${[...s.why].slice(0, 2).join('; ')}${s.langs.has('both') ? '' : ` (${[...s.langs].map((l) => LANGS[l]).join(', ')})`}`,
-        );
+      // Why, per language: "TypeScript: CheckoutModule.finish → CheckoutPage.pay · Java: CheckoutPage.pay".
+      for (const s of steps) {
+        const per = [...s.byLang].map(([lang, whys]) => {
+          const why = [...whys].slice(0, 2).join('; ');
+          return lang === 'both' ? why : s.byLang.size > 1 ? `${LANGS[lang]}: ${why}` : `${why} (${LANGS[lang]})`;
+        });
+        lines.push(`\`${esc(`${s.step.keyword} ${s.step.text}`)}\` ← ${per.join(' · ')}`);
+      }
       const id = `[${sc.id}](${blob(file, sc.line)})${sc.examples ? ` ×${sc.examples}` : ''}`;
       out.push(
         `| ${id} | ${esc(sc.title.replace(/^[A-Z]\d+:\s*/, ''))} | ${tier(sc)} | ${inPr(sc)} | ${langCell(e.langs)} | ${lines.join('<br>')} |`,
