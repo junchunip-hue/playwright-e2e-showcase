@@ -534,7 +534,7 @@ const whatFailed = failed.length
 // failed scenario looks like; a control that passed means that reporting needs a look.
 const controlSection = controlCases.length
   ? [
-      '## Failure control (not counted)',
+      '## Failure controls (not counted)',
       '',
       `${[...new Set(controlCases.map((f) => f.id))].join(', ')} fail on purpose every night, outside the verdict, to show how a failure is`,
       'reported: the steps before it passed, the failing step with its error (a UI failure also with a screenshot of the',
