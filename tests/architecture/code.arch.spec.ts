@@ -32,7 +32,9 @@ test.describe('Code architecture', { tag: [Tag.smoke, Tag.architecture] }, () =>
     expect(findCycle(graph), 'npm script cycle').toBeNull();
   });
 
-  test('N3: TypeScript imports between src/ and tests/ are acyclic', () => {
+  // Every file under src/, tests/ and java/src/test/java, found by walking the folders: a new file or folder is
+  // checked without registering it anywhere. The PR's structure comment (scripts/pr-structure.mjs) lists any cycle.
+  test('N3: TypeScript imports and Java class references are acyclic', () => {
     const files = [
       ...filesUnder(join(ROOT, 'src'), (n) => n.endsWith('.ts')),
       ...filesUnder(join(ROOT, 'tests'), (n) => n.endsWith('.ts')),
@@ -52,6 +54,26 @@ test.describe('Code architecture', { tag: [Tag.smoke, Tag.architecture] }, () =>
     );
 
     expect(graph.size).toBeGreaterThan(10);
-    expect(findCycle(graph), 'import cycle').toBeNull();
+    // Soft, so a TypeScript cycle does not hide a Java one: the failure names both.
+    expect.soft(findCycle(graph), 'import cycle').toBeNull();
+
+    // Java: a class depends on every class it names in its code (an import, or a class of the same package used
+    // without one). Comments and strings are left out: naming a class in a Javadoc is not a dependency.
+    const javaFiles = filesUnder(join(ROOT, 'java/src/test/java'), (n) => n.endsWith('.java'));
+    const classOf = new Map(javaFiles.map((f) => [f.replace(/^.*[\\/]/, '').replace(/\.java$/, ''), rel(f)]));
+    const codeOnly = (src: string) =>
+      src
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/.*$/gm, '')
+        .replace(/"(?:\\.|[^"\\\n])*"/g, '""');
+    const javaGraph = new Map(
+      javaFiles.map((file) => {
+        const names = new Set(codeOnly(readFileSync(file, 'utf8')).match(/[A-Za-z_$][\w$]*/g) ?? []);
+        return [rel(file), [...classOf].filter(([cls, f]) => f !== rel(file) && names.has(cls)).map(([, f]) => f)];
+      }),
+    );
+
+    expect(javaGraph.size).toBeGreaterThan(10);
+    expect(findCycle(javaGraph), 'Java class cycle').toBeNull();
   });
 });

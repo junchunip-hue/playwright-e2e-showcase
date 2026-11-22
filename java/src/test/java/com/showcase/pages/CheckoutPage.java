@@ -7,7 +7,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.Response;
 import com.microsoft.playwright.assertions.LocatorAssertions;
-import com.showcase.data.Payments.Payment;
+import com.showcase.api.ApiClient.Payment;
 import com.showcase.modules.CheckoutModule;
 import java.net.URI;
 import java.util.List;

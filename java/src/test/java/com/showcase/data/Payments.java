@@ -1,22 +1,17 @@
 package com.showcase.data;
 
+import com.showcase.api.ApiClient.Payment;
 import java.time.Year;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Java twin of src/data/payments.ts: payment data in the API's own shape (method + details). The
+ * Java twin of src/data/payments.ts: payment data in the API's own shape (ApiClient.Payment). The
  * checkout form's data-test ids equal the API field names, so one object fills the form and calls
  * the API.
  */
 public final class Payments {
-  /**
-   * {@code details}: data-test id / API field → value; monthly_installments is a select, the rest
-   * text fields.
-   */
-  public record Payment(String method, Map<String, String> details) {}
-
   /** An invalid card breaking one rule; {@code field} is the input the UI must flag. */
   public record InvalidCard(String name, Payment payment, String field) {}
 

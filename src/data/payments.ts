@@ -1,16 +1,11 @@
+import type { Payment } from '../api/ApiClient';
+
 /**
- * Payment test data in the API's own shape (POST /payment/check): `method` + `details`.
+ * Payment test data in the API's own shape (POST /payment/check, the Payment type of the API layer).
  * The checkout form uses the same names as data-test ids (e.g. `credit_card_number`), so one object drives
  * both the UI (pages/checkout.page.ts) and the API (api.payments.check).
  * Formats follow the pinned Toolshop rules (PaymentController::check and the payment form's validators).
  */
-export type PaymentMethod = 'bank-transfer' | 'cash-on-delivery' | 'credit-card' | 'buy-now-pay-later' | 'gift-card';
-
-export interface Payment {
-  method: PaymentMethod;
-  /** data-test id / API field → value; `monthly_installments` is a select, everything else a text field. */
-  details: Record<string, string>;
-}
 
 /** A card expiry that is always in the future: December of next year, as MM/YYYY. */
 const nextYearExpiry = (): string => `12/${new Date().getFullYear() + 1}`;

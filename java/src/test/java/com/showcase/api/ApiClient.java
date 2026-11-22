@@ -11,7 +11,6 @@ import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.RequestOptions;
 import com.showcase.config.Env;
-import com.showcase.data.Payments;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -83,6 +82,13 @@ public final class ApiClient implements AutoCloseable {
 
   /** A favourite with its product (TS: Favorite). */
   public record Favorite(String id, @SerializedName("product_id") String productId, Ref product) {}
+
+  /**
+   * A payment in the API's own shape (POST /payment/check; TS: Payment): {@code details} maps the
+   * data-test id / API field to its value. Test data (data/Payments) builds one for both the
+   * checkout form and the API.
+   */
+  public record Payment(String method, Map<String, String> details) {}
 
   public record Paginated<T>(
       @SerializedName("current_page") int currentPage,
@@ -404,14 +410,14 @@ public final class ApiClient implements AutoCloseable {
   }
 
   /** POST /payment/check, raw response. No login needed. */
-  public APIResponse paymentCheckRequest(Payments.Payment payment) {
+  public APIResponse paymentCheckRequest(Payment payment) {
     return request.post(
         "/payment/check",
         json(Map.of("payment_method", payment.method(), "payment_details", payment.details())));
   }
 
   /** Succeeds only for "Payment was successful". */
-  public void checkPayment(Payments.Payment payment) {
+  public void checkPayment(Payment payment) {
     APIResponse res = paymentCheckRequest(payment);
     ensureOk(res, "POST /payment/check");
     String message = GSON.fromJson(res.text(), JsonObject.class).get("message").getAsString();

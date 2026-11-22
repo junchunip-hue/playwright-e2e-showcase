@@ -174,7 +174,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 |---|---|---|---|
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
-| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, imports), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, page/module file naming, bddgen before every Playwright run) | PR static stage | ✅ |
+| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, TypeScript imports, Java class references), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, page/module file naming, bddgen before every Playwright run) | PR static stage | ✅ |
 
 ### Control (`features/control`, tag `@control`; nightly, outside the verdict)
 A control is not a product test. It fails on purpose, at the same step, every night, so the reports always show what a
