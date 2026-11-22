@@ -187,10 +187,14 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   report is built, `scripts/report-lightbox.mjs` adds a viewer: a click on a screenshot opens it enlarged, with a
   download button. Playwright's own `error-context.md` (the error again, plus a text snapshot of the page) is left
   out by `src/reporters/no-error-context.ts`, listed before the other reporters, since Playwright has no option for
-  it: the evidence is the screenshot, in both languages. Traces: TypeScript records one on the first retry of a
-  failed test, Java one for every failed attempt; the failure controls run without retries, so the TypeScript control
-  step records with `--trace=retain-on-failure` and C2 has its trace in both reports. (TypeScript also traces the API
-  calls of C1 and keeps a video of a failed UI test; the Java API client and Java runs have neither.)
+  it: the evidence is the screenshot, in both languages. Traces, for browser tests only in both languages:
+  TypeScript records one on the first retry of a failed test, Java one for every failed attempt; the failure controls
+  run without retries, so with `SUITE=control` TypeScript keeps the failed run's trace and C2 has its trace in both
+  reports. API tests (the `api` project, C1 too) record none, as in Java: their trace would show an empty page and
+  the request, and the error already says what was expected and what came back. A trace still lists Playwright's
+  "error-context" attachment among its actions (the trace is closed before the reporter can take it out). TypeScript
+  also keeps a video of a failed UI test; Java has none. In the reports, a trace's thumbnail opens the trace viewer;
+  only links to an image open the screenshot viewer.
 - **IDs:** every test title (except setup/seed) starts with an ID from [test-plan.md](test-plan.md), e.g. `U6: ...`.
 - `npm run check:tags` lists all tests without a browser and prints the count per tag. It fails on unknown tags, a
   missing or duplicate tier, or a missing/unknown ID. Java runs the same feature files, so the check covers both.

@@ -69,7 +69,8 @@ const VIEWER = `${MARK}
     const link = e.target.closest && e.target.closest('a[href]');
     if (!link) return;
     const href = link.href;
-    if (!isImage(href) && !link.querySelector('img')) return;
+    // Only links to an image: a trace's thumbnail is an image too, but its link opens the trace viewer.
+    if (!isImage(href)) return;
     e.preventDefault();
     e.stopPropagation();
     // The thumbnail link has no text: take the attachment's name from the link to the same file in the list.
