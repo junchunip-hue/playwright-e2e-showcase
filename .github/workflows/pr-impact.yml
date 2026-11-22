@@ -3,8 +3,8 @@ name: PR impact
 # Two comments on every pull request, updated on each push, next to the smoke tests (not instead of them):
 #   1. Scenario impact: every feature scenario the change can affect, the steps in it and why, per language
 #      (scripts/pr-impact.mjs: changed lines → code that uses them → step definitions → scenario steps).
-#   2. Structure check: architecture rules, types, Java compile and dry run, tags, step catalogue, and how far the
-#      changed code reaches, dependency cycles and dependencies against the layers (scripts/pr-structure.mjs).
+#   2. Structure check: architecture rules, types, Java compile and dry run, tags, step catalogue, and every new
+#      dependency: does it follow the layers, does it close a cycle (scripts/pr-structure.mjs).
 # Static analysis only: no Toolshop, no browser. It reports; the smoke workflow's checks gate the merge.
 on:
   pull_request:

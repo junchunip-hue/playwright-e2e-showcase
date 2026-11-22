@@ -112,7 +112,7 @@ API scenarios read the same way; the API client stands in for the page
 - Every PR shows what else it can break: a comment lists each scenario, in either language, that uses the changed
   code, with the steps and the chain of code that leads there (`CheckoutModule.finish → CheckoutPage.pay`), its tier and
   whether the PR's smoke runs it; a second comment checks the structure (architecture rules, types, Java compile and dry
-  run, how far the changed files reach, cycles, dependencies against the layers). Both update on every push
+  run, and every new dependency: does it follow the layers, does it close a cycle). Both update on every push
   ([ADR 0014](docs/decisions/0014-pr-impact-comments.md)).
 - Flaky is visible, never silent: both lanes retry a failed test twice in CI, and a test that passed only on a retry
   turns the verdict gold (⚠️ passed with flaky) and is listed by name with its first error, as an annotation and in the

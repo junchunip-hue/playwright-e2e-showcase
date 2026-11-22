@@ -23,7 +23,7 @@ itself and would race S3.
 | Workflow | Trigger | What runs | Browsers |
 |---|---|---|---|
 | `pr-smoke.yml` | Every PR and push to `master` | **Static:** lint, format (Prettier), typecheck, `check:tags`, `check:steps`, `test:architecture` ([coding rules](coding-rules.md))<br/>**Then:** suite `pr` (smoke + a11y + visual) on API + Chromium, and in parallel the Java lane: Spotless format check, a dry run that binds every feature's steps (seconds, no browser), then the Java smoke suite | Chromium |
-| `pr-impact.yml` | Every PR push | Two PR comments, kept up to date: the **scenarios the change can affect** (with the steps and why, per language) and a **structure check** (architecture rules, types, Java compile and dry run, tags, steps, reach, cycles, layer direction). Static, informative; see [PR impact comments](#pr-impact-comments) | none |
+| `pr-impact.yml` | Every PR push | Two PR comments, kept up to date: the **scenarios the change can affect** (with the steps and why, per language) and a **structure check** (architecture rules, types, Java compile and dry run, tags, steps, and every new dependency: does it follow the layers, does it close a cycle). Static, informative; see [PR impact comments](#pr-impact-comments) | none |
 | `nightly-regression.yml` | 02:00 UTC, manual, PRs that change it | Suite `nightly` (everything except the agents' seed and the failure controls) in 3 shards, plus the full Java suite; then the failure controls C1 (API) and C2 (UI) in both languages, separately (fail on purpose, not counted) | Chromium, Firefox, WebKit |
 | `update-visual-baselines.yml` | PR label `update-snapshots` | Regenerates Linux baselines, verifies them with a second run, commits them to the PR, and comments how to get PR checks on that commit (GitHub runs no workflow for a push made by Actions) | Chromium |
 
@@ -125,10 +125,10 @@ failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-
 **2. Structure check** (`scripts/pr-structure.mjs`)
 - The static checks, each with its first error: architecture rules (N3), `typecheck`, Java `test-compile` (with
   Spotless), the Java dry run, `check:tags`, `check:steps`.
-- How far each changed file reaches: the files that use it, directly and recursively (TypeScript imports, Java class
-  names), how many of them are step or test files, and whether it sits in a dependency cycle.
-- New dependencies the PR adds, flagged when one points up through the layers (steps → fixtures → pages → data →
-  modules/api → config), e.g. a module that imports a page.
+- Every dependency the PR adds: a file that now uses another (TypeScript import, Java class name), with its layers and
+  ✅ when it points down (steps → fixtures → pages → data → modules/api → config) or ⚠️ when it points up (a module that
+  imports a page) or closes a dependency cycle. Only cycles the PR creates count; how many files a change reaches is
+  not counted, since the first comment already lists the scenarios and steps it affects.
 
 Locally: `node scripts/pr-impact.mjs --base origin/master` prints the first comment for the current branch.
 
