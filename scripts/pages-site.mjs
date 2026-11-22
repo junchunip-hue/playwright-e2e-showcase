@@ -155,7 +155,7 @@ function landing(s) {
   const controlFailed = control.filter((f) => f.failed);
   const controlIds = [...new Set(control.map((f) => f.id))].join(', ');
   const controlNote = control.length
-    ? `<br>Failure controls ${esc(controlIds)}: ${controlFailed.length === control.length ? 'failed on purpose, as intended' : '⚠️ did not fail: check the failure reporting'}, not counted. <a href="#control">See where it failed ↓</a>`
+    ? `<br>Failure controls ${esc(controlIds)}: ${controlFailed.length === control.length ? 'failed on purpose, as intended' : '⚠️ did not fail: check the failure reporting'}, not counted. <a href="#control">See where they failed ↓</a>`
     : '';
   const tsControl = control.filter((f) => !f.project.startsWith('Java')).length;
   const javaControl = control.length - tsControl;
