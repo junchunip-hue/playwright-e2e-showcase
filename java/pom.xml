@@ -14,7 +14,7 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <!-- Keep in step with @playwright/test in ../package.json -->
-    <playwright.version>1.65.0</playwright.version>
+    <playwright.version>1.65.1</playwright.version>
     <junit.version>5.14.4</junit.version>
     <gson.version>2.15.0</gson.version>
     <!-- 7.x is the last line on JUnit 5 (8.x needs JUnit 6) -->
