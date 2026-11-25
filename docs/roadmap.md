@@ -5,9 +5,10 @@
 
 **Status (2026-11-19): done by its own definition, all four criteria met.** Risks, techniques and demo are met
 ([§5](#5-definition-of-done)). Stability was met on 2026-11-18, reopened the next day by a flaky S2 (a test race,
-fixed in #27), and met again the same day: nightlies #40, #44, #47, #50 and #53 on `main` were clean. The "clean
-nightlies" README badge keeps counting after every nightly. Nothing is in progress. What comes next is keeping it
-green and, only if wanted, the optional or backlog items: see [§6](#6-what-comes-next).
+fixed in #27), and met again the same day: nightlies #40, #44, #47, #50 and #53 on `main` (the default branch then, now
+`master`) were clean. The "clean nightlies" README badge keeps counting after every nightly. Nothing is in progress.
+What comes next is keeping it green and, only if wanted, the optional or backlog items: see
+[§6](#6-what-comes-next).
 
 **2026-11-20:** every A/U/S scenario is now a shared Gherkin feature run by both languages through steps → pages →
 modules (R7, [ADR 0012](decisions/0012-gherkin-features-with-layered-steps.md), PRs #35–#41), with a clean nightly
@@ -30,7 +31,7 @@ The IDs continue the test plan: `S` = story, a multi-step journey across roles o
 
 | ID | Scenario | Steps (abridged) | Builds on | Shows |
 |---|---|---|---|---|
-| **S1** ✅ | First purchase (exists as U6) | API-registered customer → cart → sign in → postcode lookup → pay → invoice verified via API | – | Hybrid API/UI, isolated data |
+| **S1** ✅ | First purchase (exists as U6) | API-registered customer → cart → sign in → saved address (filled in and looked up by the app) → pay → invoice verified via API | – | Hybrid API/UI, isolated data |
 | **S2** ✅ | Payment matrix (U7) | Same journey, data-driven over every payment method; invalid card is flagged, cannot be submitted, is rejected by the API (A9) and creates no invoice | S1 | Data-driven tests, negative path, one data model for UI and API |
 | **S3** ✅ | Admin publishes, customer buys | Admin creates a product via API (A8) → customer finds it by search → buys it → admin ships the order via API → customer sees it listed and SHIPPED | A8, S1 | Cross-role E2E, two sessions in one test |
 | **S4** ✅ | Guest checkout (U8) | Anonymous cart → guest tab (email, name) → postcode lookup → pay → `POST /invoices/guest`; the admin finds the order (guest invoices belong to no user) | S1 | Second entry path into the same flow |

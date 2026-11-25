@@ -86,7 +86,8 @@ API scenarios read the same way; the API client stands in for the page
   In the report a click on it opens it enlarged, with a download button. An API step has no page, so no screenshot:
   its error shows the expected and received values. A failed UI test also has its Playwright trace; API tests record
   none, in either language. Playwright's extra `error-context.md` download is left out
-  ([`no-error-context.ts`](src/reporters/no-error-context.ts)), so both languages show the same evidence.
+  ([`no-error-context.ts`](src/reporters/no-error-context.ts)). One difference is left: TypeScript also keeps a video of
+  a failed UI test, Java records none.
 - To show both every night, two failure controls fail on purpose at step 2 of 4, in both languages, with steps 3 and 4
   listed as not run: C1 an API test ([`api-failure.feature`](features/control/api-failure.feature)), C2 a UI test with
   its screenshot ([`ui-failure.feature`](features/control/ui-failure.feature)). They appear in the reports as real
@@ -215,7 +216,7 @@ scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)
-.github/        workflows (PR smoke, PR impact, nightly, baselines) and shared actions
+.github/        workflows (PR smoke, PR impact, nightly, baselines), shared actions, Dependabot, the PR template
 .githooks/      pre-push: code style and step checks (installed by npm install)
 CONTRIBUTING.md how to add a scenario, step by step
 CLAUDE.md       guide for Claude Code sessions, local or cloud: what to read, structure, checks, working rules
@@ -239,7 +240,8 @@ Every npm test script runs `bddgen` first, which turns the features into Playwri
 a step outside these scripts, run `npx bddgen` before `npx playwright test`.
 
 Locally the tests run against the public demo, which other people use too:
-- **`@admin` scenarios are skipped** there: they change catalogue or orders, so they run against our own Toolshop only (CI).
+- **`@admin` scenarios (A8, S3, S4) and `@own-toolshop` (S5) are skipped** there: they change catalogue or orders, or
+  need Toolshop's background jobs, so they run against our own Toolshop only (CI).
 - **Visual baselines are per OS and stay local:** CI compares the committed Linux ones. Your first run creates baselines
   for your OS, and the demo's shared data (e.g. new brands in the filter list) can make them stale later. Refresh them
   with `npx playwright test tests/quality/visual.spec.ts --update-snapshots`
@@ -248,6 +250,7 @@ Locally the tests run against the public demo, which other people use too:
 Java (JDK 21+, the same `.env`), see [docs/java.md](docs/java.md):
 ```bash
 cd java
+./mvnw exec:java -Dexec.args="install chromium"   # once: the suite downloads no browser by itself
 ./mvnw test -Dgroups=smoke   # the smoke scenarios (the PR gate)
 ./mvnw test                  # every feature (nightly), without the failure controls
 ./mvnw test -Dgroups=control -DexcludedGroups=   # only the failure controls C1, C2: fail on purpose

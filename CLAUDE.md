@@ -22,7 +22,8 @@ Chromium, Firefox and WebKit plus Java, and publishes both reports and a
 4. **Layers point down only:** steps → fixtures → pages → data → modules / api → config. A step creates no locator, a
    module only declares locators, waits live in pages, no fixed sleeps.
 5. **Both reports look and behave the same**; the TypeScript Playwright HTML report is the reference. Failure evidence:
-   the screenshot at the failed step plus the trace for browser tests, nothing for API tests.
+   the screenshot at the failed step plus the trace for browser tests, nothing for API tests. One known difference:
+   TypeScript also keeps a video of a failed UI test ([ADR 0013](docs/decisions/0013-failures-stay-failures.md)).
 6. **CI never uses the public demo.** Toolshop is pinned in one place, `.github/actions/toolshop-start`.
 7. **IDs are never renumbered or reused.** Next free: A12, U12, S8, N4, C3 (U7–U11 and S7 are taken;
    [how IDs work](docs/test-plan.md#how-ids-work)).
@@ -74,7 +75,8 @@ src/  (TypeScript)         java/src/test/java/com/showcase/  (Java)
   reporters/, a11y/, visual/ ↔ report/ScenarioLog (feeds the Java report)
 tests/         architecture/ (N3), quality/ (N1 visual, N2 a11y), auth.setup.ts, ui/seed.spec.ts (agents' seed)
 scripts/       suite runner, demo, format, step catalogue, CI summary, reports, Pages site, PR impact
-.github/       workflows/ (pr-smoke, pr-impact, nightly-regression, update-visual-baselines), actions/ (shared)
+.github/       workflows/ (pr-smoke, pr-impact, nightly-regression, update-visual-baselines), actions/ (shared),
+               pull_request_template.md, dependabot.yml
 .claude/agents/, .mcp.json   Playwright Test Agents: exploration only; generated specs are not committed (specs/README.md)
 ```
 
@@ -133,11 +135,10 @@ cd java
   ([ADR 0004](docs/decisions/0004-visual-baselines-from-ci.md)).
 - **If `CI` is set,** runs retry, TypeScript adds Firefox and WebKit, and Maven checks the Java style instead of fixing
   it; unset it for a local-like run.
-- **`java/mvnw.cmd` modified in a clean checkout:** a Dependabot wrapper update committed it with CRLF. Fix it with
-  `git add --renormalize java/mvnw.cmd`, in its own PR.
 
 ## Local Windows
 
 Playwright's Firefox can fail to start with an SxS `mozglue` error, so local runs use Chromium (`ALL_BROWSERS=1` adds
-the others) and CI covers the rest. In the Claude desktop app the files sit in its virtualised AppData; a copy outside
-AppData starts (`PLAYWRIGHT_BROWSERS_PATH` sets where browsers are installed).
+the others) and CI covers the rest. In the Claude desktop app the files sit in its virtualised AppData; installed
+outside it, all three browsers start: set `PLAYWRIGHT_BROWSERS_PATH` to a folder outside AppData, then
+`npx playwright install`. Java uses the same folder while both suites are on the same Playwright build.

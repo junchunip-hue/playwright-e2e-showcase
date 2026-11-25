@@ -20,7 +20,7 @@ Why CI never uses the public demo: Cloudflare serves a bot challenge to CI runne
 flowchart LR
   subgraph TS["Job: smoke (TypeScript)"]
     direction TB
-    T0["Toolshop build starts<br/>in the background"] --> T1["1 · Static: lint · tsc ·<br/>check:tags · architecture + parity"] --> T2["2 · Toolshop ready"] --> T3["3 · setup + api"] --> T4["4 · chromium<br/>smoke · a11y · visual"] --> T5["5 · HTML report<br/>ts-results.json"]
+    T0["Toolshop build starts<br/>in the background"] --> T1["1 · Static: lint · format · tsc ·<br/>check:tags · check:steps ·<br/>architecture + parity"] --> T2["2 · Toolshop ready"] --> T3["3 · setup + api"] --> T4["4 · chromium<br/>smoke · a11y · visual"] --> T5["5 · HTML report<br/>ts-results.json"]
   end
   subgraph JV["Job: smoke (Java), in parallel"]
     direction TB
@@ -33,7 +33,7 @@ Stages of the TypeScript lane:
 
 | # | Stage | Checks | Fails fast because |
 |---|---|---|---|
-| 1 | Static (TypeScript job, while Toolshop builds) | ESLint (incl. Playwright rules), `tsc --noEmit`, tag check, architecture tests | Broken code or a looping pipeline never reaches a browser |
+| 1 | Static (TypeScript job, while Toolshop builds) | ESLint (incl. Playwright rules), Prettier, `tsc --noEmit`, tag check, step catalogue check, architecture tests | Broken code or a looping pipeline never reaches a browser |
 | 2 | Environment | Containers up, DB seeded, `/products` and UI return 200 | Infra problems are reported as infra, not as test failures |
 | 3 | `setup` + `api` (parallel) | Session for UI tests; API contract checks | Cheapest layer first |
 | 4 | `chromium` | UI smoke incl. checkout E2E, accessibility, visual (depends on `setup`) | Only runs when login works |
