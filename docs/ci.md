@@ -29,7 +29,7 @@ itself and would race S3.
 
 **Dependency updates:** Dependabot (`.github/dependabot.yml`) opens one grouped PR per week for npm, Maven and GitHub
 Actions, gated by the same PR checks. Major versions of npm and Maven packages stay manual, and so do Playwright minors: TypeScript and Java move
-to the same minor in one PR, which an architecture test checks ([roadmap §6](roadmap.md#6-what-comes-next)).
+to the same minor in one PR, by hand: no check compares the two versions ([roadmap §6](roadmap.md#6-what-comes-next)).
 
 ```mermaid
 flowchart LR
