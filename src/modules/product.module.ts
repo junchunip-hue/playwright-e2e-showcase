@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test';
 
 /** Module layer: locators of a product's detail page. Java twin: modules/ProductModule.java. */
 export class ProductModule {
+  /** The heading: the name, plus the ECO badge of an eco-friendly product (ProductPage.productName reads the name). */
   readonly name: Locator;
   readonly quantity: Locator;
   readonly addToCart: Locator;

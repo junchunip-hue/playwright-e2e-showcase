@@ -17,7 +17,7 @@ test.describe('Accessibility (anonymous visitor)', { tag: [Tag.a11y, Tag.regress
   test('N2: product detail page', async ({ api, productPage, makeAxeBuilder }, testInfo) => {
     const product = await api.products.findInStock();
     await productPage.open(product.id);
-    await expect(productPage.ui.name).toHaveText(product.name);
+    expect(await productPage.productName()).toBe(product.name);
     await expectNoNewViolations(makeAxeBuilder, testInfo, 'product');
   });
 

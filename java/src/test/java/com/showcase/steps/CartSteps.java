@@ -1,6 +1,7 @@
 package com.showcase.steps;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.showcase.modules.HeaderModule;
 import com.showcase.pages.ProductPage;
@@ -33,7 +34,7 @@ public class CartSteps {
 
   @Then("the product page shows that product")
   public void thePageShowsThatProduct() {
-    assertThat(productPage().ui.name).hasText(ctx.product().name());
+    assertEquals(ctx.product().name(), productPage().productName());
   }
 
   @When("I add it to the cart on the product page")

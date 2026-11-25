@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 import { ProductModule } from '../modules/product.module';
 
@@ -13,6 +13,21 @@ export class ProductPage {
 
   async open(productId: string): Promise<void> {
     await this.page.goto(`/product/${productId}`);
+  }
+
+  /**
+   * The product's name, once the page shows it. Toolshop puts the ECO badge of an eco-friendly product inside the
+   * same heading, so only the heading's own text counts, not that of its child elements.
+   */
+  async productName(): Promise<string> {
+    await expect(this.ui.name).toBeVisible();
+    const ownText = await this.ui.name.evaluate((heading) =>
+      Array.from(heading.childNodes)
+        .filter((node) => node.nodeType === Node.TEXT_NODE)
+        .map((node) => node.textContent)
+        .join(''),
+    );
+    return ownText.trim();
   }
 
   async addToCart(): Promise<void> {

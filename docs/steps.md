@@ -42,11 +42,11 @@ sentence. If it is not, write it so it names the page or API it acts on. The rul
 
 | Step | Used in | TypeScript | Java |
 |---|---|---|---|
-| When I add it to the cart on the product page | journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/guest-checkout.feature, journeys/shopper.feature, ui/cart.feature | [cart.steps.ts:14](../src/steps/cart.steps.ts#L14) | [CartSteps.java:39](../java/src/test/java/com/showcase/steps/CartSteps.java#L39) |
+| When I add it to the cart on the product page | journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/guest-checkout.feature, journeys/shopper.feature, ui/cart.feature | [cart.steps.ts:14](../src/steps/cart.steps.ts#L14) | [CartSteps.java:40](../java/src/test/java/com/showcase/steps/CartSteps.java#L40) |
 | When I add the first product to my favourites on its product page | journeys/shopper.feature | [shopper.steps.ts:13](../src/steps/shopper.steps.ts#L13) | [ShopperSteps.java:50](../java/src/test/java/com/showcase/steps/ShopperSteps.java#L50) |
 | When I compare both products | journeys/shopper.feature | [shopper.steps.ts:23](../src/steps/shopper.steps.ts#L23) | [ShopperSteps.java:64](../java/src/test/java/com/showcase/steps/ShopperSteps.java#L64) |
-| When I open that product's page | journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/guest-checkout.feature, journeys/shopper.feature, ui/cart.feature | [cart.steps.ts:5](../src/steps/cart.steps.ts#L5) | [CartSteps.java:29](../java/src/test/java/com/showcase/steps/CartSteps.java#L29) |
-| Then the product page shows that product | ui/cart.feature | [cart.steps.ts:10](../src/steps/cart.steps.ts#L10) | [CartSteps.java:34](../java/src/test/java/com/showcase/steps/CartSteps.java#L34) |
+| When I open that product's page | journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/guest-checkout.feature, journeys/shopper.feature, ui/cart.feature | [cart.steps.ts:5](../src/steps/cart.steps.ts#L5) | [CartSteps.java:30](../java/src/test/java/com/showcase/steps/CartSteps.java#L30) |
+| Then the product page shows that product | ui/cart.feature | [cart.steps.ts:10](../src/steps/cart.steps.ts#L10) | [CartSteps.java:35](../java/src/test/java/com/showcase/steps/CartSteps.java#L35) |
 
 ## Favourites page
 
@@ -79,7 +79,7 @@ sentence. If it is not, write it so it names the page or API it acts on. The rul
 
 | Step | Used in | TypeScript | Java |
 |---|---|---|---|
-| Then the cart badge shows {int} | journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/guest-checkout.feature, journeys/shopper.feature, ui/cart.feature | [cart.steps.ts:18](../src/steps/cart.steps.ts#L18) | [CartSteps.java:44](../java/src/test/java/com/showcase/steps/CartSteps.java#L44) |
+| Then the cart badge shows {int} | journeys/admin-to-customer.feature, journeys/checkout.feature, journeys/guest-checkout.feature, journeys/shopper.feature, ui/cart.feature | [cart.steps.ts:18](../src/steps/cart.steps.ts#L18) | [CartSteps.java:45](../java/src/test/java/com/showcase/steps/CartSteps.java#L45) |
 | Then the header shows my user menu | ui/login.feature | [login.steps.ts:24](../src/steps/login.steps.ts#L24) | [LoginSteps.java:56](../java/src/test/java/com/showcase/steps/LoginSteps.java#L56) |
 
 ## Network: mocked API answers

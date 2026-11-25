@@ -1,5 +1,7 @@
 package com.showcase.pages;
 
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
 import com.showcase.modules.ProductModule;
@@ -21,6 +23,25 @@ public class ProductPage {
 
   public void open(String productId) {
     page.navigate("/product/" + productId);
+  }
+
+  /**
+   * The product's name, once the page shows it. Toolshop puts the ECO badge of an eco-friendly
+   * product inside the same heading, so only the heading's own text counts, not that of its child
+   * elements.
+   */
+  public String productName() {
+    assertThat(ui.name).isVisible();
+    String ownText =
+        (String)
+            ui.name.evaluate(
+                """
+                heading => Array.from(heading.childNodes)
+                  .filter(node => node.nodeType === Node.TEXT_NODE)
+                  .map(node => node.textContent)
+                  .join('')\
+                """);
+    return ownText.trim();
   }
 
   public void addToCart() {

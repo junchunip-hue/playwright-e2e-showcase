@@ -8,7 +8,12 @@ import com.microsoft.playwright.Page;
  * src/modules/product.module.ts.
  */
 public class ProductModule {
+  /**
+   * The heading: the name, plus the ECO badge of an eco-friendly product (ProductPage.productName
+   * reads the name).
+   */
   public final Locator name;
+
   public final Locator addToCart;
   public final Locator addToFavorites;
 
