@@ -9,6 +9,7 @@ import com.microsoft.playwright.Tracing;
 import com.showcase.api.ApiClient;
 import com.showcase.config.Env;
 import java.nio.file.Path;
+import java.util.Map;
 
 /**
  * One scenario's browser and API client: a fresh browser context (signed out) per scenario, on one
@@ -45,7 +46,11 @@ public class PlaywrightContext {
   }
 
   private static Playwright startPlaywright() {
-    Playwright playwright = Playwright.create();
+    // create() would install every missing default browser (Firefox and WebKit too). The suite
+    // uses only Chromium, installed once with the CLI (docs/java.md).
+    Playwright playwright =
+        Playwright.create(
+            new Playwright.CreateOptions().setEnv(Map.of("PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD", "1")));
     playwright
         .selectors()
         .setTestIdAttribute("data-test"); // Toolshop exposes data-test -> getByTestId()
