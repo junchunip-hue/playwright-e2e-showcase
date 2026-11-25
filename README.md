@@ -21,9 +21,9 @@ language with the TypeScript report and the Java report (both Playwright HTML re
 failure controls, TypeScript vs Java per test ID, and the history.
 
 <p align="center">
-  <img src="docs/images/checkout-journey.gif" width="720"
+  <img src="docs/images/checkout-journey.webp" width="720"
        alt="U6 checkout journey: product page, cart, sign-in, saved billing address, cash on delivery, order confirmation with invoice number">
-  <br><sub>U6 as the test drives it, from the screencast of a real run's Playwright trace (Chromium, about 5 seconds).</sub>
+  <br><sub>U6 as the test drives it, from the screencast of a real run's Playwright trace (Chromium; loading frames cut, slowed to read).</sub>
 </p>
 
 **Status:** done by its own [definition](docs/roadmap.md#5-definition-of-done): every P1/P2 risk covered, every demo
@@ -271,4 +271,4 @@ HEADED=1 SLOW_MO=400 ./mvnw test -Dcucumber.filter.name="U6: .*"   # live demo o
 
 [MIT](LICENSE) for the code in this repository. Toolshop, the application under test, is
 [testsmith-io/practice-software-testing](https://github.com/testsmith-io/practice-software-testing) under its own
-license; the GIF and summary images show its UI and results from runs against it.
+license; the animation and summary images show its UI and results from runs against it.
