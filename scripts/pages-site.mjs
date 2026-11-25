@@ -11,6 +11,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { CODE_FONT, TEXT_FONT } from './report-fonts.mjs';
 // The site's navigation bar, the same on every page: back one level, or any level above.
 import { NAV_CSS, navBar, REPO } from './site-nav.mjs';
 
@@ -70,7 +71,7 @@ const STYLE = `
 @media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9198a1;--line:#3d444d;--card:#151b23;--link:#4493f8;
 --ok-bg:#16260d;--ok-fg:#b5dd8f;--ok-line:#5a9a2a;--flaky-bg:#2e2210;--flaky-fg:#f0c674;--flaky-line:#b07a1c;
 --bad-bg:#2d1212;--bad-fg:#f2a7a7;--bad-line:#c94a4a;--skip-bg:#1f1f1c;--skip-fg:#c9c7bf;--skip-line:#77766f}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 ${TEXT_FONT}}
 main{max-width:980px;margin:0 auto;padding:24px 16px 48px}a{color:var(--link)}h1{font-size:24px;margin:0 0 4px}
 h2{font-size:18px;margin:32px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}.muted{color:var(--muted)}
 .verdict{margin:18px 0;padding:14px 16px;border-radius:8px;border-left:5px solid}.verdict strong{font-size:17px}
@@ -80,7 +81,7 @@ h2{font-size:18px;margin:32px 0 10px;padding-bottom:6px;border-bottom:1px solid 
 .lane{border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:var(--card)}.lane h3{margin:0 0 6px;font-size:16px}
 .big{font-size:28px;font-weight:600}.button{display:inline-block;margin-top:10px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);text-decoration:none;background:var(--bg)}
 table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--muted);font-weight:600}.scroll{overflow-x:auto}code{font:12.5px ui-monospace,SFMono-Regular,Menlo,monospace}
+th{color:var(--muted);font-weight:600}.scroll{overflow-x:auto}code{font:12.5px ${CODE_FONT};font-variant-ligatures:none}
 .dots{display:flex;flex-wrap:wrap;gap:6px}.dot{display:inline-block;min-width:44px;text-align:center;padding:3px 6px;border-radius:6px;border:1px solid;text-decoration:none;font-size:13px}
 details{border:1px solid var(--line);border-radius:6px;margin:6px 0;background:var(--card)}summary{cursor:pointer;padding:8px 10px}
 details ol{margin:0 0 10px;padding:0 12px 0 40px}details p{margin:6px 12px}.step-failed,.step-undefined{color:var(--bad-fg)}.step-skipped,.step-pending{color:var(--muted)}`;

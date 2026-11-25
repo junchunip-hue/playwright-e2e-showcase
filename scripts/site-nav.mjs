@@ -16,6 +16,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { TEXT_FONT } from './report-fonts.mjs';
+
 const repoName = process.env.GITHUB_REPOSITORY || 'junchunip-hue/playwright-e2e-showcase';
 const [owner, name] = repoName.split('/');
 export const REPO = `https://github.com/${repoName}`;
@@ -27,7 +29,7 @@ const MARK = '<!-- site-nav -->';
 export const NAV_CSS = `
 #snav{--sn-bg:#f6f8fa;--sn-fg:#1f2328;--sn-muted:#59636e;--sn-line:#d1d9e0;--sn-link:#0969da;--sn-btn:#fff;
   display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;padding:7px 16px;background:var(--sn-bg);color:var(--sn-fg);
-  border-bottom:1px solid var(--sn-line);font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;flex:none}
+  border-bottom:1px solid var(--sn-line);font:13px/1.4 ${TEXT_FONT};flex:none}
 @media (prefers-color-scheme:dark){#snav{--sn-bg:#151b23;--sn-fg:#e6edf3;--sn-muted:#9198a1;--sn-line:#3d444d;--sn-link:#4493f8;--sn-btn:#0d1117}}
 .light-mode #snav{--sn-bg:#f6f8fa;--sn-fg:#1f2328;--sn-muted:#59636e;--sn-line:#d1d9e0;--sn-link:#0969da;--sn-btn:#fff}
 .dark-mode #snav{--sn-bg:#151b23;--sn-fg:#e6edf3;--sn-muted:#9198a1;--sn-line:#3d444d;--sn-link:#4493f8;--sn-btn:#0d1117}

@@ -140,6 +140,7 @@ jobs:
           node scripts/report-lightbox.mjs playwright-report
           node scripts/site-nav.mjs playwright-report "TypeScript report"
           node scripts/report-step-colors.mjs playwright-report
+          node scripts/report-fonts.mjs playwright-report # readable text and code on every system
 
       - name: Upload results for the summary
         uses: actions/upload-artifact@v7
@@ -392,6 +393,7 @@ jobs:
           node scripts/report-lightbox.mjs java-report
           node scripts/site-nav.mjs java-report "Java report"
           node scripts/report-step-colors.mjs java-report
+          node scripts/report-fonts.mjs java-report
 
       - name: Upload the Java report
         if: ${{ steps.java-report.outcome == 'success' }}

@@ -54,7 +54,7 @@ const HUBS = [
   [/^tests\/auth\.setup\.ts$/, 'ts', 'signs in before every TypeScript browser test', 'browser'],
   [/^java\/pom\.xml$|^java\/src\/test\/resources\//, 'java', 'configures every Java run'],
   [
-    /^java\/src\/test\/java\/com\/showcase\/(RunCucumberTest|steps\/Hooks|report\/ScenarioLog|config\/Env)\.java$/,
+    /^java\/src\/test\/java\/com\/showcase\/(RunCucumberTest|steps\/Hooks|report\/(?:ScenarioLog|ActionLog|ActionAgent)|config\/Env)\.java$/,
     'java',
     'runs around every Java scenario',
   ],

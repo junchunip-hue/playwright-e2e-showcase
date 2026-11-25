@@ -121,7 +121,7 @@ failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-
 - Files every run depends on mark every scenario of their language: `playwright.config.ts`, `package.json`,
   `src/tags.ts`, `src/config/env.ts`, the failure reporting (`src/fixtures/not-run.ts`, `evidence.ts`,
   `not-run.hooks.ts`), the sign-in setup (browser scenarios), `java/pom.xml`, `RunCucumberTest`, `Hooks`,
-  `ScenarioLog`, `Env`.
+  `ScenarioLog`, `ActionLog`, `ActionAgent`, `Env`.
 - The comment lists, per feature, each scenario with its affected steps, why (the chain of code), the language, the
   tier and whether this PR's smoke runs it; then the spec tests (N1, N2) the change reaches, and the command to run the
   nightly-only scenarios on the branch.
@@ -233,7 +233,9 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   both languages (`src/fixtures/evidence.ts` from the AfterStep hook; Java `Hooks` `@AfterStep`, stored by
   `ScenarioLog` and attached by `scripts/java-report.mjs`). Playwright's own end-of-test screenshot is off. After each
   report is built, `scripts/report-lightbox.mjs` adds a viewer: a click on a screenshot opens it enlarged, with a
-  download button, and `scripts/report-step-colors.mjs` styles the step tree: every step title in bold, coloured
+  download button, `scripts/report-fonts.mjs` names readable fonts (also in the trace viewers and on the results page;
+  without it, errors and code use the browser's default `monospace`, which is hard to read on East Asian systems), and
+  `scripts/report-step-colors.mjs` styles the step tree: every step title in bold, coloured
   like its icon (passed green, failed red, not run in a readable gray), from Before Hooks to After Hooks, nested
   steps included. Playwright's own `error-context.md` (the error again, plus a text snapshot of the page) is left
   out by `src/reporters/no-error-context.ts`, listed before the other reporters, since Playwright has no option for
