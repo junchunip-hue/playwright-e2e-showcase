@@ -110,6 +110,8 @@ cd java
 - `master` changes only through a PR (ruleset, no bypass). Required: `smoke (TypeScript)`, `smoke (Java)` and
   `test verdict / PR smoke`. `PR impact` is not required, but read its two comments (affected scenarios, structure
   check) on every PR. The N3 rules, cycles included, fail the gate; the comment's layer-direction list is advisory.
+- A PR body follows [the template](.github/pull_request_template.md), also with `gh pr create --body`, which skips it:
+  Why, What, Checked (`Run`, `Not run`, `Nightly`); Notes only when there is something to say. Dependabot is exempt.
 - The repository has no auto-merge and does not delete merged branches: wait for the checks, then
   `gh pr merge <n> --merge --delete-branch`.
 - The PR gate runs no `@regression` scenario (visual and a11y tests are the exception): when a change affects one, the

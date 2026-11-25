@@ -86,6 +86,9 @@ and stops the push if something is out of date.
 
 ## 8. Open the PR
 
+Fill in the [PR template](.github/pull_request_template.md): Why, What and Checked always, Notes only if needed. Leave
+out what the checks and comments below already report.
+
 The PR gate runs the static checks (lint, format, types, tags, steps, architecture), the TypeScript smoke suite and
 the Java dry run plus smoke suite. All of them must pass before the PR can merge. A `@regression` scenario runs in the
 nightly after the merge, on Chromium, Firefox and WebKit.
