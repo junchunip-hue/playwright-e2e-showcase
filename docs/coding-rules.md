@@ -16,6 +16,7 @@ can merge.
 | Every feature step has a TypeScript and a Java definition | `bddgen` (TS) · Cucumber dry run (Java) | PR gate |
 | Steps call pages and create no locators; modules only declare locators | `npm run test:architecture` (N3) | PR gate |
 | Every scenario (A, U, S, C) exists in both languages and matches the test plan's Java column | `npm run test:architecture` (N3) | PR gate |
+| TypeScript and Java use the same Playwright minor | `npm run test:architecture` (N3) | PR gate |
 | Every test has exactly one tier tag, only known tags, and a title that starts with its ID | `npm run check:tags` | PR gate |
 | Lint and types | `npm run lint`, `npm run typecheck` | PR gate |
 

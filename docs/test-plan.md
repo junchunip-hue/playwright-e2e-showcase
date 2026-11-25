@@ -174,7 +174,7 @@ checks recovery; a future error message would fail S6 on purpose, which is the m
 |---|---|---|---|
 | N1 | Visual regression: header, login form, contact form, catalogue filters, full login page (masked) | PR + nightly | ✅ |
 | N2 | Accessibility: axe-core WCAG 2.1 A/AA on 6 pages, known-issue baseline ([ADR 0003](decisions/0003-accessibility-known-issues.md)) | PR + nightly | ✅ |
-| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, TypeScript imports, Java class references), every job and browser install bounded; TS/Java parity with this plan, equal CI retries; Gherkin layers (modules only locators, steps no locators, page/module file naming, bddgen before every Playwright run) | PR static stage | ✅ |
+| N3 | Architecture: no self-triggering workflows, no cycles (actions, workflow_run, npm scripts, projects, TypeScript imports, Java class references), every job and browser install bounded; TS/Java parity with this plan, equal CI retries, same Playwright minor; Gherkin layers (modules only locators, steps no locators, page/module file naming, bddgen before every Playwright run) | PR static stage | ✅ |
 
 ### Control (`features/control`, tag `@control`; nightly, outside the verdict)
 A control is not a product test. It fails on purpose, at the same step, every night, so the reports always show what a
@@ -213,11 +213,11 @@ passes, the way failures are reported needs a look.
 | S6 | 3 | regression | – | ✅ | Chromium, Firefox, WebKit | `features/journeys/resilience.feature` |
 | N1 | 5 | regression, visual | ✅ (`@visual`) | ✅ | Chromium | TypeScript only |
 | N2 | 6 | regression, a11y | ✅ (`@a11y`) | ✅ | Chromium | TypeScript only |
-| N3 | 20 | smoke, architecture | static stage | ✅ | none | TypeScript only |
+| N3 | 21 | smoke, architecture | static stage | ✅ | none | TypeScript only |
 | C1 | 1 | control | – | ✅ | API (project `api`), nightly control step only | `features/control/api-failure.feature`: fails on purpose, not counted |
 | C2 | 1 | control | – | ✅ | Chromium, nightly control step only | `features/control/ui-failure.feature`: fails on purpose with a screenshot, not counted |
 
-"Tests" counts TypeScript test cases per ID (72 in total, plus the failure controls C1 and C2; data-driven cases count once
+"Tests" counts TypeScript test cases per ID (73 in total, plus the failure controls C1 and C2; data-driven cases count once
 each). Gherkin features run
 in both languages with the same tier. `@admin` tests run only against our own Toolshop, never the public demo.
 

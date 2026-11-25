@@ -80,7 +80,7 @@ repository, not a scenario.
   the failed attempts as `<flakyFailure>` in the XML, and the summary lists it under Flaky tests like a TypeScript
   one. An architecture test keeps the two counts equal.
 - **Same Playwright release line.** `playwright.version` in `java/pom.xml` follows the minor version of
-  `@playwright/test` (Java patch releases can lag behind Node).
+  `@playwright/test` (Java patch releases can lag behind Node). An architecture test keeps the two minors equal.
 
 **Debugging a Java failure:** a scenario that uses a page records a Playwright trace (the browser opens on its first
 page use, so API-only scenarios record none) and keeps it only on failure

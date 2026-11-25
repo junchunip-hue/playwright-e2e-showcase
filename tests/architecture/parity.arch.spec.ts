@@ -86,4 +86,24 @@ test.describe('TypeScript/Java parity', { tag: [Tag.smoke, Tag.architecture] }, 
     expect(java, 'Java reruns (pom.xml, profile ci-retries) vs TypeScript retries').toBe(ts);
     expect(javaOutsideProfile, 'Java reruns set outside the CI-only profile').toBe(false);
   });
+
+  test('N3: both suites use the same Playwright minor', () => {
+    // The minor decides which browser builds a suite downloads. A patch may differ: Java's can lag behind Node's.
+    const lock = JSON.parse(readFileSync(join(ROOT, 'package-lock.json'), 'utf8')) as {
+      packages: Record<string, { version?: string }>;
+    };
+    const pom = readFileSync(join(ROOT, 'java', 'pom.xml'), 'utf8');
+    const minor = (version?: string): string | undefined => /^\d+\.\d+(?=\.)/.exec(version ?? '')?.[0];
+    // The lock file, not package.json's range: it is the version `npm ci` installs.
+    const ts = minor(lock.packages['node_modules/@playwright/test']?.version);
+    const java = minor(/<playwright\.version>\s*([^<\s]+)/.exec(pom)?.[1]);
+    const dependency =
+      /<groupId>com\.microsoft\.playwright<\/groupId>\s*<artifactId>playwright<\/artifactId>\s*<version>([^<]+)</.exec(
+        pom,
+      )?.[1];
+
+    expect(ts, 'package-lock.json: version of @playwright/test').toBeDefined();
+    expect(dependency, 'java/pom.xml: the Playwright dependency uses the property').toBe('${playwright.version}');
+    expect(java, 'Playwright minor: java/pom.xml playwright.version vs package-lock.json @playwright/test').toBe(ts);
+  });
 });
