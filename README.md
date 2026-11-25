@@ -9,12 +9,12 @@ Gherkin feature**, and run by two suites: **Playwright + TypeScript** (playwrigh
 (Cucumber-JVM on JUnit 5). It targets the open-source [Toolshop](https://practicesoftwaretesting.com) demo shop.
 
 **At a glance:** 34 feature scenarios (41 test cases with Scenario Outline examples, plus the failure controls C1 and C2)
-run in both languages · 72 TypeScript test cases including quality and architecture checks: 110 runs a night across
-Chromium, Firefox and WebKit (108 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per
+run in both languages · 73 TypeScript test cases including quality and architecture checks: 111 runs a night across
+Chromium, Firefox and WebKit (109 test runs + 2 sign-in setups, one per shard with browser tests) · one verdict per
 run: ✅ passed, ⚠️ passed with flaky (or only on a rerun), ❌ failed.
 
-The "nightly tests" badge above is the latest nightly's count of runs in both languages (110 TypeScript, including the
-sign-in setups, + 41 Java = 151), coloured like its verdict. On top of that run the failure controls C1 (API) and C2 (UI),
+The "nightly tests" badge above is the latest nightly's count of runs in both languages (111 TypeScript, including the
+sign-in setups, + 41 Java = 152), coloured like its verdict. On top of that run the failure controls C1 (API) and C2 (UI),
 which fail on purpose and are never counted: the TypeScript and the Java report each list them as their failed tests,
 and the results page shows them right below the two lanes. Both badges open the nightly's results page: the verdict, the count split by
 language with the TypeScript report and the Java report (both Playwright HTML reports, in the same format), the
@@ -174,7 +174,7 @@ the TypeScript lane did. That run itself still said "Passed": it exposed the bug
 | UI | U1–U5 | Login, search (incl. UI = API), cart | [`features/ui`](features/ui/), TS + Java |
 | Journeys | U6 (S1), S2–S6 | First purchase, every payment method, admin → customer → admin, guest checkout, returning customer with invoice download, slow or failing backend (network mocking) | [`features/journeys`](features/journeys/), TS + Java |
 | Quality | N1, N2 | Visual regression, accessibility (WCAG 2.1 AA) | [`tests/quality`](tests/quality/), TS |
-| Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, no dependency cycle (TS imports, Java classes), TS/Java parity, equal CI retries | [`tests/architecture`](tests/architecture/), TS |
+| Architecture | N3 | Pipeline cannot loop or hang (bounded, cached browser installs), layer rules, no dependency cycle (TS imports, Java classes), TS/Java parity, equal CI retries, same Playwright minor | [`tests/architecture`](tests/architecture/), TS |
 | Control | C1, C2 | Not product tests: fail on purpose every night to show how an API failure (C1) and a UI failure with its screenshot (C2) are reported; never counted | [`features/control`](features/control/), TS + Java |
 
 Full inventory, with where each ID runs: [docs/test-plan.md](docs/test-plan.md#3-test-inventory).
