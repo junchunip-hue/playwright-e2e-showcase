@@ -72,7 +72,7 @@ src/  (TypeScript)         java/src/test/java/com/showcase/  (Java)
   api/         ↔ api/          API client and response contracts (zod / Contracts)
   config/      ↔ config/       URLs and accounts (.env; the defaults are the public demo)
   tags.ts                      the only tag and suite registry: what the PR gate and the nightly run
-  reporters/, a11y/, visual/ ↔ report/ScenarioLog (feeds the Java report)
+  reporters/, a11y/, visual/ ↔ report/ScenarioLog, ActionLog, ActionAgent (feed the Java report)
 tests/         architecture/ (N3), quality/ (N1 visual, N2 a11y), auth.setup.ts, ui/seed.spec.ts (agents' seed)
 scripts/       suite runner, demo, format, step catalogue, CI summary, reports, Pages site, PR impact
 .github/       workflows/ (pr-smoke, pr-impact, nightly-regression, update-visual-baselines), actions/ (shared),

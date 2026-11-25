@@ -51,6 +51,7 @@ Scenario: U6: new customer buys an in-stock product with cash on delivery
   And I confirm my saved billing address             # the app fills in and looks up the saved address
   And I pay with "cash-on-delivery"
   Then that customer's invoice exists at the cart total   # assert via API
+  And the invoice is billed to the customer's country
 ```
 
 **2. Each sentence goes down the same layers in both languages**
@@ -88,7 +89,11 @@ API scenarios read the same way; the API client stands in for the page
   none, in either language. Playwright's extra `error-context.md` download is left out
   ([`no-error-context.ts`](src/reporters/no-error-context.ts)). One difference is left: TypeScript also keeps a video of
   a failed UI test, Java records none.
-- To show both every night, two failure controls fail on purpose at step 2 of 4, in both languages, with steps 3 and 4
+- Every step opens in both reports to what it did: browser actions, API requests and assertions, each with its target,
+  duration and line of code. Playwright Test records them in TypeScript,
+  [`ActionLog.java`](java/src/test/java/com/showcase/report/ActionLog.java) in Java, without logging code in steps or
+  pages.
+- To show failures and their evidence every night, two failure controls fail on purpose at step 2 of 4, in both languages, with steps 3 and 4
   listed as not run: C1 an API test ([`api-failure.feature`](features/control/api-failure.feature)), C2 a UI test with
   its screenshot ([`ui-failure.feature`](features/control/ui-failure.feature)). They appear in the reports as real
   failures and are left out of the verdict, the counts and the badge
@@ -207,12 +212,13 @@ tests/
   ui/           the Playwright Test Agents' seed
   features/     generated from features/ by `npx bddgen` (git-ignored)
 java/           the same features in Java: RunCucumberTest + steps/ → pages/ → modules/, api/, data/; report/ScenarioLog
-                logs every scenario attempt with its steps, hooks and errors for the summary and the Java report
+                logs every scenario attempt with its steps, hooks and errors for the summary and the Java report;
+                report/ActionLog records what each step did, called by ActionAgent (Byte Buddy)
 scripts/        suite runner, demo, formatter (format.mjs), step catalogue (step-catalog.mjs), bounded browser
                 install, the CI pipeline summary, the Java report (java-report.mjs), the screenshot viewer for both
                 reports (report-lightbox.mjs), the step colours (report-step-colors.mjs) and fonts (report-fonts.mjs), the
-                site's navigation bar (site-nav.mjs), the nightly's history and results page on GitHub Pages, and the PR impact comments
-                (pr-impact.mjs, pr-structure.mjs, impact/model.mjs)
+                site's navigation bar (site-nav.mjs), the nightly's history and results page on GitHub Pages, and the PR
+                impact comments (pr-impact.mjs, pr-structure.mjs, impact/model.mjs)
 .claude/agents/ Playwright Test Agents (planner, generator, healer) with .mcp.json: an exploration aid; plans land in
                 specs/ and become features, never committed generated specs (see specs/README.md)
 docs/           strategy, test plan, coding rules, step catalogue (steps.md), CI, Java, roadmap, decisions (ADRs)
