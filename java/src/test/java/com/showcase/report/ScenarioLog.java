@@ -32,7 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * turns it into a Playwright HTML report): the scenario's feature, line, tags, start and duration,
  * and every step in order, the hooks included, each with its status, duration, line and, if it
  * failed, its error. A step is "passed", "failed" or "skipped": Cucumber does not run the steps
- * after a failed one, and they are listed as skipped. A screenshot taken at a failure (Hooks,
+ * after a failed one, and they are listed as skipped. Each step carries the actions it ran ({@link
+ * ActionLog}): what the report shows when a step is opened. A screenshot taken at a failure (Hooks,
  * {@code @AfterStep}) is written next to the log, under attachments/, and listed with the step that
  * failed.
  *
@@ -45,9 +46,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ScenarioLog implements ConcurrentEventListener {
   private static final AtomicBoolean TRUNCATED = new AtomicBoolean();
   private static final Gson GSON = new Gson();
-
-  /** Errors are kept whole (Playwright's messages span several lines), up to this length. */
-  private static final int MAX_ERROR = 4000;
 
   private final Path file;
   private final ThreadLocal<List<Map<String, Object>>> steps =
@@ -66,11 +64,13 @@ public class ScenarioLog implements ConcurrentEventListener {
   @Override
   public void setEventPublisher(EventPublisher publisher) {
     if (Boolean.parseBoolean(System.getProperty("cucumber.execution.dry-run"))) return;
+    ActionAgent.install();
     publisher.registerHandlerFor(TestRunStarted.class, e -> truncateOnce());
     publisher.registerHandlerFor(
         TestCaseStarted.class,
         e -> {
           steps.get().clear();
+          ActionLog.drain();
           started.set(e.getInstant().toEpochMilli());
         });
     publisher.registerHandlerFor(TestStepFinished.class, this::step);
@@ -90,6 +90,7 @@ public class ScenarioLog implements ConcurrentEventListener {
 
   private void step(TestStepFinished event) {
     Map<String, Object> entry = new LinkedHashMap<>();
+    List<Map<String, Object>> actions = ActionLog.drain();
     if (event.getTestStep() instanceof PickleStepTestStep step) {
       entry.put("text", step.getStep().getKeyword() + step.getStep().getText());
       entry.put("line", step.getStep().getLine());
@@ -98,10 +99,16 @@ public class ScenarioLog implements ConcurrentEventListener {
       // fails, whose attachment goes to the step it follows anyway (attach()).
       boolean stepHook =
           hook.getHookType() == HookType.BEFORE_STEP || hook.getHookType() == HookType.AFTER_STEP;
-      if (stepHook && event.getResult().getStatus() != Status.FAILED) return;
+      if (stepHook && event.getResult().getStatus() != Status.FAILED) {
+        // What it did (the screenshot) shows under the step it ran after, as in TypeScript.
+        Map<String, Object> owner = lastGherkinStep();
+        if (owner != null) addActions(owner, actions);
+        return;
+      }
       // Hooks show as "Before Hooks" / "After Hooks" in the report, like Playwright's own.
       entry.put("hook", hook.getHookType() == HookType.BEFORE ? "before" : "after");
-      entry.put("text", hook.getCodeLocation().replaceFirst("^com\\.showcase\\.", ""));
+      String method = hook.getCodeLocation().replaceFirst("\\(.*$", "");
+      entry.put("text", "Hook \"" + method.replaceFirst("^.*\\.", "") + "\"");
     } else {
       return;
     }
@@ -110,8 +117,8 @@ public class ScenarioLog implements ConcurrentEventListener {
     entry.put("start", event.getInstant().toEpochMilli() - duration);
     entry.put("duration", duration);
     Throwable error = event.getResult().getError();
-    if (event.getResult().getStatus() == Status.FAILED && error != null)
-      entry.put("error", message(error));
+    if (event.getResult().getStatus() == Status.FAILED && error != null) putError(entry, error);
+    addActions(entry, actions);
     steps.get().add(entry);
   }
 
@@ -121,8 +128,7 @@ public class ScenarioLog implements ConcurrentEventListener {
    */
   @SuppressWarnings("unchecked")
   private void attach(EmbedEvent event) {
-    Map<String, Object> owner = null;
-    for (Map<String, Object> s : steps.get()) if (!s.containsKey("hook")) owner = s;
+    Map<String, Object> owner = lastGherkinStep();
     if (owner == null) return;
     String extension = event.getMediaType().endsWith("png") ? ".png" : ".bin";
     String name = "attachments/" + UUID.randomUUID() + extension;
@@ -149,7 +155,7 @@ public class ScenarioLog implements ConcurrentEventListener {
     entry.put("start", started.get());
     entry.put("duration", event.getInstant().toEpochMilli() - started.get());
     Throwable error = event.getResult().getError();
-    if (error != null) entry.put("error", message(error));
+    if (error != null) putError(entry, error);
     entry.put("steps", List.copyOf(steps.get()));
     String line = GSON.toJson(entry) + System.lineSeparator();
     synchronized (ScenarioLog.class) {
@@ -166,8 +172,22 @@ public class ScenarioLog implements ConcurrentEventListener {
     }
   }
 
-  private static String message(Throwable error) {
-    String text = String.valueOf(error.getMessage()).strip();
-    return text.length() > MAX_ERROR ? text.substring(0, MAX_ERROR) + "…" : text;
+  private Map<String, Object> lastGherkinStep() {
+    Map<String, Object> last = null;
+    for (Map<String, Object> s : steps.get()) if (!s.containsKey("hook")) last = s;
+    return last;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static void addActions(Map<String, Object> entry, List<Map<String, Object>> actions) {
+    if (actions.isEmpty()) return;
+    ((List<Map<String, Object>>) entry.computeIfAbsent("actions", k -> new ArrayList<>()))
+        .addAll(actions);
+  }
+
+  /** The message, and the lines of the suite it came from, innermost first. */
+  private static void putError(Map<String, Object> entry, Throwable error) {
+    entry.put("error", ActionLog.message(error));
+    entry.put("frames", ActionLog.frames(error));
   }
 }

@@ -37,6 +37,7 @@ the build only checks it and fails on an unformatted file ([coding rules](coding
 | API client (the page layer of API steps) | `src/api/` (per resource), steps in `src/steps/api/` | `api/ApiClient.java`, steps in `steps/api/` |
 | Response contracts | `src/api/schemas.ts` (zod) | `api/Contracts.java` (same rules, same failure format) |
 | HTML report | Playwright HTML reporter (`/typescript/`) | the same Playwright HTML report (`/java/`), built from the scenario log by `scripts/java-report.mjs` |
+| What a step did (opened in "Test Steps") | recorded by Playwright Test: actions, requests, `expect` calls, each with its target and line of code | the same, recorded by `report/ActionLog`: `ActionAgent` (Byte Buddy) calls it around Playwright's and JUnit's public methods, so steps and pages need no logging code |
 | Failed step and the steps not run (ADR 0013) | `src/steps/not-run.hooks.ts` + `src/fixtures/not-run.ts`: the steps after a failure are listed right after it, at the same level, as skipped; the test is annotated | Cucumber skips them; `report/ScenarioLog` keeps every step with its status and the failed step's error, which survives CI reruns |
 | Tags and tiers | `src/tags.ts`; Gherkin tags become Playwright tags | the same Gherkin tags; Cucumber tags are JUnit tags (`-Dgroups=smoke`) |
 | Before every scenario/test ("Before Hooks" in the report) | auto fixture `ownToolshopOnly` (`src/fixtures/index.ts`): skips `@admin` and `@own-toolshop` on the public demo; the browser fixtures only for tests that use a page | `Hooks.ownToolshopOnly`, untagged so it runs for every scenario: the same check; the browser opens on a step's first page use |
@@ -90,6 +91,10 @@ repository, not a scenario.
 page use, so API-only scenarios record none) and keeps it only on failure
 (`target/playwright/`); CI uploads it as `junit-reports-traces` (PR) or `junit-reports-nightly-traces`, next to the
 Surefire XML, also when the test passed on a rerun (the trace is the failed attempt's). Open it with `npx playwright show-trace <file>.zip`.
+
+**Known differences in the report:** the browser opens in the step that first needs it ("Launch browser", "Create
+context", "Create page" show there; in TypeScript under "Before Hooks"), assertions keep their Java names, and the
+trace viewer lists Playwright calls without the Gherkin steps around them.
 
 **Known difference:** TypeScript logs in once for single-page tests (`setup` project + `storageState`); Java signs in
 inside the test. Journeys use fresh customers in both.

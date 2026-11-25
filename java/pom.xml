@@ -17,6 +17,7 @@
     <playwright.version>1.65.1</playwright.version>
     <junit.version>5.14.4</junit.version>
     <gson.version>2.15.0</gson.version>
+    <byte-buddy.version>1.18.17</byte-buddy.version>
     <!-- 7.x is the last line on JUnit 5 (8.x needs JUnit 6) -->
     <cucumber.version>7.34.9</cucumber.version>
     <!-- Where Surefire writes its XML; the PR's step dry run points it elsewhere (-Dsurefire.reportsDirectory=...). -->
@@ -88,6 +89,19 @@
       <version>${gson.version}</version>
       <scope>test</scope>
     </dependency>
+    <!-- Records what each step does, for the Java report (com.showcase.report.ActionAgent) -->
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>${byte-buddy.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy-agent</artifactId>
+      <version>${byte-buddy.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -103,6 +117,8 @@
         <version>3.6.1</version>
         <configuration>
           <reportsDirectory>${surefire.reportsDirectory}</reportsDirectory>
+          <!-- com.showcase.report.ActionAgent attaches to this JVM; JDK 21+ warns without this flag. -->
+          <argLine>-XX:+EnableDynamicAgentLoading</argLine>
           <!-- Record scenario names ("U6: ...") in the XML reports, so the CI summary can match tests to IDs. -->
           <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
             <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>

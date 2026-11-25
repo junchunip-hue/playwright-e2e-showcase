@@ -9,8 +9,11 @@
 //     Gherkin tags as chips and project "api" (features/api, the API failure control C1) or "chromium" (everything else);
 //   - every attempt as a result, so a scenario that passed on a CI rerun shows as flaky, as in TypeScript;
 //   - "Before Hooks", each Gherkin step and "After Hooks" as top-level steps, with durations; the failed step carries
-//     its error, and the steps after it are listed as skipped (not run); the attempt's annotations name the failed
-//     step and list the steps not run ("failed step", "not run"), as in TypeScript;
+//     its error, and the steps after it are listed as skipped; the attempt's annotations name the failed step and list
+//     the steps not run ("failed step", "not run"), as in TypeScript;
+//   - inside each step what it did (com.showcase.report.ActionLog): browser actions, API requests and assertions, with
+//     their target, duration, error and the line of Java code, which opens as a code snippet, as in TypeScript;
+//   - an error with the line of Java code it came from and the code around it;
 //   - the screenshot taken at the failed step (steps/Hooks.java, @AfterStep) attached to that step, like TypeScript;
 //   - the Playwright trace of a failed scenario (java/target/playwright/<scenario>/trace.zip) as its trace attachment.
 //
@@ -33,7 +36,19 @@ if (!outDir || !logDirs.length) {
 }
 
 const ROOT = process.cwd();
-const PLAYWRIGHT = createRequire(import.meta.url)('@playwright/test/package.json').version;
+// As in playwright.config.ts (testDir): paths in the report are relative to it, so Java code reads "../java/src/...",
+// like "../src/..." in TypeScript. No feature file lies below it, so a Gherkin step shows no snippet of itself.
+const REPORT_ROOT = join(ROOT, 'tests');
+const require = createRequire(import.meta.url);
+const PLAYWRIGHT = require('@playwright/test/package.json').version;
+/** A Playwright selector as Java code, e.g. getByTestId("email"); the raw selector if Playwright's formatter moves. */
+const locatorText = (selector) => {
+  try {
+    return require('playwright-core/lib/coreBundle').iso.asLocator('java', selector);
+  } catch {
+    return selector;
+  }
+};
 const id = (...parts) => createHash('sha1').update(parts.join('\u0000')).digest('hex').slice(0, 32);
 const CONTROL = /^C\d+:/;
 const CONTROL_NOTE =
@@ -105,7 +120,7 @@ emit('onConfigure', {
     globalTimeout: 0,
     maxFailures: 0,
     metadata: {},
-    rootDir: ROOT,
+    rootDir: REPORT_ROOT,
     shard: null,
     version: PLAYWRIGHT,
     workers: 1,
@@ -165,7 +180,64 @@ for (const [name, files] of byProject) {
 }
 emit('onBegin');
 
-const error = (message) => ({ message, stack: message });
+const sources = new Map();
+/** The lines of a source file of this repository, or none. */
+function source(file) {
+  if (!sources.has(file)) {
+    const path = join(ROOT, file);
+    sources.set(file, existsSync(path) ? readFileSync(path, 'utf8').split(/\r?\n/) : []);
+  }
+  return sources.get(file);
+}
+/** Where a line of Java code is, at its first character. */
+const codeLocation = ({ file, line }) => ({
+  file: join(ROOT, file),
+  line,
+  column: (source(file)[line - 1] ?? '').search(/\S|$/) + 1,
+});
+/** The code around a line, as Playwright Test shows it below an error. */
+function codeFrame({ file, line }) {
+  const lines = source(file);
+  const from = Math.max(line - 2, 1);
+  const to = Math.min(line + 2, lines.length);
+  const width = String(to).length;
+  const shown = [];
+  for (let n = from; n <= to; n++) {
+    const text = lines[n - 1];
+    shown.push(`${n === line ? '>' : ' '} ${String(n).padStart(width)} | ${text}`.trimEnd());
+    if (n === line) shown.push(`  ${' '.repeat(width)} | ${' '.repeat(text.search(/\S|$/))}^`);
+  }
+  return `   at ../${file}:${line}\n\n${shown.join('\n')}`;
+}
+/** As in Playwright Test: the expected value green, the received one red, the call log dimmed. */
+const green = (text) => `\u001b[32m${text}\u001b[39m`;
+const red = (text) => `\u001b[31m${text}\u001b[39m`;
+const dim = (text) => `\u001b[2m${text}\u001b[22m`;
+function coloured(message) {
+  const at = message.indexOf('Call log:\n');
+  const head = at >= 0 ? message.slice(0, at) : message;
+  const log = at >= 0 ? message.slice(at) : '';
+  return (
+    head
+      .replace(/^(Expected[^:\n]*: *)(.+)$/gm, (_, label, value) => label + green(value))
+      .replace(/^(Received[^:\n]*: *)(.+)$/gm, (_, label, value) => label + red(value))
+      .replace(/expected: (<.*>) but was: (<.*>)$/gm, (_, a, b) => `expected: ${green(a)} but was: ${red(b)}`) +
+    log.replace(/^(?!Call log:).+$/gm, (line) => dim(line))
+  );
+}
+/** An error with the suite's lines it came from, innermost first (com.showcase.report.ActionLog). */
+function error(message, frames = []) {
+  const text = coloured(message);
+  const stack = frames.map((f) => `\n    at ${f.function} (${join(ROOT, f.file)}:${f.line})`).join('');
+  const top = frames.find((f) => source(f.file).length);
+  return {
+    message: text,
+    stack: text + stack,
+    ...(top ? { location: codeLocation(top), snippet: codeFrame(top) } : {}),
+  };
+}
+/** When the last action in a list ended: a step lasts as long as what ran in it (the failure screenshot included). */
+const endOf = (list = []) => Math.max(0, ...list.map((x) => (x.start ?? 0) + (x.duration ?? 0)));
 let firstStart = Infinity;
 let lastEnd = 0;
 let anyFailed = false;
@@ -184,6 +256,29 @@ for (const sc of scenarios.values()) {
       result: { id: resultId, retry, workerIndex: 0, parallelIndex: 0, startTime: start },
     });
 
+    // What a step did, nested as it ran.
+    const actions = (list, parentStepId) => {
+      for (const x of list ?? []) {
+        const stepId = id(resultId, String(events.length));
+        const subtitle = [x.selector && locatorText(x.selector), x.subtitle].filter(Boolean).join(' ');
+        emit('onStepBegin', {
+          ...at,
+          step: {
+            id: stepId,
+            parentStepId,
+            title: x.title,
+            ...(subtitle ? { subtitle } : {}),
+            category: x.category,
+            startTime: x.start,
+            location: { ...codeLocation(x), file: `../${x.file}` }, // relative to REPORT_ROOT, as in a blob report
+          },
+        });
+        actions(x.actions, stepId);
+        const end = { id: stepId, duration: x.duration ?? 0 };
+        if (x.error) end.error = error(x.error);
+        emit('onStepEnd', { ...at, step: end });
+      }
+    };
     let clock = start;
     const step = (s, parentStepId, title, category, location) => {
       const stepId = id(resultId, String(events.length));
@@ -192,22 +287,34 @@ for (const sc of scenarios.values()) {
         ...at,
         step: { id: stepId, ...(parentStepId ? { parentStepId } : {}), title, category, startTime, location },
       });
-      const end = { id: stepId, duration: s.duration ?? 0 };
-      if (s.error) end.error = error(s.error);
-      if (s.status === 'skipped') end.annotations = [{ type: 'skip', description: 'not run' }];
+      actions(s.actions, stepId);
+      const duration = Math.max(s.duration ?? 0, endOf(s.actions) - startTime);
+      const end = { id: stepId, duration };
+      if (s.error) end.error = error(s.error, s.frames);
+      if (s.status === 'skipped') end.annotations = [{ type: 'skip' }];
       // The failure screenshot (Hooks @AfterStep, saved by ScenarioLog): attached to this step, as in TypeScript.
       const files = (s.attachments ?? []).filter((x) => existsSync(join(a.dir, x.path)));
-      if (files.length) {
-        const attachments = files.map((x) => {
-          const name = `resources/${id(a.dir, x.path)}${x.path.slice(x.path.lastIndexOf('.'))}`;
-          resources.push([join(a.dir, x.path), name]);
-          return { name: `${x.name}: ${title}`, path: name, contentType: x.contentType };
+      for (const x of files) {
+        const name = `resources/${id(a.dir, x.path)}${x.path.slice(x.path.lastIndexOf('.'))}`;
+        resources.push([join(a.dir, x.path), name]);
+        const attached = `${x.name}: ${title}`;
+        const attachId = id(resultId, String(events.length));
+        const last = endOf(s.actions) || startTime;
+        emit('onStepBegin', {
+          ...at,
+          step: {
+            id: attachId,
+            parentStepId: stepId,
+            title: `Attach ${JSON.stringify(attached)}`,
+            category: 'test.attach',
+            startTime: last,
+          },
         });
-        emit('onAttach', { ...at, attachments });
-        end.attachments = attachments.map(() => attachmentCount++);
+        emit('onAttach', { ...at, attachments: [{ name: attached, path: name, contentType: x.contentType }] });
+        emit('onStepEnd', { ...at, step: { id: attachId, duration: 0, attachments: [attachmentCount++] } });
       }
       emit('onStepEnd', { ...at, step: end });
-      clock = startTime + (s.duration ?? 0);
+      clock = startTime + duration;
       return stepId;
     };
     const hooks = (kind, title) => {
@@ -220,7 +327,11 @@ for (const sc of scenarios.values()) {
       const failed = list.find((h) => h.error);
       emit('onStepEnd', {
         ...at,
-        step: { id: groupId, duration: clock - groupStart, ...(failed ? { error: error(failed.error) } : {}) },
+        step: {
+          id: groupId,
+          duration: clock - groupStart,
+          ...(failed ? { error: error(failed.error, failed.frames) } : {}),
+        },
       });
     };
 
@@ -260,7 +371,7 @@ for (const sc of scenarios.values()) {
         id: resultId,
         duration: a.duration ?? 0,
         status,
-        errors: status === 'failed' && a.error ? [error(a.error)] : [],
+        errors: status === 'failed' && a.error ? [error(a.error, a.frames)] : [],
         annotations: attemptAnnotations,
       },
     });

@@ -52,7 +52,8 @@ The nightly's GitHub Pages site, built by the `summary` job because only it has 
   badges open it.
 - `/typescript/` the merged Playwright HTML report; `/java/` the Java results as the same kind of Playwright HTML
   report: `scripts/java-report.mjs` turns the scenario logs (every attempt, step, hook, duration and error, written by
-  `com.showcase.report.ScenarioLog`) and the traces of failed attempts into a Playwright blob report, and
+  `com.showcase.report.ScenarioLog`, and what each step did, recorded by `ActionLog`) and the traces of failed attempts
+  into a Playwright blob report, and
   `playwright merge-reports` renders it with the standard HTML reporter. Same list, filters, search, step tree,
   errors and trace viewer as TypeScript; a scenario that passed on a rerun shows as flaky. Also an artifact
   (`java-report`) on every run.
