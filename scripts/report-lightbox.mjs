@@ -11,6 +11,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { TEXT_FONT } from './report-fonts.mjs';
+
 const MARK = '<!-- report-lightbox -->';
 
 // Runs in the report page. Plain DOM, no framework, so Playwright's own React app is untouched.
@@ -18,10 +20,10 @@ const VIEWER = `${MARK}
 <style>
 #plb{position:fixed;inset:0;z-index:2147483647;background:rgba(15,17,20,.88);display:none;flex-direction:column}
 #plb.open{display:flex}
-#plb .bar{display:flex;gap:8px;align-items:center;padding:10px 14px;color:#f0f3f6;font:14px/1.4 system-ui,sans-serif}
+#plb .bar{display:flex;gap:8px;align-items:center;padding:10px 14px;color:#f0f3f6;font:14px/1.4 ${TEXT_FONT}}
 #plb .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #plb button,#plb a.btn{background:#2d333b;color:#f0f3f6;border:1px solid #444c56;border-radius:6px;padding:6px 12px;
-  font:13px system-ui,sans-serif;cursor:pointer;text-decoration:none}
+  font:13px ${TEXT_FONT};cursor:pointer;text-decoration:none}
 #plb button:hover,#plb a.btn:hover{background:#373e47}
 #plb .stage{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:0 14px 14px}
 #plb img{max-width:100%;max-height:100%;object-fit:contain;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.5);cursor:zoom-in}
