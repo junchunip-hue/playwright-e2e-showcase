@@ -121,7 +121,7 @@ failed to start on the Windows 11 dev machine (SxS error, `mozglue`), and cross-
 - Files every run depends on mark every scenario of their language: `playwright.config.ts`, `package.json`,
   `src/tags.ts`, `src/config/env.ts`, the failure reporting (`src/fixtures/not-run.ts`, `evidence.ts`,
   `not-run.hooks.ts`), the sign-in setup (browser scenarios), `java/pom.xml`, `RunCucumberTest`, `Hooks`,
-  `ScenarioLog`, `Env`.
+  `ScenarioLog`, `ActionLog`, `ActionAgent`, `Env`.
 - The comment lists, per feature, each scenario with its affected steps, why (the chain of code), the language, the
   tier and whether this PR's smoke runs it; then the spec tests (N1, N2) the change reaches, and the command to run the
   nightly-only scenarios on the branch.
