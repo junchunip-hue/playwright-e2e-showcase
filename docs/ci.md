@@ -89,9 +89,12 @@ test run red or stall it:
 |---|---|---|
 | `playwright-report` / `regression-report` | PR / nightly | HTML report with traces, screenshots and video on failure |
 | `ts-results` | PR, nightly | Playwright JSON, input for the summary |
-| `junit-reports` / `junit-reports-nightly` | PR / nightly | Surefire XML, input for the summary |
+| `java-report` | nightly | The Java results as a Playwright HTML report |
+| `junit-reports` / `junit-reports-nightly` | PR / nightly | Surefire XML and scenario log, input for the summary |
+| `junit-reports-control` | nightly | The same for the failure controls C1 and C2 |
 | `junit-reports-traces` / `junit-reports-nightly-traces` | Java failure only | Playwright traces of the failed Java tests |
-| `blob-report-<shard>` | nightly | Shard results, merged by `merge-reports` |
+| `blob-report-<shard>`, `blob-report-control` | nightly | Results of each shard and of the failure controls, merged by `merge-reports` |
+| `visual-baselines-report` | `update-snapshots` label | HTML report of the baseline run |
 
 **Nightly mechanics:** each shard boots its own Toolshop (no shared data between shards) and writes a blob report.
 A merge job turns the blobs into one HTML report, and runs on `master` publish it to GitHub Pages (`/typescript/`). The `setup` login
@@ -168,7 +171,7 @@ results and the Surefire XML reports and writes the run page's job summary:
   verdict, the commit status and the badge. A job that dies before its tests (e.g. a browser install) therefore turns
   its IDs ⛔, not ✅, and the run red. Java writes no results when its job dies early; it runs the same A/U/S IDs as
   TypeScript (ADR 0009), so those show ⛔ not run in the Java column.
-- **A skip in CI counts as not run.** The only skips are for the public demo (`@admin` checks, S5), which CI never
+- **A skip in CI counts as not run.** The only skips are for the public demo (`@admin`, `@own-toolshop`), which CI never
   uses; a skip in CI means a test silently did not run (e.g. a wrong `BASE_URL`), so it turns the run red.
 - **No list, no "Passed".** If the planned-test list cannot be made, the summary cannot see tests that never ran: the
   verdict is ⚠️ Unverified (yellow badge, status says so) instead of ✅ Passed.
@@ -210,9 +213,11 @@ Cucumber-JVM, inside the normal `mvnw test` (Cucumber tags are JUnit tags, so `-
   where a login is needed.
 - **Tiers:** every test has exactly one of `@smoke` (PR gate), `@regression` (nightly), `@setup`, `@seed`, `@control`
   (the failure controls: a separate nightly step only).
-  **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, and `@admin`. An `@admin` test signs in as
-  the seeded admin or can change catalogue or orders, so it is skipped against the public demo (TS: `adminToken`
-  fixture or `test.skip(isPublicDemo, ...)`, Java: `Hooks` `@Before("@admin")`) and runs against our own Toolshop only.
+  **Kinds** are optional: `@negative`, `@e2e`, `@a11y`, `@visual`, `@architecture`, `@admin`,
+  `@own-toolshop` and `@logged-out` (starts without the shared signed-in session). An `@admin` test signs in as the
+  seeded admin or can change catalogue or orders; an `@own-toolshop` test needs our own Toolshop, e.g. its background
+  jobs (S5). Both are skipped against the public demo (`ownToolshopOnly`: a fixture in `src/fixtures/index.ts`, a hook
+  in Java's `Hooks`).
 - **Failures:** a failing test stays a failure; there are no known-issue markers or expected failures
   ([ADR 0013](decisions/0013-failures-stay-failures.md)). Every report lists the failed step and the steps after it
   as not run.
@@ -255,10 +260,16 @@ afterwards to re-run the PR gate. The PNG diff in the PR is the review step
 - a workflow that pushes commits could trigger itself: it must not run on `push`, `workflow_run` or
   `repository_dispatch`; it must keep `GITHUB_TOKEN`, remove its trigger label, and have a concurrency group
 - `workflow_run` triggers form a cycle, or a step starts or re-runs a workflow
-- composite actions, npm scripts, Playwright project dependencies or TypeScript imports form a cycle
+- a local action reference points to no action
+- composite actions, npm scripts, Playwright project dependencies, TypeScript imports or Java class references form a
+  cycle
 - a job has no `timeout-minutes` ≤ 60, or a shell step uses `while`/`until` instead of a bounded `for … in $(seq …)`
 - a step installs browsers with `playwright install` (npx or the Java CLI) instead of the bounded, cached
   `install-browsers` action
+- a step runs Playwright directly without running `bddgen` first
+- a module contains an action, a step creates a locator, a page or module file breaks the naming, or a hand-written
+  `*.spec.js` sits in `tests/` (layers)
 - an A/U/S/C ID exists in only one language, or the test plan's "Java" column disagrees with `java/` (parity)
+- the two suites retry differently in CI or at all locally, or use different Playwright minors
 
 See [ADR 0008](decisions/0008-architecture-tests.md) for what they found on their first run.

@@ -7,10 +7,14 @@
 Needs JDK 21+. Maven comes from the wrapper, and config is read from the same `.env` as the TypeScript suite.
 ```bash
 cd java
-./mvnw exec:java -Dexec.args="install chromium"   # once: download the browser
+./mvnw exec:java -Dexec.args="install chromium"   # once, and after a Playwright update: download the browser
 ./mvnw test -Dgroups=smoke                          # smoke scenarios (the PR gate)
 ./mvnw test                                         # everything (nightly)
 ```
+The install is needed: the suite downloads no browser by itself. `Playwright.create()` would install every missing
+default browser, Firefox and WebKit too, so `PlaywrightContext` switches that off
+(`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD`).
+
 On Windows use `mvnw.cmd`; set `HEADED=1` to watch the browser and `SLOW_MO=400` to slow it down. One scenario:
 `-Dcucumber.filter.name="U6: .*"` (a regex for the whole scenario name; the Java side of `npm run demo`).
 

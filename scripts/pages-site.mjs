@@ -187,7 +187,7 @@ ${s.rerunNote ? `${esc(s.rerunNote)}<br>` : ''}${controlNote ? `${controlNote.sl
 ${tsControl ? `<div class="muted">The report also lists the failure controls as ${tsControl} failed (${total(ts.runs) + tsControl} tests in all): on purpose, not counted.</div>` : ''}
 <a class="button" href="typescript/">Open the TypeScript report →</a></div>
 <div class="lane"><h3>Java</h3><div class="big">${total(jv.runs)}</div>
-<div class="muted">scenarios (Cucumber-JVM, Chromium), the same feature files</div><div>${esc(runCounts(jv.runs))}</div>
+<div class="muted">test cases of the same feature files (Cucumber-JVM, Chromium)</div><div>${esc(runCounts(jv.runs))}</div>
 ${javaControl ? `<div class="muted">The report also lists the failure controls as ${javaControl} failed (${total(jv.runs) + javaControl} tests in all): on purpose, not counted.</div>` : ''}
 <a class="button" href="java/">Open the Java report →</a></div>
 </div>
@@ -235,13 +235,13 @@ TypeScript runs U and S IDs once per browser (Chromium, Firefox, WebKit), A and 
     const cls = { passed: 'ok', flaky: 'flaky', rerun: 'flaky', failed: 'bad', unverified: 'flaky' };
     const recent = history.slice(-30).reverse();
     sections.push(`<h2 id="history">Nightly history</h2>
-<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun; the failure controls do not count). ` : ''}Latest first; each links to its run.</p>
+<p>${streak ? `<strong>${esc(streakText(streak.message))}</strong> (no failed, flaky, skipped or not-run test in either language, and no rerun; the failure controls do not count). ` : ''}Latest first${history.length > recent.length ? ` (the last ${recent.length} of ${history.length})` : ''}; each links to its run.</p>
 <div class="dots">${recent.map((r) => `<a class="dot ${cls[r.verdict] ?? 'skip'}" href="${REPO}/actions/runs/${esc(r.id)}" title="${esc(`#${r.run} · ${r.date} · ${r.verdict}${r.note ? ` · ${r.note}` : ''}`)}">#${esc(r.run)}</a>`).join('')}</div>
 <p class="muted">Green passed · gold flaky, passed on a rerun or unverified · red failed. Only nightlies on <code>master</code> are listed: a missing number is a run of the same workflow on a branch or a pull request, which never publishes here. Data: <a href="history.json">history.json</a>.</p>`);
   }
 
   sections.push(
-    `<p class="muted" style="margin-top:32px">Java scenarios on this run: ${total(jv.runs)}${javaControl ? ', plus the failure controls' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary; both reports are Playwright HTML reports (Java: <code>scripts/java-report.mjs</code>).</p>`,
+    `<p class="muted" style="margin-top:32px">Java test cases on this run: ${total(jv.runs)}${javaControl ? ', plus the failure controls' : ''}. Built by <code>scripts/pages-site.mjs</code> from the same results as the run's summary; both reports are Playwright HTML reports (Java: <code>scripts/java-report.mjs</code>).</p>`,
   );
   return page('Nightly results · Playwright E2E Showcase', sections.join('\n'));
 }
