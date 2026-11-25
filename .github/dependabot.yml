@@ -1,7 +1,7 @@
 # Weekly dependency updates, one grouped PR per ecosystem, gated by the same PR smoke as any change.
 # Major versions of npm and Maven packages stay manual: they change APIs (ESLint, TypeScript, JUnit 6 for Cucumber 8) and need a planned PR.
 # Playwright minors stay manual too: TypeScript (@playwright/test) and Java (com.microsoft.playwright) must move to the
-# same minor in one PR, which an architecture test checks and Dependabot cannot do across ecosystems
+# same minor in one PR, which Dependabot cannot do across ecosystems and no check enforces
 # (roadmap §6, "Keep it green"). Their patch releases come through here.
 version: 2
 updates:
